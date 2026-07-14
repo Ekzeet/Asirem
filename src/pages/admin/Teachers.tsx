@@ -102,7 +102,7 @@ function InviteModal({ institutionId, onClose, onSaved }: { institutionId: strin
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string },
-        body: JSON.stringify({ email: email.trim(), full_name: name.trim(), role, institution_id: institutionId }),
+        body: JSON.stringify({ email: email.trim(), full_name: name.trim(), role, institution_id: institutionId, redirect_to: window.location.origin }),
       })
       const j = await res.json()
       if (!res.ok) { setError(j.error ?? 'Failed'); setBusy(false); return }

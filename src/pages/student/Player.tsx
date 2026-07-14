@@ -7,7 +7,7 @@ import { useAsync } from '../../hooks/useAsync'
 import { Icon } from '../../components/Icon'
 import { Loader } from '../../components/ui'
 
-type Lesson = { id: string; title: string; duration: string | null; body: string | null; done: boolean }
+type Lesson = { id: string; title: string; duration: string | null; body: string | null; done: boolean; content_type: string; file_url: string | null; external_url: string | null; duration_seconds: number | null }
 type Section = { id: string; title: string; lessons: Lesson[] }
 type Resource = { id: string; name: string; size_label: string | null; icon: string | null; kind: string | null }
 type QuizOption = { id: string; label: string; is_correct: boolean }
@@ -29,13 +29,13 @@ export default function Player() {
   const { data, loading, reload } = useAsync(async () => {
     const [{ data: course }, { data: sections }, { data: prog }] = await Promise.all([
       supabase.from('courses').select('id,title').eq('id', courseId!).single(),
-      supabase.from('sections').select('id,title,position,lessons(id,title,duration,body,position)').eq('course_id', courseId!).order('position'),
+      supabase.from('sections').select('id,title,position,lessons(id,title,duration,body,position,content_type,file_url,external_url,duration_seconds)').eq('course_id', courseId!).order('position'),
       supabase.from('lesson_progress').select('lesson_id, completed_at').eq('user_id', me!.userId),
     ])
     const doneSet = new Set((prog ?? []).filter((p) => p.completed_at).map((p) => p.lesson_id))
     const secs: Section[] = (sections ?? []).map((s: any) => ({
       id: s.id, title: s.title,
-      lessons: (s.lessons ?? []).sort((a: any, b: any) => a.position - b.position).map((l: any) => ({ id: l.id, title: l.title, duration: l.duration, body: l.body, done: doneSet.has(l.id) })),
+      lessons: (s.lessons ?? []).sort((a: any, b: any) => a.position - b.position).map((l: any) => ({ id: l.id, title: l.title, duration: l.duration, body: l.body, done: doneSet.has(l.id), content_type: l.content_type, file_url: l.file_url, external_url: l.external_url, duration_seconds: l.duration_seconds })),
     }))
     return { course: course as { id: string; title: string }, sections: secs }
   }, [courseId, me!.userId])
@@ -91,22 +91,7 @@ export default function Player() {
   return (
     <div className="lmsfade" style={{ display: 'flex', height: '100%' }}>
       <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', paddingBottom: 40 }}>
-        {/* Video */}
-        <div style={{ background: '#0B2038' }}>
-          <div style={{ aspectRatio: '16/9', maxHeight: 460, background: 'linear-gradient(135deg,#0F2C4C,#0B2038)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(135deg,rgba(255,255,255,.02) 0 22px,transparent 22px 44px)' }} />
-            <button onClick={() => setPlaying((p) => !p)} style={{ width: 76, height: 76, borderRadius: '50%', background: 'rgba(217,164,65,.95)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 10px 34px rgba(217,164,65,.4)', zIndex: 2 }}>
-              <Icon name={playing ? 'pause' : 'play'} size={30} color="#0F2C4C" fill="#0F2C4C" />
-            </button>
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '14px 18px', background: 'linear-gradient(0deg,rgba(0,0,0,.55),transparent)' }}>
-              <div style={{ height: 5, background: 'rgba(255,255,255,.22)', borderRadius: 4, overflow: 'hidden', marginBottom: 10 }}><div style={{ height: '100%', width: `${pct}%`, background: '#D9A441' }} /></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, color: '#fff', fontSize: 12.5, fontWeight: 600 }}>
-                <Icon name={playing ? 'pause' : 'play'} size={16} /><span>{current.duration ?? '—'}</span><div style={{ flex: 1 }} />
-                <Icon name="volume-2" size={16} /><Icon name="settings" size={16} /><Icon name="maximize" size={16} />
-              </div>
-            </div>
-          </div>
-        </div>
+        <MediaPlayer key={current.id} lesson={current} userId={me!.userId} progressPct={pct} onCompleted={reload} />
 
         <div style={{ padding: '22px 30px', maxWidth: 820 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#8494A8', fontWeight: 700, marginBottom: 8 }}>
@@ -193,6 +178,102 @@ export default function Player() {
           </div>
         ))}
       </aside>
+    </div>
+  )
+}
+
+function embedUrl(url: string): string | null {
+  try {
+    const u = new URL(url)
+    if (u.hostname.includes('youtube.com')) { const id = u.searchParams.get('v'); return id ? `https://www.youtube.com/embed/${id}` : null }
+    if (u.hostname === 'youtu.be') return `https://www.youtube.com/embed/${u.pathname.slice(1)}`
+    if (u.hostname.includes('vimeo.com')) { const id = u.pathname.split('/').filter(Boolean)[0]; return id ? `https://player.vimeo.com/video/${id}` : null }
+    return url
+  } catch { return null }
+}
+
+function MediaPlayer({ lesson, userId, progressPct, onCompleted }: {
+  lesson: Lesson & { sectionTitle?: string }
+  userId: string
+  progressPct: number
+  onCompleted: () => void
+}) {
+  const { t } = useI18n()
+  const [signedUrl, setSignedUrl] = useState<string | null>(null)
+  const [marked, setMarked] = useState(lesson.done)
+  const lastSaveRef = useState({ t: 0 })[0]
+
+  useEffect(() => {
+    setMarked(lesson.done)
+    let active = true
+    if (lesson.file_url) {
+      supabase.storage.from('course-media').createSignedUrl(lesson.file_url, 3600).then(({ data }) => { if (active) setSignedUrl(data?.signedUrl ?? null) })
+    } else setSignedUrl(null)
+    return () => { active = false }
+  }, [lesson.id, lesson.file_url, lesson.done])
+
+  async function complete() {
+    if (marked) return
+    setMarked(true)
+    await supabase.from('lesson_progress').upsert(
+      { user_id: userId, lesson_id: lesson.id, completed_at: new Date().toISOString() },
+      { onConflict: 'user_id,lesson_id' },
+    )
+    onCompleted()
+  }
+
+  async function onTimeUpdate(e: React.SyntheticEvent<HTMLVideoElement>) {
+    const v = e.currentTarget
+    const dur = lesson.duration_seconds || v.duration
+    const now = Date.now()
+    if (now - lastSaveRef.t > 5000) {
+      lastSaveRef.t = now
+      supabase.from('lesson_progress').upsert(
+        { user_id: userId, lesson_id: lesson.id, seconds: Math.round(v.currentTime) },
+        { onConflict: 'user_id,lesson_id' },
+      )
+    }
+    if (dur && v.currentTime / dur >= 0.9) complete()
+  }
+
+  const isVideo = lesson.content_type === 'video'
+  const isPdf = lesson.content_type === 'pdf'
+  const embed = lesson.external_url ? embedUrl(lesson.external_url) : null
+
+  return (
+    <div>
+      <div style={{ background: '#0B2038' }}>
+        <div style={{ aspectRatio: '16/9', maxHeight: 460, background: 'linear-gradient(135deg,#0F2C4C,#0B2038)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          {isVideo && signedUrl ? (
+            <video src={signedUrl} controls onTimeUpdate={onTimeUpdate} onEnded={complete} style={{ width: '100%', height: '100%', background: '#000' }} />
+          ) : embed ? (
+            <iframe src={embed} title={lesson.title} allow="accelerated-destination; autoplay; encrypted-media; picture-in-picture" allowFullScreen style={{ width: '100%', height: '100%', border: 'none' }} />
+          ) : isPdf && signedUrl ? (
+            <iframe src={signedUrl} title={lesson.title} style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} />
+          ) : (
+            <>
+              <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(135deg,rgba(255,255,255,.02) 0 22px,transparent 22px 44px)' }} />
+              <div style={{ textAlign: 'center', color: '#9DB4D0', zIndex: 2 }}>
+                <Icon name={isVideo ? 'video-off' : 'file'} size={40} />
+                <div style={{ marginTop: 8, fontSize: 13, fontWeight: 600 }}>{t('noMediaYet')}</div>
+              </div>
+            </>
+          )}
+          {!isVideo || !signedUrl ? (
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '10px 18px', background: 'linear-gradient(0deg,rgba(0,0,0,.55),transparent)', pointerEvents: 'none' }}>
+              <div style={{ height: 5, background: 'rgba(255,255,255,.22)', borderRadius: 4, overflow: 'hidden' }}><div style={{ height: '100%', width: `${progressPct}%`, background: '#D9A441' }} /></div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+      {/* Manual completion for non-tracked media (embed / pdf / none) */}
+      {!(isVideo && signedUrl) && (
+        <div style={{ padding: '12px 30px 0', maxWidth: 820 }}>
+          <button onClick={complete} disabled={marked} style={{ height: 40, padding: '0 18px', borderRadius: 10, background: marked ? '#EAF6EF' : '#0F2C4C', color: marked ? '#1F8A5B' : '#fff', border: 'none', fontWeight: 800, fontSize: 13, cursor: marked ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
+            <Icon name={marked ? 'check-circle' : 'circle'} size={16} />{marked ? t('completed') : t('markDone')}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

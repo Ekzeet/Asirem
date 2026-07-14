@@ -82,9 +82,15 @@ export type Database = {
         Relationships: []
       }
       lessons: {
-        Row: { body: string | null; content_type: string; created_at: string; duration: string | null; file_url: string | null; id: string; is_preview: boolean; position: number; section_id: string; title: string }
-        Insert: { body?: string | null; content_type?: string; created_at?: string; duration?: string | null; file_url?: string | null; id?: string; is_preview?: boolean; position?: number; section_id: string; title: string }
+        Row: { body: string | null; content_type: string; created_at: string; duration: string | null; duration_seconds: number | null; external_url: string | null; file_url: string | null; id: string; is_preview: boolean; position: number; section_id: string; title: string }
+        Insert: { body?: string | null; content_type?: string; created_at?: string; duration?: string | null; duration_seconds?: number | null; external_url?: string | null; file_url?: string | null; id?: string; is_preview?: boolean; position?: number; section_id: string; title: string }
         Update: Partial<Database['public']['Tables']['lessons']['Insert']>
+        Relationships: []
+      }
+      course_instructors: {
+        Row: { id: string; course_id: string; user_id: string; created_at: string }
+        Insert: { id?: string; course_id: string; user_id: string; created_at?: string }
+        Update: Partial<Database['public']['Tables']['course_instructors']['Insert']>
         Relationships: []
       }
       memberships: {
@@ -192,6 +198,7 @@ export type Database = {
       sales_stats: { Args: { p_institution_id: string }; Returns: Json }
       teacher_dashboard_stats: { Args: { p_institution_id: string; p_teacher_id?: string }; Returns: Json }
       top_courses: { Args: { p_institution_id: string; p_limit?: number }; Returns: { accent: string; icon: string; id: string; instructor: string; rating: number; revenue_cents: number; status: string; students: number; title: string }[] }
+      verify_certificate: { Args: { p_serial: string }; Returns: Json }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

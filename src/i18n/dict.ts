@@ -47,6 +47,10 @@ export const DICT: Record<Lang, Record<string, string>> = {
     inviteSub: 'Ajoute un membre à ton académie', sendInvite: 'Envoyer l’invitation', fullName: 'Nom complet', role: 'Rôle', inviteNote: 'Le compte est créé avec le mot de passe de démo.',
     replied: 'Répondu', reply: 'Répondre', yourReply: 'Ta réponse…', send: 'Envoyer',
     canResubmit: 'tu peux modifier', yourAnswer: 'Ta réponse…', linkOptional: 'Lien (optionnel)', resubmit: 'Renvoyer', submitWork: 'Rendre le devoir',
+    uploading: 'Téléversement…', chooseFile: 'Choisir un fichier', mediaSource: 'Source du média', noMedia: 'Aucun', uploadFile: 'Téléverser un fichier',
+    externalLink: 'Lien externe (YouTube/Vimeo)', durationSeconds: 'Durée (secondes)', noMediaYet: 'Aucun média pour cette leçon',
+    coInstructors: 'Co-instructeurs', addCoInstructor: 'Ajouter un co-instructeur', inviteSent: 'Invitation envoyée',
+    verifyTitle: 'Vérification de certificat', verifyValid: 'Certificat authentique', verifyInvalid: 'Certificat introuvable', verifyIssuedTo: 'Délivré à', verifyBackHome: 'Aller à Asirem',
   },
   en: {
     menu: 'Menu', viewAs: 'View as', search: 'Search a course, student…',
@@ -93,6 +97,10 @@ export const DICT: Record<Lang, Record<string, string>> = {
     inviteSub: 'Add a member to your academy', sendInvite: 'Send invite', fullName: 'Full name', role: 'Role', inviteNote: 'The account is created with the demo password.',
     replied: 'Replied', reply: 'Reply', yourReply: 'Your reply…', send: 'Send',
     canResubmit: 'you can edit', yourAnswer: 'Your answer…', linkOptional: 'Link (optional)', resubmit: 'Resubmit', submitWork: 'Submit work',
+    uploading: 'Uploading…', chooseFile: 'Choose a file', mediaSource: 'Media source', noMedia: 'None', uploadFile: 'Upload a file',
+    externalLink: 'External link (YouTube/Vimeo)', durationSeconds: 'Duration (seconds)', noMediaYet: 'No media for this lesson yet',
+    coInstructors: 'Co-instructors', addCoInstructor: 'Add co-instructor', inviteSent: 'Invitation sent',
+    verifyTitle: 'Certificate verification', verifyValid: 'Authentic certificate', verifyInvalid: 'Certificate not found', verifyIssuedTo: 'Issued to', verifyBackHome: 'Go to Asirem',
   },
   es: {
     menu: 'Menú', viewAs: 'Ver como', search: 'Buscar un curso, estudiante…',
@@ -139,6 +147,10 @@ export const DICT: Record<Lang, Record<string, string>> = {
     inviteSub: 'Añade un miembro a tu academia', sendInvite: 'Enviar invitación', fullName: 'Nombre completo', role: 'Rol', inviteNote: 'La cuenta se crea con la contraseña de demo.',
     replied: 'Respondido', reply: 'Responder', yourReply: 'Tu respuesta…', send: 'Enviar',
     canResubmit: 'puedes editar', yourAnswer: 'Tu respuesta…', linkOptional: 'Enlace (opcional)', resubmit: 'Reenviar', submitWork: 'Entregar',
+    uploading: 'Subiendo…', chooseFile: 'Elegir archivo', mediaSource: 'Fuente del medio', noMedia: 'Ninguno', uploadFile: 'Subir archivo',
+    externalLink: 'Enlace externo (YouTube/Vimeo)', durationSeconds: 'Duración (segundos)', noMediaYet: 'Sin medio para esta lección',
+    coInstructors: 'Co-instructores', addCoInstructor: 'Añadir co-instructor', inviteSent: 'Invitación enviada',
+    verifyTitle: 'Verificación de certificado', verifyValid: 'Certificado auténtico', verifyInvalid: 'Certificado no encontrado', verifyIssuedTo: 'Emitido a', verifyBackHome: 'Ir a Asirem',
   },
 }
 

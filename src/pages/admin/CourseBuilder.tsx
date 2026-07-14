@@ -8,8 +8,9 @@ import { Icon } from '../../components/Icon'
 import { Card, Loader, StatusChip } from '../../components/ui'
 import { BtnGhost, BtnPrimary, Field, Modal, inputCss, textareaCss } from '../../components/Modal'
 import { CourseFormModal } from '../../components/CourseFormModal'
+import { FileUpload } from '../../components/FileUpload'
 
-type Lesson = { id: string; title: string; content_type: string; duration: string | null; is_preview: boolean; position: number; hasQuiz: boolean }
+type Lesson = { id: string; title: string; content_type: string; duration: string | null; duration_seconds: number | null; file_url: string | null; external_url: string | null; is_preview: boolean; position: number; hasQuiz: boolean }
 type Section = { id: string; title: string; position: number; lessons: Lesson[] }
 type Assignment = { id: string; title: string; instructions: string | null; due_at: string | null; points: number }
 type Course = { id: string; title: string; status: string; category: string | null; accent: string | null; icon: string | null; subtitle: string | null; level: string | null; price_cents: number; instructor_id: string | null }
@@ -29,7 +30,7 @@ export default function CourseBuilder() {
   const { data, loading, reload } = useAsync(async () => {
     const [{ data: course }, { data: sections }, { data: quizzes }, { data: assignments }] = await Promise.all([
       supabase.from('courses').select('id,title,status,category,accent,icon,subtitle,level,price_cents,instructor_id').eq('id', courseId!).single(),
-      supabase.from('sections').select('id,title,position,lessons(id,title,content_type,duration,is_preview,position)').eq('course_id', courseId!).order('position'),
+      supabase.from('sections').select('id,title,position,lessons(id,title,content_type,duration,duration_seconds,file_url,external_url,is_preview,position)').eq('course_id', courseId!).order('position'),
       supabase.from('quizzes').select('lesson_id'),
       supabase.from('assignments').select('id,title,instructions,due_at,points').eq('course_id', courseId!).order('created_at'),
     ])
@@ -73,6 +74,8 @@ export default function CourseBuilder() {
         <BtnGhost onClick={() => setEditDetails(true)}>{t('editDetails')}</BtnGhost>
         <BtnPrimary onClick={togglePublish}><Icon name={course.status === 'published' ? 'eye-off' : 'send'} size={15} />{course.status === 'published' ? t('unpublish') : t('publish')}</BtnPrimary>
       </Card>
+
+      <CoInstructors courseId={course.id} institutionId={me!.institutionId} instructorId={course.instructor_id} />
 
       <div style={{ display: 'flex', gap: 6, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
         {([['curriculum', t('curriculum')], ['assignments', t('assignments')]] as const).map(([id, label]) => (
@@ -131,7 +134,7 @@ export default function CourseBuilder() {
       )}
 
       {editDetails && <CourseFormModal existing={course} onClose={() => setEditDetails(false)} onSaved={() => { setEditDetails(false); reload() }} />}
-      {lessonForm && <LessonModal sectionId={lessonForm.sectionId} lesson={lessonForm.lesson} count={sections.find((s) => s.id === lessonForm.sectionId)?.lessons.length ?? 0} onClose={() => setLessonForm(null)} onSaved={() => { setLessonForm(null); reload() }} />}
+      {lessonForm && <LessonModal courseId={course.id} sectionId={lessonForm.sectionId} lesson={lessonForm.lesson} count={sections.find((s) => s.id === lessonForm.sectionId)?.lessons.length ?? 0} onClose={() => setLessonForm(null)} onSaved={() => { setLessonForm(null); reload() }} />}
       {quizLesson && <QuizModal lesson={quizLesson} onClose={() => setQuizLesson(null)} onSaved={() => { setQuizLesson(null); reload() }} />}
       {newAssign && <AssignmentModal courseId={course.id} institutionId={me!.institutionId} onClose={() => setNewAssign(false)} onSaved={() => { setNewAssign(false); reload() }} />}
     </div>
@@ -140,21 +143,74 @@ export default function CourseBuilder() {
 
 const linkBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px' }
 
-function LessonModal({ sectionId, lesson, count, onClose, onSaved }: { sectionId: string; lesson?: Lesson; count: number; onClose: () => void; onSaved: () => void }) {
+function CoInstructors({ courseId, institutionId, instructorId }: { courseId: string; institutionId: string; instructorId: string | null }) {
+  const { t } = useI18n()
+  const { data, loading, reload } = useAsync(async () => {
+    const [{ data: teachers }, { data: co }] = await Promise.all([
+      supabase.from('memberships').select('user_id, profiles:profiles!memberships_user_profile_fkey(full_name)').eq('institution_id', institutionId).eq('role', 'teacher'),
+      supabase.from('course_instructors').select('id, user_id, profiles:profiles!course_instructors_user_id_fkey(full_name)').eq('course_id', courseId),
+    ])
+    return {
+      teachers: (teachers ?? []).map((m: any) => ({ id: m.user_id, name: m.profiles?.full_name ?? '—' })),
+      co: (co ?? []).map((c: any) => ({ id: c.id, userId: c.user_id, name: c.profiles?.full_name ?? '—' })),
+    }
+  }, [courseId])
+
+  if (loading || !data) return null
+  const coIds = new Set(data.co.map((c) => c.userId))
+  const available = data.teachers.filter((tt) => !coIds.has(tt.id) && tt.id !== instructorId)
+
+  async function add(userId: string) { if (userId) { await supabase.from('course_instructors').insert({ course_id: courseId, user_id: userId }); reload() } }
+  async function remove(id: string) { await supabase.from('course_instructors').delete().eq('id', id); reload() }
+
+  return (
+    <Card style={{ padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 12, fontWeight: 800, color: '#8494A8', textTransform: 'uppercase', letterSpacing: .4 }}>{t('coInstructors')}</span>
+      {data.co.map((c) => (
+        <span key={c.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700, color: '#1B5FB0', background: '#EAF1FB', padding: '5px 10px', borderRadius: 20 }}>
+          {c.name}
+          <button onClick={() => remove(c.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#1B5FB0', display: 'flex', padding: 0 }}><Icon name="x" size={13} /></button>
+        </span>
+      ))}
+      {data.co.length === 0 && <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>—</span>}
+      <div style={{ flex: 1 }} />
+      {available.length > 0 && (
+        <select onChange={(e) => { add(e.target.value); e.target.value = '' }} defaultValue="" style={{ ...inputCss, height: 36, width: 220 }}>
+          <option value="" disabled>+ {t('addCoInstructor')}</option>
+          {available.map((tt) => <option key={tt.id} value={tt.id}>{tt.name}</option>)}
+        </select>
+      )}
+    </Card>
+  )
+}
+
+function LessonModal({ courseId, sectionId, lesson, count, onClose, onSaved }: { courseId: string; sectionId: string; lesson?: Lesson; count: number; onClose: () => void; onSaved: () => void }) {
   const { t } = useI18n()
   const [title, setTitle] = useState(lesson?.title ?? '')
   const [ctype, setCtype] = useState(lesson?.content_type ?? 'video')
   const [duration, setDuration] = useState(lesson?.duration ?? '')
   const [preview, setPreview] = useState(lesson?.is_preview ?? false)
+  const [source, setSource] = useState<'upload' | 'external' | 'none'>(lesson?.external_url ? 'external' : lesson?.file_url ? 'upload' : 'none')
+  const [filePath, setFilePath] = useState<string | null>(lesson?.file_url ?? null)
+  const [externalUrl, setExternalUrl] = useState(lesson?.external_url ?? '')
+  const [durationSeconds, setDurationSeconds] = useState<number | null>(lesson?.duration_seconds ?? null)
   const [busy, setBusy] = useState(false)
 
   async function save() {
     if (!title.trim()) return
     setBusy(true)
-    if (lesson) await supabase.from('lessons').update({ title: title.trim(), content_type: ctype, duration, is_preview: preview }).eq('id', lesson.id)
-    else await supabase.from('lessons').insert({ section_id: sectionId, title: title.trim(), content_type: ctype, duration, is_preview: preview, position: count })
+    const media = {
+      file_url: source === 'upload' ? filePath : null,
+      external_url: source === 'external' ? (externalUrl.trim() || null) : null,
+      duration_seconds: durationSeconds,
+    }
+    const payload = { title: title.trim(), content_type: ctype, duration, is_preview: preview, ...media }
+    if (lesson) await supabase.from('lessons').update(payload).eq('id', lesson.id)
+    else await supabase.from('lessons').insert({ section_id: sectionId, position: count, ...payload })
     setBusy(false); onSaved()
   }
+
+  const isMedia = ctype === 'video' || ctype === 'audio' || ctype === 'pdf' || ctype === 'image'
 
   return (
     <Modal title={lesson ? t('editLesson') : t('addLesson')} onClose={onClose}
@@ -168,6 +224,32 @@ function LessonModal({ sectionId, lesson, count, onClose, onSaved }: { sectionId
         </Field>
         <Field label={t('duration')}><input value={duration ?? ''} onChange={(e) => setDuration(e.target.value)} placeholder="12:40" style={inputCss} /></Field>
       </div>
+
+      {isMedia && (
+        <>
+          <Field label={t('mediaSource')}>
+            <select value={source} onChange={(e) => setSource(e.target.value as any)} style={inputCss}>
+              <option value="none">{t('noMedia')}</option>
+              <option value="upload">{t('uploadFile')}</option>
+              <option value="external">{t('externalLink')}</option>
+            </select>
+          </Field>
+          {source === 'upload' && (
+            <div style={{ marginBottom: 14 }}>
+              <FileUpload bucket="course-media" pathPrefix={courseId} currentPath={filePath}
+                accept={ctype === 'video' ? 'video/*' : ctype === 'audio' ? 'audio/*' : ctype === 'pdf' ? 'application/pdf' : 'image/*'}
+                onUploaded={(path) => setFilePath(path)} />
+            </div>
+          )}
+          {source === 'external' && (
+            <Field label={t('externalLink')}><input value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." style={inputCss} /></Field>
+          )}
+          {ctype === 'video' && (
+            <Field label={t('durationSeconds')}><input type="number" min={0} value={durationSeconds ?? ''} onChange={(e) => setDurationSeconds(e.target.value ? Number(e.target.value) : null)} placeholder="1907" style={inputCss} /></Field>
+          )}
+        </>
+      )}
+
       <label style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, fontWeight: 600, color: 'var(--ink-soft)', cursor: 'pointer' }}>
         <input type="checkbox" checked={preview} onChange={(e) => setPreview(e.target.checked)} /> {t('freePreview')}
       </label>

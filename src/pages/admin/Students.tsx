@@ -14,25 +14,40 @@ export default function AdminStudents() {
   const { t, lang } = useI18n()
   const inst = me!.institutionId
 
+  const isTeacher = me!.role === 'teacher'
+
   const { data, loading } = useAsync(async () => {
-    // members with student role, their enrollments (+ plan) and progress
-    const [{ data: mem }, { data: enr }, { data: prog }, { data: plans }] = await Promise.all([
-      supabase.from('memberships').select('user_id, role, profiles:profiles!memberships_user_profile_fkey(full_name)').eq('institution_id', inst).eq('role', 'student'),
-      supabase.from('enrollments').select('user_id, course_id, plan_id, last_active_at').eq('institution_id', inst),
+    const [{ data: enr }, { data: prog }, { data: plans }] = await Promise.all([
+      supabase.from('enrollments').select('user_id, course_id, plan_id, last_active_at, student:profiles!enrollments_user_profile_fkey(full_name)').eq('institution_id', inst),
       supabase.from('course_progress').select('user_id, pct'),
       supabase.from('plans').select('id, code, name').eq('institution_id', inst),
     ])
+    // For teachers, restrict to students enrolled in their own courses.
+    let enrollments = enr ?? []
+    if (isTeacher) {
+      const [{ data: owned }, { data: co }] = await Promise.all([
+        supabase.from('courses').select('id').eq('institution_id', inst).eq('instructor_id', me!.userId),
+        supabase.from('course_instructors').select('course_id').eq('user_id', me!.userId),
+      ])
+      const mine = new Set([...(owned ?? []).map((c) => c.id), ...(co ?? []).map((c) => c.course_id)])
+      enrollments = enrollments.filter((e) => mine.has(e.course_id))
+    }
     const planById: Record<string, string> = {}
     for (const p of plans ?? []) planById[p.id] = p.name
-    const rows: Row[] = (mem ?? []).map((m: any) => {
-      const es = (enr ?? []).filter((e) => e.user_id === m.user_id)
-      const ps = (prog ?? []).filter((p) => p.user_id === m.user_id)
+
+    // group enrollments by student
+    const byStudent = new Map<string, { name: string; es: typeof enrollments }>()
+    for (const e of enrollments as any[]) {
+      const cur = byStudent.get(e.user_id) ?? { name: e.student?.full_name ?? '—', es: [] as any[] }
+      cur.es.push(e); byStudent.set(e.user_id, cur)
+    }
+    const rows: Row[] = Array.from(byStudent.entries()).map(([userId, { name, es }]) => {
+      const ps = (prog ?? []).filter((p) => p.user_id === userId)
       const avgPct = ps.length ? Math.round(ps.reduce((s, p) => s + (p.pct ?? 0), 0) / ps.length) : 0
-      const lastActive = es.map((e) => e.last_active_at).sort().at(-1) ?? new Date().toISOString()
-      const topPlan = es.map((e) => (e.plan_id ? planById[e.plan_id] : 'Gratuit')).sort().at(0) ?? 'Gratuit'
-      return { userId: m.user_id, name: m.profiles?.full_name ?? '—', email: '', courses: es.length, pct: avgPct, last: lastActive, plan: topPlan }
+      const lastActive = es.map((e: any) => e.last_active_at).sort().at(-1) ?? new Date().toISOString()
+      const topPlan = es.map((e: any) => (e.plan_id ? planById[e.plan_id] : 'Gratuit')).sort().at(0) ?? 'Gratuit'
+      return { userId, name, email: '', courses: es.length, pct: avgPct, last: lastActive, plan: topPlan }
     })
-    // emails aren't in profiles; show a friendly handle instead
     return rows.sort((a, b) => b.pct - a.pct)
   }, [inst])
 

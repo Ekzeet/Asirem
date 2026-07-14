@@ -20,6 +20,7 @@ const Catalog = lazy(() => import('./pages/student/Catalog'))
 const Player = lazy(() => import('./pages/student/Player'))
 const Certificates = lazy(() => import('./pages/student/Certificates'))
 const TeacherDashboard = lazy(() => import('./pages/teacher/Dashboard'))
+const Verify = lazy(() => import('./pages/public/Verify'))
 
 function Loading() {
   const { t } = useI18n()
@@ -61,10 +62,14 @@ export default function App() {
   if (loading) return <Loading />
   if (!session || !me) {
     return (
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          {/* Public certificate verification — no auth required */}
+          <Route path="/verify/:serial" element={<Verify />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Suspense>
     )
   }
 
@@ -74,6 +79,7 @@ export default function App() {
   return (
     <Suspense fallback={<Loading />}>
     <Routes>
+      <Route path="/verify/:serial" element={<Verify />} />
       <Route path="/login" element={<Navigate to={roleHome(me.role)} replace />} />
       <Route element={<Layout />}>
         {/* Admin */}

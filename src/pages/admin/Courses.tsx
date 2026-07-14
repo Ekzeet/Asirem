@@ -23,18 +23,26 @@ export default function AdminCourses() {
   const [filter, setFilter] = useState<'all' | 'published' | 'draft'>('all')
   const [showNew, setShowNew] = useState(false)
 
+  const isTeacher = me!.role === 'teacher'
+
   const { data, loading, reload } = useAsync(async () => {
-    const [{ data: courses }, { data: enr }] = await Promise.all([
+    const [{ data: courses }, { data: enr }, { data: coInstr }] = await Promise.all([
       supabase
         .from('courses')
-        .select('id,title,subtitle,category,price_cents,rating,accent,icon,status,instructor:profiles!courses_instructor_id_fkey(full_name)')
+        .select('id,title,subtitle,category,price_cents,rating,accent,icon,status,instructor_id,instructor:profiles!courses_instructor_id_fkey(full_name)')
         .eq('institution_id', inst)
         .order('created_at', { ascending: false }),
       supabase.from('enrollments').select('course_id').eq('institution_id', inst),
+      isTeacher ? supabase.from('course_instructors').select('course_id').eq('user_id', me!.userId) : Promise.resolve({ data: [] as { course_id: string }[] }),
     ])
     const counts: Record<string, number> = {}
     for (const e of enr ?? []) counts[e.course_id] = (counts[e.course_id] ?? 0) + 1
-    return { courses: (courses ?? []) as unknown as Course[], counts }
+    let list = (courses ?? []) as unknown as (Course & { instructor_id: string | null })[]
+    if (isTeacher) {
+      const co = new Set((coInstr ?? []).map((c) => c.course_id))
+      list = list.filter((c) => c.instructor_id === me!.userId || co.has(c.id))
+    }
+    return { courses: list as unknown as Course[], counts }
   }, [inst])
 
   const filtered = useMemo(() => {

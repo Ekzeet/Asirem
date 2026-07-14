@@ -1,9 +1,38 @@
+import { jsPDF } from 'jspdf'
 import { useAuth } from '../../auth/AuthContext'
 import { useI18n } from '../../i18n/I18nContext'
 import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
 import { Icon } from '../../components/Icon'
 import { Loader, PageWrap } from '../../components/ui'
+
+function makeCertificatePdf(opts: { name: string; course: string; date: string; serial: string }) {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
+  const W = doc.internal.pageSize.getWidth()
+  const H = doc.internal.pageSize.getHeight()
+  // background + border
+  doc.setFillColor(15, 44, 76); doc.rect(0, 0, W, H, 'F')
+  doc.setFillColor(255, 255, 255); doc.roundedRect(28, 28, W - 56, H - 56, 10, 10, 'F')
+  doc.setDrawColor(217, 164, 65); doc.setLineWidth(2); doc.roundedRect(40, 40, W - 80, H - 80, 8, 8, 'S')
+  // header
+  doc.setTextColor(217, 164, 65); doc.setFont('helvetica', 'bold'); doc.setFontSize(13)
+  doc.text('ASIREM ACADEMY', W / 2, 92, { align: 'center' })
+  doc.setTextColor(120, 138, 160); doc.setFont('helvetica', 'normal'); doc.setFontSize(12)
+  doc.text('CERTIFICATE OF COMPLETION', W / 2, 118, { align: 'center' })
+  // recipient
+  doc.setTextColor(15, 44, 76); doc.setFont('helvetica', 'bold'); doc.setFontSize(34)
+  doc.text(opts.name, W / 2, 190, { align: 'center' })
+  doc.setTextColor(90, 107, 130); doc.setFont('helvetica', 'normal'); doc.setFontSize(13)
+  doc.text('has successfully completed', W / 2, 220, { align: 'center' })
+  doc.setTextColor(27, 95, 176); doc.setFont('helvetica', 'bold'); doc.setFontSize(20)
+  doc.text(opts.course, W / 2, 256, { align: 'center', maxWidth: W - 160 })
+  // footer
+  doc.setTextColor(120, 138, 160); doc.setFont('helvetica', 'normal'); doc.setFontSize(11)
+  doc.text(opts.date, W / 2, H - 96, { align: 'center' })
+  doc.setFontSize(9)
+  doc.text(`Certificate ID: ${opts.serial}  •  Verify at /verify/${opts.serial}`, W / 2, H - 74, { align: 'center' })
+  doc.save(`Asirem-${opts.serial}.pdf`)
+}
 
 type Cert = { id: string; serial: string; issued_at: string; title: string }
 
@@ -42,9 +71,11 @@ export default function Certificates() {
               <div>
                 <div style={{ fontSize: 11.5, color: '#93A1B4', fontWeight: 700 }}>{t('issuedTo')} {me!.fullName}</div>
                 <div style={{ fontSize: 12.5, color: 'var(--navy-800)', fontWeight: 700, marginTop: 2 }}>{fmt(c.issued_at)}</div>
-                <div style={{ fontSize: 11, color: '#9AA7B8', fontWeight: 600, marginTop: 4, fontFamily: 'var(--display)' }}>{c.serial}</div>
+                <a href={`/verify/${c.serial}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#1B5FB0', fontWeight: 700, marginTop: 4, fontFamily: 'var(--display)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Icon name="shield-check" size={12} />{c.serial}
+                </a>
               </div>
-              <button style={{ height: 40, padding: '0 16px', borderRadius: 11, border: '1px solid var(--border)', background: '#fff', color: 'var(--navy-800)', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
+              <button onClick={() => makeCertificatePdf({ name: me!.fullName, course: c.title, date: fmt(c.issued_at), serial: c.serial })} style={{ height: 40, padding: '0 16px', borderRadius: 11, border: '1px solid var(--border)', background: '#fff', color: 'var(--navy-800)', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
                 <Icon name="download" size={16} />{t('downloadCert')}
               </button>
             </div>
