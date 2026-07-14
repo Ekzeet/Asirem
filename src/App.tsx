@@ -1,21 +1,24 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 import { useI18n } from './i18n/I18nContext'
 import LoginPage from './auth/LoginPage'
 import Layout from './components/Layout'
-import AdminDashboard from './pages/admin/Dashboard'
-import AdminCourses from './pages/admin/Courses'
-import CourseBuilder from './pages/admin/CourseBuilder'
-import AdminStudents from './pages/admin/Students'
-import AdminTeachers from './pages/admin/Teachers'
-import AdminSales from './pages/admin/Sales'
-import Review from './pages/shared/Review'
-import Community from './pages/community/Community'
-import MyCourses from './pages/student/MyCourses'
-import Catalog from './pages/student/Catalog'
-import Player from './pages/student/Player'
-import Certificates from './pages/student/Certificates'
-import TeacherDashboard from './pages/teacher/Dashboard'
+
+// Route pages are code-split so each loads on demand (smaller initial bundle).
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
+const AdminCourses = lazy(() => import('./pages/admin/Courses'))
+const CourseBuilder = lazy(() => import('./pages/admin/CourseBuilder'))
+const AdminStudents = lazy(() => import('./pages/admin/Students'))
+const AdminTeachers = lazy(() => import('./pages/admin/Teachers'))
+const AdminSales = lazy(() => import('./pages/admin/Sales'))
+const Review = lazy(() => import('./pages/shared/Review'))
+const Community = lazy(() => import('./pages/community/Community'))
+const MyCourses = lazy(() => import('./pages/student/MyCourses'))
+const Catalog = lazy(() => import('./pages/student/Catalog'))
+const Player = lazy(() => import('./pages/student/Player'))
+const Certificates = lazy(() => import('./pages/student/Certificates'))
+const TeacherDashboard = lazy(() => import('./pages/teacher/Dashboard'))
 
 function Loading() {
   const { t } = useI18n()
@@ -52,6 +55,7 @@ export default function App() {
   const isTeacher = me.role === 'teacher'
 
   return (
+    <Suspense fallback={<Loading />}>
     <Routes>
       <Route path="/login" element={<Navigate to={roleHome(me.role)} replace />} />
       <Route element={<Layout />}>
@@ -76,5 +80,6 @@ export default function App() {
       </Route>
       <Route path="*" element={<Navigate to={roleHome(me.role)} replace />} />
     </Routes>
+    </Suspense>
   )
 }
