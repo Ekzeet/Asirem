@@ -17,11 +17,12 @@ export default function MyCourses() {
   const nav = useNavigate()
 
   const { data, loading } = useAsync(async () => {
-    const [{ data: enr }, { data: prog }, { data: certs }, { data: pts }] = await Promise.all([
+    const [{ data: enr }, { data: prog }, { data: certs }, { data: pts }, { data: ubadges }] = await Promise.all([
       supabase.from('enrollments').select('course_id, course:courses(id,title,category,accent,icon,instructor:profiles!courses_instructor_id_fkey(full_name))').eq('user_id', me!.userId),
       supabase.from('course_progress').select('course_id, done, total, pct').eq('user_id', me!.userId),
       supabase.from('certificates').select('id').eq('user_id', me!.userId),
       supabase.from('points_ledger').select('points').eq('user_id', me!.userId),
+      supabase.from('user_badges').select('badge:badges(name,icon,color)').eq('user_id', me!.userId),
     ])
     const progByCourse: Record<string, { done: number; total: number; pct: number }> = {}
     for (const p of prog ?? []) progByCourse[p.course_id!] = { done: p.done ?? 0, total: p.total ?? 0, pct: p.pct ?? 0 }
@@ -31,11 +32,12 @@ export default function MyCourses() {
     })
     const points = (pts ?? []).reduce((s, p) => s + (p.points ?? 0), 0)
     const inProgress = courses.filter((c) => c.pct > 0 && c.pct < 100).length
-    return { courses, certificates: (certs ?? []).length, points, inProgress }
+    const badges = (ubadges ?? []).map((b: any) => b.badge).filter(Boolean) as { name: string; icon: string | null; color: string | null }[]
+    return { courses, certificates: (certs ?? []).length, points, inProgress, badges }
   }, [me!.userId])
 
   if (loading || !data) return <Loader />
-  const { courses, certificates, points, inProgress } = data
+  const { courses, certificates, points, inProgress, badges } = data
   const firstName = me!.fullName.split(' ')[0]
 
   const heroStats = [
@@ -63,6 +65,17 @@ export default function MyCourses() {
         </div>
       </div>
 
+      {badges.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 22 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: '#8494A8', textTransform: 'uppercase', letterSpacing: .5 }}>{t('badges')}</span>
+          {badges.map((b, i) => (
+            <span key={i} title={b.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 700, color: 'var(--navy-800)', background: '#fff', border: '1px solid var(--border)', borderRadius: 20, padding: '6px 12px' }}>
+              <span style={{ width: 22, height: 22, borderRadius: '50%', background: (b.color ?? '#D9A441') + '22', color: b.color ?? '#D9A441', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={b.icon ?? 'award'} size={13} /></span>
+              {b.name}
+            </span>
+          ))}
+        </div>
+      )}
       <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 17, color: 'var(--navy-800)', marginBottom: 14 }}>{t('myCourses')}</div>
       {courses.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('noCourses')}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
