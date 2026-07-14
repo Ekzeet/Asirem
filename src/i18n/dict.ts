@@ -51,6 +51,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     externalLink: 'Lien externe (YouTube/Vimeo)', durationSeconds: 'Durée (secondes)', noMediaYet: 'Aucun média pour cette leçon',
     coInstructors: 'Co-instructeurs', addCoInstructor: 'Ajouter un co-instructeur', inviteSent: 'Invitation envoyée',
     verifyTitle: 'Vérification de certificat', verifyValid: 'Certificat authentique', verifyInvalid: 'Certificat introuvable', verifyIssuedTo: 'Délivré à', verifyBackHome: 'Aller à Asirem', gradebook: 'Notes', passed: 'Réussi', failed: 'Échoué', quizResult: 'Résultat du quiz', retryQuiz: 'Recommencer',
+    drip: 'Séquentiel', dripHint: 'Déverrouiller les leçons une à une', lockedLesson: 'Termine la leçon précédente',
   },
   en: {
     menu: 'Menu', viewAs: 'View as', search: 'Search a course, student…',
@@ -101,6 +102,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     externalLink: 'External link (YouTube/Vimeo)', durationSeconds: 'Duration (seconds)', noMediaYet: 'No media for this lesson yet',
     coInstructors: 'Co-instructors', addCoInstructor: 'Add co-instructor', inviteSent: 'Invitation sent',
     verifyTitle: 'Certificate verification', verifyValid: 'Authentic certificate', verifyInvalid: 'Certificate not found', verifyIssuedTo: 'Issued to', verifyBackHome: 'Go to Asirem', gradebook: 'Grades', passed: 'Passed', failed: 'Failed', quizResult: 'Quiz result', retryQuiz: 'Retry',
+    drip: 'Sequential', dripHint: 'Unlock lessons one by one', lockedLesson: 'Finish the previous lesson',
   },
   es: {
     menu: 'Menú', viewAs: 'Ver como', search: 'Buscar un curso, estudiante…',
@@ -151,6 +153,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     externalLink: 'Enlace externo (YouTube/Vimeo)', durationSeconds: 'Duración (segundos)', noMediaYet: 'Sin medio para esta lección',
     coInstructors: 'Co-instructores', addCoInstructor: 'Añadir co-instructor', inviteSent: 'Invitación enviada',
     verifyTitle: 'Verificación de certificado', verifyValid: 'Certificado auténtico', verifyInvalid: 'Certificado no encontrado', verifyIssuedTo: 'Emitido a', verifyBackHome: 'Ir a Asirem', gradebook: 'Notas', passed: 'Aprobado', failed: 'Suspenso', quizResult: 'Resultado', retryQuiz: 'Reintentar',
+    drip: 'Secuencial', dripHint: 'Desbloquear lecciones una a una', lockedLesson: 'Termina la lección anterior',
   },
 }
 

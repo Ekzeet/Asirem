@@ -28,7 +28,7 @@ export default function Player() {
 
   const { data, loading, reload } = useAsync(async () => {
     const [{ data: course }, { data: sections }, { data: prog }] = await Promise.all([
-      supabase.from('courses').select('id,title').eq('id', courseId!).single(),
+      supabase.from('courses').select('id,title,drip_enabled').eq('id', courseId!).single(),
       supabase.from('sections').select('id,title,position,lessons(id,title,duration,body,position,content_type,file_url,external_url,duration_seconds)').eq('course_id', courseId!).order('position'),
       supabase.from('lesson_progress').select('lesson_id, completed_at').eq('user_id', me!.userId),
     ])
@@ -37,10 +37,16 @@ export default function Player() {
       id: s.id, title: s.title,
       lessons: (s.lessons ?? []).sort((a: any, b: any) => a.position - b.position).map((l: any) => ({ id: l.id, title: l.title, duration: l.duration, body: l.body, done: doneSet.has(l.id), content_type: l.content_type, file_url: l.file_url, external_url: l.external_url, duration_seconds: l.duration_seconds })),
     }))
-    return { course: course as { id: string; title: string }, sections: secs }
+    return { course: course as { id: string; title: string; drip_enabled: boolean }, sections: secs }
   }, [courseId, me!.userId])
 
   const flat = useMemo(() => data?.sections.flatMap((s) => s.lessons.map((l) => ({ ...l, sectionTitle: s.title }))) ?? [], [data])
+  const drip = data?.course.drip_enabled ?? false
+  const unlocked = useMemo(() => {
+    const set = new Set<string>()
+    flat.forEach((l, i) => { if (!drip || i === 0 || l.done || flat[i - 1]?.done) set.add(l.id) })
+    return set
+  }, [flat, drip])
 
   // Pick a default current lesson: first not-done, else first
   useEffect(() => {
@@ -166,9 +172,10 @@ export default function Player() {
             <div style={{ padding: '13px 20px 7px', fontSize: 12, fontWeight: 800, color: '#8494A8', textTransform: 'uppercase', letterSpacing: .4 }}>{s.title}</div>
             {s.lessons.map((l) => {
               const active = l.id === currentId
-              const wrap = active ? { bg: '#D9A441', fg: '#0F2C4C', icon: 'play' } : l.done ? { bg: '#EAF6EF', fg: '#1F8A5B', icon: 'check' } : { bg: '#F1F4F8', fg: '#B0BCCB', icon: 'circle' }
+              const locked = !unlocked.has(l.id)
+              const wrap = active ? { bg: '#D9A441', fg: '#0F2C4C', icon: 'play' } : l.done ? { bg: '#EAF6EF', fg: '#1F8A5B', icon: 'check' } : locked ? { bg: '#F1F4F8', fg: '#B0BCCB', icon: 'lock' } : { bg: '#F1F4F8', fg: '#B0BCCB', icon: 'circle' }
               return (
-                <button key={l.id} onClick={() => { setCurrentId(l.id); setTab('overview') }} style={{ display: 'flex', alignItems: 'center', gap: 11, width: '100%', padding: '11px 20px', border: 'none', cursor: 'pointer', background: active ? '#FBF7EE' : 'transparent', borderLeft: `3px solid ${active ? '#D9A441' : 'transparent'}`, textAlign: 'left' }}>
+                <button key={l.id} disabled={locked} onClick={() => { if (!locked) { setCurrentId(l.id); setTab('overview') } }} title={locked ? t('lockedLesson') : ''} style={{ display: 'flex', alignItems: 'center', gap: 11, width: '100%', padding: '11px 20px', border: 'none', cursor: locked ? 'not-allowed' : 'pointer', opacity: locked ? .55 : 1, background: active ? '#FBF7EE' : 'transparent', borderLeft: `3px solid ${active ? '#D9A441' : 'transparent'}`, textAlign: 'left' }}>
                   <span style={{ width: 26, height: 26, flex: 'none', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: wrap.bg, color: wrap.fg }}><Icon name={wrap.icon} size={14} /></span>
                   <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: active ? 700 : 600, color: active ? '#0F2C4C' : l.done ? '#5B6B82' : '#5B6B82', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.title}</span>
                   <span style={{ fontSize: 11.5, color: '#9AA7B8', fontWeight: 600 }}>{l.duration}</span>
