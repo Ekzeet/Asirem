@@ -21,6 +21,7 @@ const Player = lazy(() => import('./pages/student/Player'))
 const Certificates = lazy(() => import('./pages/student/Certificates'))
 const TeacherDashboard = lazy(() => import('./pages/teacher/Dashboard'))
 const Verify = lazy(() => import('./pages/public/Verify'))
+const Search = lazy(() => import('./pages/Search'))
 
 function Loading() {
   const { t } = useI18n()
@@ -100,6 +101,7 @@ export default function App() {
         <Route path="/student/certificates" element={<Certificates />} />
         {/* Shared */}
         <Route path="/community" element={<Community />} />
+        <Route path="/search" element={<Search />} />
       </Route>
       <Route path="*" element={<Navigate to={roleHome(me.role)} replace />} />
     </Routes>

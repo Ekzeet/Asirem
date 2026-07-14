@@ -54,7 +54,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     drip: 'Séquentiel', dripHint: 'Déverrouiller les leçons une à une', lockedLesson: 'Termine la leçon précédente',
     notifications: 'Notifications', noNotifications: 'Aucune notification',
     askQuestion: 'Pose une question sur ce cours…', noQuestions: 'Aucune question pour le moment', resolved: 'Résolu', markResolved: 'Marquer résolu', officialAnswer: 'Réponse officielle', answer: 'Répondre',
-    badges: 'Badges',
+    badges: 'Badges', searchResults: 'Résultats de recherche', noResults: 'Aucun résultat',
   },
   en: {
     menu: 'Menu', viewAs: 'View as', search: 'Search a course, student…',
@@ -108,7 +108,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     drip: 'Sequential', dripHint: 'Unlock lessons one by one', lockedLesson: 'Finish the previous lesson',
     notifications: 'Notifications', noNotifications: 'No notifications',
     askQuestion: 'Ask a question about this course…', noQuestions: 'No questions yet', resolved: 'Resolved', markResolved: 'Mark resolved', officialAnswer: 'Official answer', answer: 'Answer',
-    badges: 'Badges',
+    badges: 'Badges', searchResults: 'Search results', noResults: 'No results',
   },
   es: {
     menu: 'Menú', viewAs: 'Ver como', search: 'Buscar un curso, estudiante…',
@@ -162,7 +162,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     drip: 'Secuencial', dripHint: 'Desbloquear lecciones una a una', lockedLesson: 'Termina la lección anterior',
     notifications: 'Notificaciones', noNotifications: 'Sin notificaciones',
     askQuestion: 'Haz una pregunta sobre este curso…', noQuestions: 'Aún no hay preguntas', resolved: 'Resuelto', markResolved: 'Marcar resuelto', officialAnswer: 'Respuesta oficial', answer: 'Responder',
-    badges: 'Insignias',
+    badges: 'Insignias', searchResults: 'Resultados', noResults: 'Sin resultados',
   },
 }
 

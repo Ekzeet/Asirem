@@ -1,4 +1,5 @@
-import { useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useI18n } from '../i18n/I18nContext'
 import type { Lang } from '../i18n/dict'
@@ -27,6 +28,8 @@ export default function Topbar() {
   const { t, lang, setLang, roleName } = useI18n()
   const { me } = useAuth()
   const { title, sub } = usePageMeta()
+  const nav = useNavigate()
+  const [q, setQ] = useState('')
   if (!me) return null
 
   return (
@@ -38,7 +41,7 @@ export default function Topbar() {
       <div style={{ flex: 1 }} />
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
         <Icon name="search" size={16} style={{ position: 'absolute', left: 12, color: '#9AA7B8' }} />
-        <input placeholder={t('search')} style={{ width: 230, height: 40, border: '1px solid #E2E8F0', borderRadius: 11, background: '#F7F9FC', padding: '0 14px 0 36px', fontSize: 13.5, color: 'var(--navy-800)', outline: 'none' }} />
+        <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`) }} placeholder={t('search')} style={{ width: 230, height: 40, border: '1px solid #E2E8F0', borderRadius: 11, background: '#F7F9FC', padding: '0 14px 0 36px', fontSize: 13.5, color: 'var(--navy-800)', outline: 'none' }} />
       </div>
       <div style={{ display: 'flex', gap: 4, background: '#F2F5F9', borderRadius: 10, padding: 3 }}>
         {(['FR', 'EN', 'ES'] as const).map((c) => {
