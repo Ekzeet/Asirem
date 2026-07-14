@@ -4,6 +4,7 @@ import { useAuth } from './auth/AuthContext'
 import { useI18n } from './i18n/I18nContext'
 import LoginPage from './auth/LoginPage'
 import Layout from './components/Layout'
+import { supabaseConfigured } from './lib/supabase'
 
 // Route pages are code-split so each loads on demand (smaller initial bundle).
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
@@ -38,9 +39,25 @@ export function roleHome(role: string): string {
   return '/admin'
 }
 
+function ConfigNotice() {
+  return (
+    <div className="center-fill" style={{ background: 'var(--bg)', padding: 24 }}>
+      <div style={{ maxWidth: 460, background: '#fff', border: '1px solid var(--border)', borderRadius: 16, padding: '28px 30px', textAlign: 'center' }}>
+        <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 20, color: 'var(--navy-800)', marginBottom: 10 }}>Configuration manquante</div>
+        <div style={{ fontSize: 14, color: 'var(--ink-soft)', lineHeight: 1.6, marginBottom: 16 }}>
+          Les variables Supabase ne sont pas définies dans ce déploiement. Ajoute-les dans <b>Vercel → Settings → Environment Variables</b>, puis redéploie&nbsp;:
+        </div>
+        <pre style={{ textAlign: 'left', background: '#F7F9FC', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', fontSize: 12.5, color: '#33415A', overflowX: 'auto' }}>VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY</pre>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const { session, me, loading } = useAuth()
 
+  if (!supabaseConfigured) return <ConfigNotice />
   if (loading) return <Loading />
   if (!session || !me) {
     return (
