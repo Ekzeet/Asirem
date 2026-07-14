@@ -5,7 +5,8 @@ import { useI18n } from '../../i18n/I18nContext'
 import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
 import { Icon } from '../../components/Icon'
-import { Loader } from '../../components/ui'
+import { Avatar, Loader } from '../../components/ui'
+import { relTime } from '../../lib/format'
 
 type Lesson = { id: string; title: string; duration: string | null; body: string | null; done: boolean; content_type: string; file_url: string | null; external_url: string | null; duration_seconds: number | null }
 type Section = { id: string; title: string; lessons: Lesson[] }
@@ -14,7 +15,7 @@ type QuizOption = { id: string; label: string; is_correct: boolean }
 type QuizQuestion = { id: string; prompt: string; points: number; options: QuizOption[] }
 type Quiz = { id: string; title: string; pass_score: number; questions: QuizQuestion[] }
 
-type TabId = 'overview' | 'resources' | 'quiz' | 'notes' | 'assignments'
+type TabId = 'overview' | 'resources' | 'quiz' | 'notes' | 'assignments' | 'qa'
 
 export default function Player() {
   const { courseId } = useParams()
@@ -91,6 +92,7 @@ export default function Player() {
     { id: 'resources', label: t('resources') },
     { id: 'quiz', label: 'Quiz' },
     { id: 'assignments', label: t('assignments') },
+    { id: 'qa', label: 'Q&R' },
     { id: 'notes', label: t('notes') },
   ]
 
@@ -153,6 +155,8 @@ export default function Player() {
 
           {tab === 'assignments' && <AssignmentsPanel courseId={courseId!} />}
 
+          {tab === 'qa' && <QAPanel courseId={courseId!} />}
+
           {tab === 'notes' && <NotesPanel key={currentId} lessonId={currentId!} initial={detail.data?.note ?? ''} />}
         </div>
       </div>
@@ -185,6 +189,83 @@ export default function Player() {
           </div>
         ))}
       </aside>
+    </div>
+  )
+}
+
+function QAPanel({ courseId }: { courseId: string }) {
+  const { me } = useAuth()
+  const { t, lang } = useI18n()
+  const isStaff = me!.role !== 'student'
+  const [ask, setAsk] = useState('')
+  const [replyTo, setReplyTo] = useState<string | null>(null)
+  const [reply, setReply] = useState('')
+
+  const { data, loading, reload } = useAsync(async () => {
+    const [{ data: qs }, { data: ans }] = await Promise.all([
+      supabase.from('course_questions').select('id, body, resolved, created_at, author:profiles!course_questions_author_id_fkey(full_name)').eq('course_id', courseId).order('created_at', { ascending: false }),
+      supabase.from('question_answers').select('id, question_id, body, is_official, created_at, author:profiles!question_answers_author_id_fkey(full_name)').order('created_at'),
+    ])
+    return { qs: (qs ?? []) as any[], ans: (ans ?? []) as any[] }
+  }, [courseId])
+
+  async function submitQuestion() {
+    if (!ask.trim()) return
+    await supabase.from('course_questions').insert({ institution_id: me!.institutionId, course_id: courseId, author_id: me!.userId, body: ask.trim() })
+    setAsk(''); reload()
+  }
+  async function submitAnswer(qid: string) {
+    if (!reply.trim()) return
+    await supabase.from('question_answers').insert({ question_id: qid, author_id: me!.userId, body: reply.trim(), is_official: isStaff })
+    setReply(''); setReplyTo(null); reload()
+  }
+  async function toggleResolved(qid: string, val: boolean) { await supabase.from('course_questions').update({ resolved: val }).eq('id', qid); reload() }
+
+  if (loading || !data) return <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t('loading')}</div>
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '14px 16px', display: 'flex', gap: 10 }}>
+        <input value={ask} onChange={(e) => setAsk(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submitQuestion() }} placeholder={t('askQuestion')} style={{ flex: 1, height: 42, border: '1px solid var(--border)', borderRadius: 11, background: '#F7F9FC', padding: '0 14px', fontSize: 13.5, outline: 'none' }} />
+        <button onClick={submitQuestion} disabled={!ask.trim()} style={{ height: 42, padding: '0 18px', borderRadius: 11, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 13, cursor: 'pointer', opacity: ask.trim() ? 1 : .6 }}>{t('post')}</button>
+      </div>
+      {data.qs.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t('noQuestions')}</div>}
+      {data.qs.map((q) => {
+        const answers = data.ans.filter((a) => a.question_id === q.id)
+        return (
+          <div key={q.id} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '15px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <Avatar name={q.author?.full_name ?? '—'} size={34} radius={9} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy-800)' }}>{q.author?.full_name ?? '—'} <span style={{ fontSize: 11, color: '#9AA7B8', fontWeight: 600 }}>· {relTime(q.created_at, lang)}</span></div>
+              </div>
+              {q.resolved
+                ? <span style={{ fontSize: 11, fontWeight: 800, color: '#1F8A5B', background: '#EAF6EF', padding: '3px 9px', borderRadius: 20 }}>✓ {t('resolved')}</span>
+                : (isStaff || true) && <button onClick={() => toggleResolved(q.id, true)} style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer' }}>{t('markResolved')}</button>}
+            </div>
+            <div style={{ fontSize: 13.5, color: '#33415A', lineHeight: 1.55 }}>{q.body}</div>
+
+            {answers.map((a) => (
+              <div key={a.id} style={{ display: 'flex', gap: 10, marginTop: 12, paddingLeft: 12, borderLeft: `2px solid ${a.is_official ? '#D9A441' : '#EEF2F7'}` }}>
+                <Avatar name={a.author?.full_name ?? '—'} size={28} radius={8} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--navy-800)' }}>{a.author?.full_name ?? '—'}{a.is_official && <span style={{ fontSize: 10, fontWeight: 800, color: '#C99A2E', background: '#FBF1E1', padding: '2px 7px', borderRadius: 6, marginLeft: 6 }}>{t('officialAnswer')}</span>}</div>
+                  <div style={{ fontSize: 13, color: '#33415A', lineHeight: 1.5, marginTop: 2 }}>{a.body}</div>
+                </div>
+              </div>
+            ))}
+
+            {replyTo === q.id ? (
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <input value={reply} onChange={(e) => setReply(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submitAnswer(q.id) }} autoFocus placeholder={t('yourAnswer')} style={{ flex: 1, height: 36, border: '1px solid var(--border)', borderRadius: 9, padding: '0 11px', fontSize: 12.5, outline: 'none' }} />
+                <button onClick={() => submitAnswer(q.id)} disabled={!reply.trim()} style={{ height: 36, padding: '0 14px', borderRadius: 9, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>{t('send')}</button>
+              </div>
+            ) : (
+              <button onClick={() => { setReplyTo(q.id); setReply('') }} style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>{t('answer')} →</button>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
