@@ -50,7 +50,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     uploading: 'Téléversement…', chooseFile: 'Choisir un fichier', mediaSource: 'Source du média', noMedia: 'Aucun', uploadFile: 'Téléverser un fichier',
     externalLink: 'Lien externe (YouTube/Vimeo)', durationSeconds: 'Durée (secondes)', noMediaYet: 'Aucun média pour cette leçon',
     coInstructors: 'Co-instructeurs', addCoInstructor: 'Ajouter un co-instructeur', inviteSent: 'Invitation envoyée',
-    verifyTitle: 'Vérification de certificat', verifyValid: 'Certificat authentique', verifyInvalid: 'Certificat introuvable', verifyIssuedTo: 'Délivré à', verifyBackHome: 'Aller à Asirem',
+    verifyTitle: 'Vérification de certificat', verifyValid: 'Certificat authentique', verifyInvalid: 'Certificat introuvable', verifyIssuedTo: 'Délivré à', verifyBackHome: 'Aller à Asirem', gradebook: 'Notes', passed: 'Réussi', failed: 'Échoué', quizResult: 'Résultat du quiz', retryQuiz: 'Recommencer',
   },
   en: {
     menu: 'Menu', viewAs: 'View as', search: 'Search a course, student…',
@@ -100,7 +100,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     uploading: 'Uploading…', chooseFile: 'Choose a file', mediaSource: 'Media source', noMedia: 'None', uploadFile: 'Upload a file',
     externalLink: 'External link (YouTube/Vimeo)', durationSeconds: 'Duration (seconds)', noMediaYet: 'No media for this lesson yet',
     coInstructors: 'Co-instructors', addCoInstructor: 'Add co-instructor', inviteSent: 'Invitation sent',
-    verifyTitle: 'Certificate verification', verifyValid: 'Authentic certificate', verifyInvalid: 'Certificate not found', verifyIssuedTo: 'Issued to', verifyBackHome: 'Go to Asirem',
+    verifyTitle: 'Certificate verification', verifyValid: 'Authentic certificate', verifyInvalid: 'Certificate not found', verifyIssuedTo: 'Issued to', verifyBackHome: 'Go to Asirem', gradebook: 'Grades', passed: 'Passed', failed: 'Failed', quizResult: 'Quiz result', retryQuiz: 'Retry',
   },
   es: {
     menu: 'Menú', viewAs: 'Ver como', search: 'Buscar un curso, estudiante…',
@@ -150,7 +150,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     uploading: 'Subiendo…', chooseFile: 'Elegir archivo', mediaSource: 'Fuente del medio', noMedia: 'Ninguno', uploadFile: 'Subir archivo',
     externalLink: 'Enlace externo (YouTube/Vimeo)', durationSeconds: 'Duración (segundos)', noMediaYet: 'Sin medio para esta lección',
     coInstructors: 'Co-instructores', addCoInstructor: 'Añadir co-instructor', inviteSent: 'Invitación enviada',
-    verifyTitle: 'Verificación de certificado', verifyValid: 'Certificado auténtico', verifyInvalid: 'Certificado no encontrado', verifyIssuedTo: 'Emitido a', verifyBackHome: 'Ir a Asirem',
+    verifyTitle: 'Verificación de certificado', verifyValid: 'Certificado auténtico', verifyInvalid: 'Certificado no encontrado', verifyIssuedTo: 'Emitido a', verifyBackHome: 'Ir a Asirem', gradebook: 'Notas', passed: 'Aprobado', failed: 'Suspenso', quizResult: 'Resultado', retryQuiz: 'Reintentar',
   },
 }
 

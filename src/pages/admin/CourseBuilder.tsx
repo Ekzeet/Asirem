@@ -20,7 +20,7 @@ export default function CourseBuilder() {
   const { me } = useAuth()
   const { t } = useI18n()
   const nav = useNavigate()
-  const [tab, setTab] = useState<'curriculum' | 'assignments'>('curriculum')
+  const [tab, setTab] = useState<'curriculum' | 'assignments' | 'grades'>('curriculum')
   const [editDetails, setEditDetails] = useState(false)
   const [quizLesson, setQuizLesson] = useState<Lesson | null>(null)
   const [lessonForm, setLessonForm] = useState<{ sectionId: string; lesson?: Lesson } | null>(null)
@@ -78,7 +78,7 @@ export default function CourseBuilder() {
       <CoInstructors courseId={course.id} institutionId={me!.institutionId} instructorId={course.instructor_id} />
 
       <div style={{ display: 'flex', gap: 6, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
-        {([['curriculum', t('curriculum')], ['assignments', t('assignments')]] as const).map(([id, label]) => (
+        {([['curriculum', t('curriculum')], ['assignments', t('assignments')], ['grades', t('gradebook')]] as const).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{ height: 40, padding: '0 4px', marginRight: 20, border: 'none', background: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14, color: tab === id ? 'var(--navy-800)' : '#93A1B4', borderBottom: `2.5px solid ${tab === id ? '#D9A441' : 'transparent'}` }}>{label}</button>
         ))}
       </div>
@@ -133,6 +133,8 @@ export default function CourseBuilder() {
         </div>
       )}
 
+      {tab === 'grades' && <Gradebook courseId={course.id} />}
+
       {editDetails && <CourseFormModal existing={course} onClose={() => setEditDetails(false)} onSaved={() => { setEditDetails(false); reload() }} />}
       {lessonForm && <LessonModal courseId={course.id} sectionId={lessonForm.sectionId} lesson={lessonForm.lesson} count={sections.find((s) => s.id === lessonForm.sectionId)?.lessons.length ?? 0} onClose={() => setLessonForm(null)} onSaved={() => { setLessonForm(null); reload() }} />}
       {quizLesson && <QuizModal lesson={quizLesson} onClose={() => setQuizLesson(null)} onSaved={() => { setQuizLesson(null); reload() }} />}
@@ -142,6 +144,32 @@ export default function CourseBuilder() {
 }
 
 const linkBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px' }
+
+function Gradebook({ courseId }: { courseId: string }) {
+  const { t } = useI18n()
+  const { data, loading } = useAsync(async () => {
+    const { data } = await supabase.rpc('course_gradebook', { p_course_id: courseId })
+    return (data ?? []) as { user_id: string; full_name: string; progress_pct: number; quiz_avg: number | null; assignment_avg: number | null }[]
+  }, [courseId])
+  if (loading || !data) return <Loader />
+  const cols = '2fr 1fr 1fr 1fr'
+  return (
+    <Card style={{ overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: cols, gap: 12, padding: '13px 20px', background: '#FAFBFD', borderBottom: '1px solid #EEF2F7', fontSize: 11, fontWeight: 800, color: '#8494A8', textTransform: 'uppercase', letterSpacing: .5 }}>
+        <span>{t('student')}</span><span>{t('progress')}</span><span>Quiz</span><span>{t('assignments')}</span>
+      </div>
+      {data.length === 0 && <div style={{ padding: 18, color: 'var(--muted)', fontSize: 13 }}>{t('noData')}</div>}
+      {data.map((r) => (
+        <div key={r.user_id} style={{ display: 'grid', gridTemplateColumns: cols, gap: 12, alignItems: 'center', padding: '12px 20px', borderTop: '1px solid #F3F6FA' }}>
+          <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--navy-800)' }}>{r.full_name}</span>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: r.progress_pct >= 100 ? '#1F8A5B' : '#3C4A5E' }}>{Math.round(r.progress_pct)}%</span>
+          <span style={{ fontSize: 12.5, color: r.quiz_avg == null ? '#B0BCCB' : '#3C4A5E', fontWeight: 700 }}>{r.quiz_avg == null ? '—' : r.quiz_avg}</span>
+          <span style={{ fontSize: 12.5, color: r.assignment_avg == null ? '#B0BCCB' : '#3C4A5E', fontWeight: 700 }}>{r.assignment_avg == null ? '—' : `${r.assignment_avg}/100`}</span>
+        </div>
+      ))}
+    </Card>
+  )
+}
 
 function CoInstructors({ courseId, institutionId, instructorId }: { courseId: string; institutionId: string; instructorId: string | null }) {
   const { t } = useI18n()

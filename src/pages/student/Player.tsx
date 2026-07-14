@@ -12,7 +12,7 @@ type Section = { id: string; title: string; lessons: Lesson[] }
 type Resource = { id: string; name: string; size_label: string | null; icon: string | null; kind: string | null }
 type QuizOption = { id: string; label: string; is_correct: boolean }
 type QuizQuestion = { id: string; prompt: string; points: number; options: QuizOption[] }
-type Quiz = { id: string; title: string; questions: QuizQuestion[] }
+type Quiz = { id: string; title: string; pass_score: number; questions: QuizQuestion[] }
 
 type TabId = 'overview' | 'resources' | 'quiz' | 'notes' | 'assignments'
 
@@ -54,13 +54,13 @@ export default function Player() {
     if (!currentId) return { quiz: null as Quiz | null, note: '' }
     const [{ data: resources }, { data: quizRow }, { data: note }] = await Promise.all([
       supabase.from('lesson_resources').select('id,name,size_label,icon,kind,position').eq('lesson_id', currentId).order('position'),
-      supabase.from('quizzes').select('id,title,questions:quiz_questions(id,prompt,points,position,options:quiz_options(id,label,is_correct,position))').eq('lesson_id', currentId).maybeSingle(),
+      supabase.from('quizzes').select('id,title,pass_score,questions:quiz_questions(id,prompt,points,position,options:quiz_options(id,label,is_correct,position))').eq('lesson_id', currentId).maybeSingle(),
       supabase.from('notes').select('body').eq('lesson_id', currentId).eq('user_id', me!.userId).maybeSingle(),
     ])
     let quiz: Quiz | null = null
     if (quizRow) {
       quiz = {
-        id: (quizRow as any).id, title: (quizRow as any).title,
+        id: (quizRow as any).id, title: (quizRow as any).title, pass_score: (quizRow as any).pass_score ?? 60,
         questions: ((quizRow as any).questions ?? [])
           .sort((a: any, b: any) => a.position - b.position)
           .map((q: any) => ({ id: q.id, prompt: q.prompt, points: q.points, options: (q.options ?? []).sort((a: any, b: any) => a.position - b.position) })),
@@ -284,25 +284,47 @@ function QuizPanel({ quiz }: { quiz: Quiz | null }) {
   const [idx, setIdx] = useState(0)
   const [pick, setPick] = useState<string | null>(null)
   const [answered, setAnswered] = useState(false)
+  const [earned, setEarned] = useState(0)
+  const [finished, setFinished] = useState(false)
 
   if (!quiz || quiz.questions.length === 0) return <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t('noData')}</div>
   const q = quiz.questions[idx]
   const correctId = q.options.find((o) => o.is_correct)?.id
   const isCorrect = answered && pick === correctId
+  const totalPoints = quiz.questions.reduce((s, qq) => s + qq.points, 0)
+  const lastQuestion = idx === quiz.questions.length - 1
 
   async function submit() {
     if (pick == null) return
     if (!answered) {
       setAnswered(true)
       if (pick === correctId) {
-        await supabase.from('quiz_attempts').insert({ user_id: me!.userId, quiz_id: quiz!.id, score: q.points, answers: { [q.id]: pick } })
+        setEarned((e) => e + q.points)
         await supabase.from('points_ledger').insert({ institution_id: me!.institutionId, user_id: me!.userId, points: q.points, reason: 'Quiz' })
       }
+    } else if (!lastQuestion) {
+      setIdx(idx + 1); setPick(null); setAnswered(false)
     } else {
-      // next question
-      const next = idx + 1
-      if (next < quiz!.questions.length) { setIdx(next); setPick(null); setAnswered(false) }
+      // record the whole attempt on finish
+      await supabase.from('quiz_attempts').insert({ user_id: me!.userId, quiz_id: quiz!.id, score: Math.round((earned / (totalPoints || 1)) * 100), answers: {} })
+      setFinished(true)
     }
+  }
+
+  if (finished) {
+    const pct = Math.round((earned / (totalPoints || 1)) * 100)
+    const pass = pct >= quiz.pass_score
+    return (
+      <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 16, padding: '28px 24px', textAlign: 'center' }}>
+        <div style={{ width: 56, height: 56, borderRadius: '50%', margin: '0 auto 14px', background: pass ? '#EAF6EF' : '#FBEBEB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name={pass ? 'award' : 'x-circle'} size={30} color={pass ? '#1F8A5B' : '#D14343'} />
+        </div>
+        <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 22, color: pass ? '#1F8A5B' : '#D14343' }}>{pct}%</div>
+        <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink-soft)', margin: '4px 0 2px' }}>{pass ? t('passed') : t('failed')}</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600, marginBottom: 16 }}>{t('quizResult')} · {quiz.pass_score}% {t('complete')}</div>
+        {!pass && <button onClick={() => { setIdx(0); setPick(null); setAnswered(false); setEarned(0); setFinished(false) }} style={{ height: 40, padding: '0 18px', borderRadius: 10, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}>{t('retryQuiz')}</button>}
+      </div>
+    )
   }
 
   return (
