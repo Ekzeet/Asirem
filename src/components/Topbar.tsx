@@ -4,6 +4,7 @@ import { useI18n } from '../i18n/I18nContext'
 import type { Lang } from '../i18n/dict'
 import { Icon } from './Icon'
 import { initials } from '../lib/format'
+import NotificationBell from './NotificationBell'
 
 function usePageMeta(): { title: string; sub: string } {
   const { t, lang } = useI18n()
@@ -47,10 +48,7 @@ export default function Topbar() {
           )
         })}
       </div>
-      <button style={{ width: 40, height: 40, borderRadius: 11, border: '1px solid #E2E8F0', background: '#fff', color: '#5B6B82', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
-        <Icon name="bell" size={18} />
-        <span style={{ position: 'absolute', top: 8, right: 9, width: 7, height: 7, borderRadius: '50%', background: 'var(--red)', border: '1.5px solid #fff' }} />
-      </button>
+      <NotificationBell />
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 6, borderLeft: '1px solid var(--border)' }}>
         <div style={{ width: 40, height: 40, borderRadius: 11, background: 'linear-gradient(135deg,#0F2C4C,#1B4B7F)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--display)', fontWeight: 700, fontSize: 14 }}>{initials(me.fullName)}</div>
         <div style={{ lineHeight: 1.2 }}>

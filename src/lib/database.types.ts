@@ -99,6 +99,12 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['memberships']['Insert']>
         Relationships: []
       }
+      notifications: {
+        Row: { id: string; user_id: string; institution_id: string | null; kind: string; title: string; body: string | null; link: string | null; read_at: string | null; created_at: string }
+        Insert: { id?: string; user_id: string; institution_id?: string | null; kind?: string; title: string; body?: string | null; link?: string | null; read_at?: string | null; created_at?: string }
+        Update: Partial<Database['public']['Tables']['notifications']['Insert']>
+        Relationships: []
+      }
       notes: {
         Row: { body: string; id: string; lesson_id: string; updated_at: string; user_id: string }
         Insert: { body?: string; id?: string; lesson_id: string; updated_at?: string; user_id: string }
