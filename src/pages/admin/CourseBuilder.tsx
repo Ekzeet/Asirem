@@ -353,17 +353,21 @@ function AssignmentModal({ courseId, institutionId, onClose, onSaved }: { course
 function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () => void; onSaved: () => void }) {
   const { t } = useI18n()
   const [prompt, setPrompt] = useState('')
+  const [qtype, setQtype] = useState<'single' | 'true_false' | 'short_answer'>('single')
   const [options, setOptions] = useState<string[]>(['', '', '', ''])
   const [correct, setCorrect] = useState(0)
+  const [answerText, setAnswerText] = useState('')
   const [busy, setBusy] = useState(false)
 
   const { data, loading, reload } = useAsync(async () => {
-    const { data: quiz } = await supabase.from('quizzes').select('id,title,questions:quiz_questions(id,prompt,points,options:quiz_options(id,label,is_correct))').eq('lesson_id', lesson.id).maybeSingle()
+    const { data: quiz } = await supabase.from('quizzes').select('id,title,questions:quiz_questions(id,prompt,points,question_type,answer_text,options:quiz_options(id,label,is_correct))').eq('lesson_id', lesson.id).maybeSingle()
     return quiz as any
   }, [lesson.id])
 
   async function addQuestion() {
-    if (!prompt.trim() || options.filter((o) => o.trim()).length < 2) return
+    if (!prompt.trim()) return
+    if (qtype === 'short_answer' && !answerText.trim()) return
+    if (qtype === 'single' && options.filter((o) => o.trim()).length < 2) return
     setBusy(true)
     let quizId = data?.id
     if (!quizId) {
@@ -371,9 +375,13 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
       quizId = q!.id
     }
     const pos = (data?.questions?.length ?? 0)
-    const { data: qq } = await supabase.from('quiz_questions').insert({ quiz_id: quizId, prompt: prompt.trim(), position: pos, points: 20 }).select('id').single()
-    await supabase.from('quiz_options').insert(options.filter((o) => o.trim()).map((label, i) => ({ question_id: qq!.id, label: label.trim(), is_correct: i === correct, position: i })))
-    setPrompt(''); setOptions(['', '', '', '']); setCorrect(0); setBusy(false)
+    const { data: qq } = await supabase.from('quiz_questions').insert({ quiz_id: quizId, prompt: prompt.trim(), position: pos, points: 20, question_type: qtype, answer_text: qtype === 'short_answer' ? answerText.trim() : null }).select('id').single()
+    if (qtype === 'true_false') {
+      await supabase.from('quiz_options').insert([{ question_id: qq!.id, label: 'Vrai', is_correct: correct === 0, position: 0 }, { question_id: qq!.id, label: 'Faux', is_correct: correct === 1, position: 1 }])
+    } else if (qtype === 'single') {
+      await supabase.from('quiz_options').insert(options.filter((o) => o.trim()).map((label, i) => ({ question_id: qq!.id, label: label.trim(), is_correct: i === correct, position: i })))
+    }
+    setPrompt(''); setOptions(['', '', '', '']); setCorrect(0); setAnswerText(''); setQtype('single'); setBusy(false)
     reload()
   }
 
@@ -388,16 +396,32 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
               <Icon name={o.is_correct ? 'check-circle' : 'circle'} size={13} /> {o.label}
             </div>
           ))}
+          {q.question_type === 'short_answer' && <div style={{ fontSize: 12.5, color: '#1F8A5B', fontWeight: 700 }}>✎ {q.answer_text}</div>}
         </div>
       ))}
       <div style={{ borderTop: '1px solid var(--border)', marginTop: 6, paddingTop: 14 }}>
+        <Field label={t('questionType')}>
+          <select value={qtype} onChange={(e) => setQtype(e.target.value as any)} style={inputCss}>
+            <option value="single">{t('typeSingle')}</option>
+            <option value="true_false">{t('typeTrueFalse')}</option>
+            <option value="short_answer">{t('typeShort')}</option>
+          </select>
+        </Field>
         <Field label={t('question')}><input value={prompt} onChange={(e) => setPrompt(e.target.value)} style={inputCss} /></Field>
-        {options.map((o, i) => (
+        {qtype === 'single' && options.map((o, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
             <button onClick={() => setCorrect(i)} title="Mark correct" style={{ width: 30, height: 30, flex: 'none', borderRadius: 8, border: 'none', cursor: 'pointer', background: correct === i ? '#EAF6EF' : '#F1F4F8', color: correct === i ? '#1F8A5B' : '#B0BCCB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={correct === i ? 'check-circle' : 'circle'} size={16} /></button>
             <input value={o} onChange={(e) => setOptions((os) => os.map((x, j) => j === i ? e.target.value : x))} placeholder={`${t('option')} ${String.fromCharCode(65 + i)}`} style={{ ...inputCss, height: 38 }} />
           </div>
         ))}
+        {qtype === 'true_false' && ['Vrai', 'Faux'].map((label, i) => (
+          <button key={i} onClick={() => setCorrect(i)} style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', marginBottom: 8, padding: '9px 12px', borderRadius: 9, border: `1.5px solid ${correct === i ? '#1F8A5B' : 'var(--border)'}`, background: correct === i ? '#EAF6EF' : '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13, color: 'var(--ink-soft)' }}>
+            <Icon name={correct === i ? 'check-circle' : 'circle'} size={16} color={correct === i ? '#1F8A5B' : '#B0BCCB'} />{label}
+          </button>
+        ))}
+        {qtype === 'short_answer' && (
+          <Field label={t('acceptedAnswer')}><input value={answerText} onChange={(e) => setAnswerText(e.target.value)} style={inputCss} /></Field>
+        )}
         <BtnPrimary onClick={addQuestion} disabled={busy}><Icon name="plus" size={15} />{t('addQuestion')}</BtnPrimary>
       </div>
     </Modal>

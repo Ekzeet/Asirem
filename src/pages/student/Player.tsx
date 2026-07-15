@@ -12,7 +12,7 @@ type Lesson = { id: string; title: string; duration: string | null; body: string
 type Section = { id: string; title: string; lessons: Lesson[] }
 type Resource = { id: string; name: string; size_label: string | null; icon: string | null; kind: string | null }
 type QuizOption = { id: string; label: string; is_correct: boolean }
-type QuizQuestion = { id: string; prompt: string; points: number; options: QuizOption[] }
+type QuizQuestion = { id: string; prompt: string; points: number; question_type: string; answer_text: string | null; options: QuizOption[] }
 type Quiz = { id: string; title: string; pass_score: number; questions: QuizQuestion[] }
 
 type TabId = 'overview' | 'resources' | 'quiz' | 'notes' | 'assignments' | 'qa'
@@ -87,7 +87,7 @@ export default function Player() {
     if (!currentId) return { quiz: null as Quiz | null, note: '' }
     const [{ data: resources }, { data: quizRow }, { data: note }] = await Promise.all([
       supabase.from('lesson_resources').select('id,name,size_label,icon,kind,position').eq('lesson_id', currentId).order('position'),
-      supabase.from('quizzes').select('id,title,pass_score,questions:quiz_questions(id,prompt,points,position,options:quiz_options(id,label,is_correct,position))').eq('lesson_id', currentId).maybeSingle(),
+      supabase.from('quizzes').select('id,title,pass_score,questions:quiz_questions(id,prompt,points,position,question_type,answer_text,options:quiz_options(id,label,is_correct,position))').eq('lesson_id', currentId).maybeSingle(),
       supabase.from('notes').select('body').eq('lesson_id', currentId).eq('user_id', me!.userId).maybeSingle(),
     ])
     let quiz: Quiz | null = null
@@ -96,7 +96,7 @@ export default function Player() {
         id: (quizRow as any).id, title: (quizRow as any).title, pass_score: (quizRow as any).pass_score ?? 60,
         questions: ((quizRow as any).questions ?? [])
           .sort((a: any, b: any) => a.position - b.position)
-          .map((q: any) => ({ id: q.id, prompt: q.prompt, points: q.points, options: (q.options ?? []).sort((a: any, b: any) => a.position - b.position) })),
+          .map((q: any) => ({ id: q.id, prompt: q.prompt, points: q.points, question_type: q.question_type ?? 'single', answer_text: q.answer_text, options: (q.options ?? []).sort((a: any, b: any) => a.position - b.position) })),
       }
     }
     return { resources: (resources ?? []) as Resource[], quiz, note: note?.body ?? '' }
@@ -400,24 +400,29 @@ function QuizPanel({ quiz }: { quiz: Quiz | null }) {
   const [answered, setAnswered] = useState(false)
   const [earned, setEarned] = useState(0)
   const [finished, setFinished] = useState(false)
+  const [short, setShort] = useState('')
 
   if (!quiz || quiz.questions.length === 0) return <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t('noData')}</div>
   const q = quiz.questions[idx]
+  const isShort = q.question_type === 'short_answer'
+  const norm = (s?: string | null) => (s ?? '').trim().toLowerCase()
   const correctId = q.options.find((o) => o.is_correct)?.id
-  const isCorrect = answered && pick === correctId
+  const right = isShort ? norm(short) === norm(q.answer_text) && norm(short) !== '' : pick === correctId
+  const isCorrect = answered && right
+  const hasInput = isShort ? short.trim().length > 0 : pick != null
   const totalPoints = quiz.questions.reduce((s, qq) => s + qq.points, 0)
   const lastQuestion = idx === quiz.questions.length - 1
 
   async function submit() {
-    if (pick == null) return
+    if (!hasInput) return
     if (!answered) {
       setAnswered(true)
-      if (pick === correctId) {
+      if (right) {
         setEarned((e) => e + q.points)
         await supabase.from('points_ledger').insert({ institution_id: me!.institutionId, user_id: me!.userId, points: q.points, reason: 'Quiz' })
       }
     } else if (!lastQuestion) {
-      setIdx(idx + 1); setPick(null); setAnswered(false)
+      setIdx(idx + 1); setPick(null); setAnswered(false); setShort('')
     } else {
       // record the whole attempt on finish
       await supabase.from('quiz_attempts').insert({ user_id: me!.userId, quiz_id: quiz!.id, score: Math.round((earned / (totalPoints || 1)) * 100), answers: {} })
@@ -436,7 +441,7 @@ function QuizPanel({ quiz }: { quiz: Quiz | null }) {
         <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 22, color: pass ? '#1F8A5B' : '#D14343' }}>{pct}%</div>
         <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink-soft)', margin: '4px 0 2px' }}>{pass ? t('passed') : t('failed')}</div>
         <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600, marginBottom: 16 }}>{t('quizResult')} · {quiz.pass_score}% {t('complete')}</div>
-        {!pass && <button onClick={() => { setIdx(0); setPick(null); setAnswered(false); setEarned(0); setFinished(false) }} style={{ height: 40, padding: '0 18px', borderRadius: 10, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}>{t('retryQuiz')}</button>}
+        {!pass && <button onClick={() => { setIdx(0); setPick(null); setAnswered(false); setEarned(0); setFinished(false); setShort('') }} style={{ height: 40, padding: '0 18px', borderRadius: 10, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}>{t('retryQuiz')}</button>}
       </div>
     )
   }
@@ -447,7 +452,9 @@ function QuizPanel({ quiz }: { quiz: Quiz | null }) {
       <div style={{ fontSize: 12.5, color: '#8494A8', fontWeight: 600, marginBottom: 18 }}>{t('question')} {idx + 1} / {quiz.questions.length}</div>
       <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--navy-800)', lineHeight: 1.5, marginBottom: 16 }}>{q.prompt}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-        {q.options.map((o, i) => {
+        {isShort ? (
+          <input value={short} onChange={(e) => setShort(e.target.value)} disabled={answered} placeholder={t('yourAnswer')} style={{ height: 46, border: `1.5px solid ${answered ? (isCorrect ? '#1F8A5B' : '#D14343') : '#E6EBF1'}`, borderRadius: 12, padding: '0 14px', fontSize: 14, outline: 'none', background: answered ? (isCorrect ? '#EAF6EF' : '#FBEBEB') : '#fff' }} />
+        ) : q.options.map((o, i) => {
           const picked = pick === o.id
           let bg = '#fff', bd = '#E6EBF1', icon = 'circle', ic = '#C9D2DF'
           if (answered && o.id === correctId) { bg = '#EAF6EF'; bd = '#1F8A5B'; icon = 'check-circle'; ic = '#1F8A5B' }
@@ -463,7 +470,7 @@ function QuizPanel({ quiz }: { quiz: Quiz | null }) {
         })}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={submit} disabled={pick == null} style={{ height: 44, padding: '0 22px', borderRadius: 11, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 14, cursor: pick == null ? 'default' : 'pointer', opacity: pick == null ? .6 : 1 }}>
+        <button onClick={submit} disabled={!hasInput} style={{ height: 44, padding: '0 22px', borderRadius: 11, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 14, cursor: !hasInput ? 'default' : 'pointer', opacity: !hasInput ? .6 : 1 }}>
           {answered && idx + 1 < quiz.questions.length ? '→' : t('submit')}
         </button>
         {answered && <span style={{ fontSize: 13, color: isCorrect ? '#1F8A5B' : '#D14343', fontWeight: 700 }}>{isCorrect ? `${t('correct')} +${q.points}` : t('incorrect')}</span>}

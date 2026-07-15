@@ -190,8 +190,8 @@ export type Database = {
         Relationships: []
       }
       quiz_questions: {
-        Row: { id: string; points: number; position: number; prompt: string; quiz_id: string }
-        Insert: { id?: string; points?: number; position?: number; prompt: string; quiz_id: string }
+        Row: { id: string; points: number; position: number; prompt: string; quiz_id: string; question_type: string; answer_text: string | null }
+        Insert: { id?: string; points?: number; position?: number; prompt: string; quiz_id: string; question_type?: string; answer_text?: string | null }
         Update: Partial<Database['public']['Tables']['quiz_questions']['Insert']>
         Relationships: []
       }
