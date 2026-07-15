@@ -136,7 +136,7 @@ export default function CourseBuilder() {
         </div>
       )}
 
-      {tab === 'grades' && <Gradebook courseId={course.id} />}
+      {tab === 'grades' && <><Gradebook courseId={course.id} /><div style={{ height: 16 }} /><Dropoff courseId={course.id} /></>}
 
       {editDetails && <CourseFormModal existing={course} onClose={() => setEditDetails(false)} onSaved={() => { setEditDetails(false); reload() }} />}
       {lessonForm && <LessonModal courseId={course.id} sectionId={lessonForm.sectionId} lesson={lessonForm.lesson} count={sections.find((s) => s.id === lessonForm.sectionId)?.lessons.length ?? 0} onClose={() => setLessonForm(null)} onSaved={() => { setLessonForm(null); reload() }} />}
@@ -147,6 +147,36 @@ export default function CourseBuilder() {
 }
 
 const linkBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px' }
+
+function Dropoff({ courseId }: { courseId: string }) {
+  const { t } = useI18n()
+  const { data, loading } = useAsync(async () => {
+    const { data } = await supabase.rpc('course_dropoff', { p_course_id: courseId })
+    return (data ?? []) as { lesson_id: string; title: string; ord: number; completed: number; enrolled: number }[]
+  }, [courseId])
+  if (loading || !data) return null
+  const enrolled = data[0]?.enrolled ?? 0
+  return (
+    <Card style={{ padding: '18px 20px' }}>
+      <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 15, color: 'var(--navy-800)' }}>{t('dropoff')}</div>
+      <div style={{ fontSize: 12.5, color: '#8494A8', fontWeight: 600, marginBottom: 16 }}>{t('dropoffSub')} · {enrolled} {t('students').toLowerCase()}</div>
+      {data.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 13 }}>{t('noLessons')}</div>}
+      {data.map((r) => {
+        const pct = enrolled > 0 ? Math.round((r.completed / enrolled) * 100) : 0
+        return (
+          <div key={r.lesson_id} style={{ display: 'grid', gridTemplateColumns: '20px 1fr 46px', gap: 10, alignItems: 'center', marginBottom: 11 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: '#B0BCCB', textAlign: 'right' }}>{r.ord}</span>
+            <div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink-soft)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 4 }}>{r.title}</div>
+              <div style={{ height: 8, background: '#EEF2F7', borderRadius: 6, overflow: 'hidden' }}><div style={{ height: '100%', borderRadius: 6, width: `${pct}%`, background: pct >= 66 ? '#1F8A5B' : pct >= 33 ? '#D9A441' : '#D14343' }} /></div>
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 800, color: '#5B6B82', textAlign: 'right' }}>{pct}%</span>
+          </div>
+        )
+      })}
+    </Card>
+  )
+}
 
 function Gradebook({ courseId }: { courseId: string }) {
   const { t } = useI18n()

@@ -230,6 +230,7 @@ export type Database = {
       top_courses: { Args: { p_institution_id: string; p_limit?: number }; Returns: { accent: string; icon: string; id: string; instructor: string; rating: number; revenue_cents: number; status: string; students: number; title: string }[] }
       verify_certificate: { Args: { p_serial: string }; Returns: Json }
       course_gradebook: { Args: { p_course_id: string }; Returns: { user_id: string; full_name: string; progress_pct: number; quiz_avg: number | null; assignment_avg: number | null }[] }
+      course_dropoff: { Args: { p_course_id: string }; Returns: { lesson_id: string; title: string; ord: number; completed: number; enrolled: number }[] }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

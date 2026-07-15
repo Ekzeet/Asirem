@@ -55,6 +55,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     notifications: 'Notifications', noNotifications: 'Aucune notification',
     askQuestion: 'Pose une question sur ce cours…', noQuestions: 'Aucune question pour le moment', resolved: 'Résolu', markResolved: 'Marquer résolu', officialAnswer: 'Réponse officielle', answer: 'Répondre',
     badges: 'Badges', searchResults: 'Résultats de recherche', noResults: 'Aucun résultat',
+    dropoff: 'Complétion par leçon', dropoffSub: 'Où les étudiants décrochent',
   },
   en: {
     menu: 'Menu', viewAs: 'View as', search: 'Search a course, student…',
@@ -109,6 +110,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     notifications: 'Notifications', noNotifications: 'No notifications',
     askQuestion: 'Ask a question about this course…', noQuestions: 'No questions yet', resolved: 'Resolved', markResolved: 'Mark resolved', officialAnswer: 'Official answer', answer: 'Answer',
     badges: 'Badges', searchResults: 'Search results', noResults: 'No results',
+    dropoff: 'Completion by lesson', dropoffSub: 'Where students drop off',
   },
   es: {
     menu: 'Menú', viewAs: 'Ver como', search: 'Buscar un curso, estudiante…',
@@ -163,6 +165,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     notifications: 'Notificaciones', noNotifications: 'Sin notificaciones',
     askQuestion: 'Haz una pregunta sobre este curso…', noQuestions: 'Aún no hay preguntas', resolved: 'Resuelto', markResolved: 'Marcar resuelto', officialAnswer: 'Respuesta oficial', answer: 'Responder',
     badges: 'Insignias', searchResults: 'Resultados', noResults: 'Sin resultados',
+    dropoff: 'Finalización por lección', dropoffSub: 'Dónde abandonan los estudiantes',
   },
 }
 
