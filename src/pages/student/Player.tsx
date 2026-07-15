@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
 import { Icon } from '../../components/Icon'
 import { Avatar, Loader } from '../../components/ui'
+import { FileUpload } from '../../components/FileUpload'
 import { relTime } from '../../lib/format'
 
 type Lesson = { id: string; title: string; duration: string | null; body: string | null; done: boolean; content_type: string; file_url: string | null; external_url: string | null; duration_seconds: number | null }
@@ -479,32 +480,49 @@ function QuizPanel({ quiz }: { quiz: Quiz | null }) {
   )
 }
 
+function StatusPill({ graded, sub, closed, notYet }: { graded: boolean; sub: any; closed: boolean; notYet: boolean }) {
+  const { t } = useI18n()
+  let label = t('notStarted'), bg = '#EEF2F7', fg = '#7C8AA0'
+  if (graded) { label = t('graded'); bg = '#EAF6EF'; fg = '#1F8A5B' }
+  else if (sub) { label = sub.is_late ? t('lateSubmitted') : t('submitted'); bg = sub.is_late ? '#FBF1E1' : '#EAF1FB'; fg = sub.is_late ? '#C99A2E' : '#1B5FB0' }
+  else if (closed) { label = t('assignmentClosed'); bg = '#FBEBEB'; fg = '#D14343' }
+  else if (notYet) { label = t('notYetAvailable'); bg = '#EEF2F7'; fg = '#9AA7B8' }
+  return <span style={{ fontSize: 10.5, fontWeight: 800, color: fg, background: bg, padding: '3px 9px', borderRadius: 20 }}>{label}</span>
+}
+
+type ADraft = { body: string; link: string; files: { name: string; path: string }[] }
+
 function AssignmentsPanel({ courseId }: { courseId: string }) {
   const { me } = useAuth()
   const { t, lang } = useI18n()
-  const [draft, setDraft] = useState<Record<string, { body: string; link: string }>>({})
+  const [draft, setDraft] = useState<Record<string, ADraft>>({})
   const [busy, setBusy] = useState<string | null>(null)
+  const locale = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR'
 
   const { data, loading, reload } = useAsync(async () => {
     const [{ data: assignments }, { data: subs }] = await Promise.all([
-      supabase.from('assignments').select('id, title, instructions, due_at, points').eq('course_id', courseId).order('created_at'),
-      supabase.from('assignment_submissions').select('id, assignment_id, body, link_url, status, grade, feedback').eq('student_id', me!.userId),
+      supabase.from('assignments').select('id,title,instructions,due_at,points,submission_types,allow_late,late_penalty,max_attempts,available_from,rubric,status').eq('course_id', courseId).eq('status', 'published').order('created_at'),
+      supabase.from('assignment_submissions').select('id,assignment_id,body,link_url,files,status,grade,feedback,is_late,attempt,rubric_scores').eq('student_id', me!.userId),
     ])
     const byAssignment: Record<string, any> = {}
     for (const s of subs ?? []) byAssignment[s.assignment_id] = s
-    return { assignments: assignments ?? [], byAssignment }
+    return { assignments: (assignments ?? []) as any[], byAssignment }
   }, [courseId])
 
   if (loading || !data) return <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t('loading')}</div>
   if (data.assignments.length === 0) return <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t('noAssignments')}</div>
 
-  async function submit(assignmentId: string) {
-    const d = draft[assignmentId] ?? { body: '', link: '' }
-    if (!d.body.trim() && !d.link.trim()) return
-    setBusy(assignmentId)
+  const getD = (id: string): ADraft => draft[id] ?? { body: data.byAssignment[id]?.body ?? '', link: data.byAssignment[id]?.link_url ?? '', files: data.byAssignment[id]?.files ?? [] }
+  const setD = (id: string, patch: Partial<ADraft>) => setDraft((s) => ({ ...s, [id]: { ...getD(id), ...patch } }))
+
+  async function submit(a: any, isLate: boolean, attempt: number) {
+    const d = getD(a.id)
+    const ok = (a.submission_types.includes('text') && d.body.trim()) || (a.submission_types.includes('link') && d.link.trim()) || (a.submission_types.includes('file') && d.files.length)
+    if (!ok) return
+    setBusy(a.id)
     await supabase.from('assignment_submissions').upsert(
-      { assignment_id: assignmentId, student_id: me!.userId, body: d.body, link_url: d.link || null, status: 'submitted' },
-      { onConflict: 'assignment_id,student_id' }
+      { assignment_id: a.id, student_id: me!.userId, body: d.body, link_url: d.link || null, files: d.files as any, status: 'submitted', is_late: isLate, attempt },
+      { onConflict: 'assignment_id,student_id' },
     )
     setBusy(null); reload()
   }
@@ -513,34 +531,66 @@ function AssignmentsPanel({ courseId }: { courseId: string }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {data.assignments.map((a: any) => {
         const sub = data.byAssignment[a.id]
-        const d = draft[a.id] ?? { body: sub?.body ?? '', link: sub?.link_url ?? '' }
+        const d = getD(a.id)
+        const now = Date.now()
+        const notYet = a.available_from && now < new Date(a.available_from).getTime()
+        const duePassed = a.due_at && now > new Date(a.due_at).getTime()
         const graded = sub?.status === 'graded'
+        const used = sub?.attempt ?? 0
+        const left = a.max_attempts === 0 ? Infinity : a.max_attempts - used
+        const closed = duePassed && !a.allow_late && !sub
+        const canSubmit = !graded && !notYet && left > 0 && (a.allow_late || !duePassed)
+        const rubric: { id: string; label: string; points: number }[] = a.rubric ?? []
+        const fmt = (iso: string) => new Date(iso).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })
         return (
           <div key={a.id} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 16, padding: '18px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <Icon name="clipboard-list" size={18} color="#7C5CD6" />
               <span style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 15, color: 'var(--navy-800)', flex: 1 }}>{a.title}</span>
+              <StatusPill graded={graded} sub={sub} closed={!!closed} notYet={!!notYet} />
               <span style={{ fontSize: 12, color: '#8494A8', fontWeight: 700 }}>{a.points} {t('points')}</span>
             </div>
-            {a.instructions && <div style={{ fontSize: 13, color: '#5B6B82', lineHeight: 1.55, marginBottom: 12 }}>{a.instructions}</div>}
-            {a.due_at && <div style={{ fontSize: 12, color: '#9AA7B8', fontWeight: 600, marginBottom: 12 }}>{t('due')} {new Date(a.due_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')}</div>}
+            {a.instructions && <div style={{ fontSize: 13, color: '#5B6B82', lineHeight: 1.55, marginBottom: 10, whiteSpace: 'pre-wrap' }}>{a.instructions}</div>}
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 11.5, color: '#9AA7B8', fontWeight: 600, marginBottom: 12 }}>
+              {a.due_at && <span style={{ color: duePassed && !graded ? '#D14343' : '#9AA7B8' }}><Icon name="clock" size={12} /> {t('due')}: {fmt(a.due_at)}</span>}
+              {a.max_attempts !== 0 && <span><Icon name="repeat" size={12} /> {t('attempts')}: {used}/{a.max_attempts}</span>}
+              {a.allow_late && a.late_penalty > 0 && <span>⚠ {t('latePenalty')} {a.late_penalty}%</span>}
+            </div>
 
             {graded ? (
               <div style={{ background: '#EAF6EF', border: '1px solid #CDE9DA', borderRadius: 12, padding: '14px 16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: rubric.length ? 8 : 6 }}>
                   <Icon name="award" size={16} color="#1F8A5B" />
                   <span style={{ fontWeight: 800, fontSize: 15, color: '#1F8A5B' }}>{sub.grade} / {a.points}</span>
-                  <span style={{ fontSize: 12, color: '#1F8A5B', fontWeight: 700 }}>· {t('graded')}</span>
+                  {sub.is_late && <span style={{ fontSize: 11, fontWeight: 700, color: '#D14343', background: '#FBEBEB', padding: '2px 8px', borderRadius: 20 }}>{t('late')}</span>}
                 </div>
-                {sub.feedback && <div style={{ fontSize: 13, color: '#33415A', lineHeight: 1.5 }}>{sub.feedback}</div>}
+                {rubric.map((c) => (
+                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#3C4A5E', padding: '2px 0' }}><span>{c.label}</span><span style={{ fontWeight: 700 }}>{(sub.rubric_scores ?? {})[c.id] ?? 0}/{c.points}</span></div>
+                ))}
+                {sub.feedback && <div style={{ fontSize: 13, color: '#33415A', lineHeight: 1.5, marginTop: rubric.length ? 8 : 0 }}>{sub.feedback}</div>}
               </div>
+            ) : closed ? (
+              <div style={{ fontSize: 13, color: '#D14343', fontWeight: 700 }}><Icon name="lock" size={14} /> {t('assignmentClosed')}</div>
+            ) : notYet ? (
+              <div style={{ fontSize: 13, color: '#9AA7B8', fontWeight: 700 }}><Icon name="clock" size={14} /> {t('notYetAvailable')} {fmt(a.available_from)}</div>
             ) : (
               <>
-                {sub && <div style={{ fontSize: 12, color: '#1B5FB0', fontWeight: 700, marginBottom: 10 }}><Icon name="check" size={13} /> {t('submitted')} — {t('canResubmit')}</div>}
-                <textarea value={d.body} onChange={(e) => setDraft((s) => ({ ...s, [a.id]: { ...d, body: e.target.value } }))} placeholder={t('yourAnswer')} style={{ width: '100%', minHeight: 90, border: '1px solid var(--border)', borderRadius: 11, padding: 12, fontSize: 13.5, outline: 'none', resize: 'vertical', fontFamily: 'var(--sans)', marginBottom: 10 }} />
-                <input value={d.link} onChange={(e) => setDraft((s) => ({ ...s, [a.id]: { ...d, link: e.target.value } }))} placeholder={t('linkOptional')} style={{ width: '100%', height: 40, border: '1px solid var(--border)', borderRadius: 11, padding: '0 12px', fontSize: 13, outline: 'none', marginBottom: 12 }} />
-                <button onClick={() => submit(a.id)} disabled={busy === a.id} style={{ height: 42, padding: '0 20px', borderRadius: 11, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 13.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <Icon name="send" size={15} />{sub ? t('resubmit') : t('submitWork')}
+                {sub && <div style={{ fontSize: 12, color: '#1B5FB0', fontWeight: 700, marginBottom: 10 }}><Icon name="check" size={13} /> {t('submitted')}{left > 0 ? ` — ${t('canResubmit')}` : ''}</div>}
+                {a.submission_types.includes('text') && <textarea value={d.body} onChange={(e) => setD(a.id, { body: e.target.value })} placeholder={t('yourAnswer')} style={{ width: '100%', minHeight: 90, border: '1px solid var(--border)', borderRadius: 11, padding: 12, fontSize: 13.5, outline: 'none', resize: 'vertical', fontFamily: 'var(--sans)', marginBottom: 10 }} />}
+                {a.submission_types.includes('link') && <input value={d.link} onChange={(e) => setD(a.id, { link: e.target.value })} placeholder={t('linkOptional')} style={{ width: '100%', height: 40, border: '1px solid var(--border)', borderRadius: 11, padding: '0 12px', fontSize: 13, outline: 'none', marginBottom: 10 }} />}
+                {a.submission_types.includes('file') && (
+                  <div style={{ marginBottom: 10 }}>
+                    {d.files.map((f, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: '#3C4A5E', fontWeight: 600, marginBottom: 4 }}>
+                        <Icon name="file" size={13} color="#7C5CD6" /><span style={{ flex: 1 }}>{f.name}</span>
+                        <button onClick={() => setD(a.id, { files: d.files.filter((_, j) => j !== i) })} style={{ border: 'none', background: 'none', color: '#D14343', cursor: 'pointer' }}><Icon name="x" size={13} /></button>
+                      </div>
+                    ))}
+                    <FileUpload bucket="submissions" pathPrefix={`${courseId}/${me!.userId}`} label={t('attachFile')} onUploaded={(path, file) => setD(a.id, { files: [...getD(a.id).files, { name: file.name, path }] })} />
+                  </div>
+                )}
+                <button onClick={() => submit(a, !!duePassed, used + 1)} disabled={busy === a.id || !canSubmit} style={{ height: 42, padding: '0 20px', borderRadius: 11, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 13.5, cursor: canSubmit ? 'pointer' : 'default', opacity: canSubmit ? 1 : .5, display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <Icon name="send" size={15} />{duePassed ? t('submitLate') : sub ? t('resubmit') : t('submitWork')}
                 </button>
               </>
             )}

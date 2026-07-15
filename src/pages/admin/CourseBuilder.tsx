@@ -12,7 +12,7 @@ import { FileUpload } from '../../components/FileUpload'
 
 type Lesson = { id: string; title: string; content_type: string; duration: string | null; duration_seconds: number | null; file_url: string | null; external_url: string | null; is_preview: boolean; position: number; hasQuiz: boolean }
 type Section = { id: string; title: string; position: number; lessons: Lesson[] }
-type Assignment = { id: string; title: string; instructions: string | null; due_at: string | null; points: number }
+type Assignment = { id: string; title: string; instructions: string | null; due_at: string | null; points: number; submission_types: string[]; status: string; available_from: string | null; allow_late: boolean; late_penalty: number; max_attempts: number; rubric: any }
 type Course = { id: string; title: string; status: string; category: string | null; accent: string | null; icon: string | null; subtitle: string | null; level: string | null; price_cents: number; instructor_id: string | null; drip_enabled: boolean }
 
 export default function CourseBuilder() {
@@ -26,13 +26,14 @@ export default function CourseBuilder() {
   const [lessonForm, setLessonForm] = useState<{ sectionId: string; lesson?: Lesson } | null>(null)
   const [newSection, setNewSection] = useState('')
   const [newAssign, setNewAssign] = useState(false)
+  const [editAssign, setEditAssign] = useState<Assignment | null>(null)
 
   const { data, loading, reload } = useAsync(async () => {
     const [{ data: course }, { data: sections }, { data: quizzes }, { data: assignments }] = await Promise.all([
       supabase.from('courses').select('id,title,status,category,accent,icon,subtitle,level,price_cents,instructor_id,drip_enabled').eq('id', courseId!).single(),
       supabase.from('sections').select('id,title,position,lessons(id,title,content_type,duration,duration_seconds,file_url,external_url,is_preview,position)').eq('course_id', courseId!).order('position'),
       supabase.from('quizzes').select('lesson_id'),
-      supabase.from('assignments').select('id,title,instructions,due_at,points').eq('course_id', courseId!).order('created_at'),
+      supabase.from('assignments').select('id,title,instructions,due_at,points,submission_types,status,available_from,allow_late,late_penalty,max_attempts,rubric').eq('course_id', courseId!).order('created_at'),
     ])
     const quizLessons = new Set((quizzes ?? []).map((q) => q.lesson_id))
     const secs: Section[] = (sections ?? []).map((s: any) => ({
@@ -130,9 +131,13 @@ export default function CourseBuilder() {
             <Card key={a.id} style={{ padding: '15px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, flex: 'none', background: '#F3EDFB', color: '#7C5CD6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="clipboard-list" size={18} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--navy-800)' }}>{a.title}</div>
-                <div style={{ fontSize: 12, color: '#8494A8', fontWeight: 600 }}>{a.points} {t('points')}{a.due_at ? ` · ${t('due')} ${new Date(a.due_at).toLocaleDateString()}` : ''}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--navy-800)' }}>{a.title}</span>
+                  {a.status === 'draft' && <span style={{ fontSize: 10, fontWeight: 800, color: '#7C8AA0', background: '#EEF2F7', padding: '2px 7px', borderRadius: 6 }}>{t('drafts').replace(/s$/, '')}</span>}
+                </div>
+                <div style={{ fontSize: 12, color: '#8494A8', fontWeight: 600 }}>{a.points} {t('points')} · {(a.submission_types ?? []).map((x) => t('type_' + x)).join(', ')}{a.due_at ? ` · ${t('due')} ${new Date(a.due_at).toLocaleDateString()}` : ''}</div>
               </div>
+              <button onClick={() => setEditAssign(a)} style={linkBtn}><Icon name="pencil" size={15} /></button>
               <button onClick={() => delAssignment(a.id)} style={{ ...linkBtn, color: '#D14343' }}><Icon name="trash-2" size={15} /></button>
             </Card>
           ))}
@@ -145,6 +150,7 @@ export default function CourseBuilder() {
       {lessonForm && <LessonModal courseId={course.id} sectionId={lessonForm.sectionId} lesson={lessonForm.lesson} count={sections.find((s) => s.id === lessonForm.sectionId)?.lessons.length ?? 0} onClose={() => setLessonForm(null)} onSaved={() => { setLessonForm(null); reload() }} />}
       {quizLesson && <QuizModal lesson={quizLesson} onClose={() => setQuizLesson(null)} onSaved={() => { setQuizLesson(null); reload() }} />}
       {newAssign && <AssignmentModal courseId={course.id} institutionId={me!.institutionId} onClose={() => setNewAssign(false)} onSaved={() => { setNewAssign(false); reload() }} />}
+      {editAssign && <AssignmentModal courseId={course.id} institutionId={me!.institutionId} existing={editAssign} onClose={() => setEditAssign(null)} onSaved={() => { setEditAssign(null); reload() }} />}
     </div>
   )
 }
@@ -321,31 +327,88 @@ function LessonModal({ courseId, sectionId, lesson, count, onClose, onSaved }: {
   )
 }
 
-function AssignmentModal({ courseId, institutionId, onClose, onSaved }: { courseId: string; institutionId: string; onClose: () => void; onSaved: () => void }) {
+type Criterion = { id: string; label: string; points: number }
+
+function AssignmentModal({ courseId, institutionId, existing, onClose, onSaved }: { courseId: string; institutionId: string; existing?: any; onClose: () => void; onSaved: () => void }) {
   const { me } = useAuth()
   const { t } = useI18n()
-  const [title, setTitle] = useState('')
-  const [instructions, setInstructions] = useState('')
-  const [due, setDue] = useState('')
-  const [points, setPoints] = useState(100)
+  const toLocal = (iso?: string | null) => iso ? new Date(iso).toISOString().slice(0, 16) : ''
+  const [title, setTitle] = useState(existing?.title ?? '')
+  const [instructions, setInstructions] = useState(existing?.instructions ?? '')
+  const [availableFrom, setAvailableFrom] = useState(toLocal(existing?.available_from))
+  const [due, setDue] = useState(toLocal(existing?.due_at))
+  const [points, setPoints] = useState(existing?.points ?? 100)
+  const [types, setTypes] = useState<string[]>(existing?.submission_types ?? ['text'])
+  const [allowLate, setAllowLate] = useState(existing?.allow_late ?? true)
+  const [latePenalty, setLatePenalty] = useState(existing?.late_penalty ?? 0)
+  const [maxAttempts, setMaxAttempts] = useState(existing?.max_attempts ?? 1)
+  const [status, setStatus] = useState(existing?.status ?? 'published')
+  const [rubric, setRubric] = useState<Criterion[]>(existing?.rubric ?? [])
   const [busy, setBusy] = useState(false)
 
+  const toggleType = (ty: string) => setTypes((ts) => ts.includes(ty) ? ts.filter((x) => x !== ty) : [...ts, ty])
+  const rubricTotal = rubric.reduce((s, c) => s + (c.points || 0), 0)
+
   async function save() {
-    if (!title.trim()) return
+    if (!title.trim() || types.length === 0) return
     setBusy(true)
-    await supabase.from('assignments').insert({ institution_id: institutionId, course_id: courseId, title: title.trim(), instructions, due_at: due ? new Date(due).toISOString() : null, points, created_by: me!.userId })
+    const payload = {
+      institution_id: institutionId, course_id: courseId, title: title.trim(), instructions,
+      available_from: availableFrom ? new Date(availableFrom).toISOString() : null,
+      due_at: due ? new Date(due).toISOString() : null,
+      points: rubric.length > 0 ? rubricTotal : points,
+      submission_types: types, allow_late: allowLate, late_penalty: latePenalty, max_attempts: maxAttempts,
+      rubric: rubric as any, status,
+    }
+    if (existing?.id) await supabase.from('assignments').update(payload).eq('id', existing.id)
+    else await supabase.from('assignments').insert({ ...payload, created_by: me!.userId })
     setBusy(false); onSaved()
   }
 
   return (
-    <Modal title={t('newAssignment')} onClose={onClose}
-      footer={<><BtnGhost onClick={onClose}>{t('cancel')}</BtnGhost><BtnPrimary onClick={save} disabled={busy}>{t('create')}</BtnPrimary></>}>
+    <Modal title={existing ? t('editAssignment') : t('newAssignment')} onClose={onClose} width={600}
+      footer={<><BtnGhost onClick={onClose}>{t('cancel')}</BtnGhost><BtnPrimary onClick={save} disabled={busy}>{existing ? t('save') : t('create')}</BtnPrimary></>}>
       <Field label={t('assignmentTitle')}><input value={title} onChange={(e) => setTitle(e.target.value)} style={inputCss} /></Field>
-      <Field label={t('instructions')}><textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} style={textareaCss} /></Field>
+      <Field label={t('instructions')}><textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} style={{ ...textareaCss, minHeight: 110 }} /></Field>
+
+      <Field label={t('submissionTypes')}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {(['text', 'file', 'link'] as const).map((ty) => (
+            <button key={ty} onClick={() => toggleType(ty)} style={{ height: 36, padding: '0 14px', borderRadius: 20, border: `1.5px solid ${types.includes(ty) ? '#0F2C4C' : 'var(--border)'}`, background: types.includes(ty) ? '#0F2C4C' : '#fff', color: types.includes(ty) ? '#fff' : '#5B6B82', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Icon name={ty === 'text' ? 'align-left' : ty === 'file' ? 'paperclip' : 'link'} size={14} />{t('type_' + ty)}
+            </button>
+          ))}
+        </div>
+      </Field>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Field label={t('dueDate')}><input type="date" value={due} onChange={(e) => setDue(e.target.value)} style={inputCss} /></Field>
-        <Field label={t('points')}><input type="number" min={0} value={points} onChange={(e) => setPoints(Number(e.target.value))} style={inputCss} /></Field>
+        <Field label={t('availableFrom')}><input type="datetime-local" value={availableFrom} onChange={(e) => setAvailableFrom(e.target.value)} style={inputCss} /></Field>
+        <Field label={t('dueDate')}><input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} style={inputCss} /></Field>
       </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Field label={t('maxAttempts')}><input type="number" min={0} value={maxAttempts} onChange={(e) => setMaxAttempts(Number(e.target.value))} style={inputCss} /></Field>
+        <Field label={t('status')}>
+          <select value={status} onChange={(e) => setStatus(e.target.value)} style={inputCss}><option value="published">{t('published')}</option><option value="draft">{t('drafts').replace(/s$/, '')}</option></select>
+        </Field>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14, flexWrap: 'wrap' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: 'var(--ink-soft)', cursor: 'pointer' }}>
+          <input type="checkbox" checked={allowLate} onChange={(e) => setAllowLate(e.target.checked)} /> {t('allowLate')}
+        </label>
+        {allowLate && <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--muted)' }}>{t('latePenalty')}<input type="number" min={0} max={100} value={latePenalty} onChange={(e) => setLatePenalty(Number(e.target.value))} style={{ ...inputCss, width: 70, height: 34 }} />%</div>}
+      </div>
+
+      <Field label={`${t('rubric')} ${rubric.length ? `(${rubricTotal} pts)` : ''}`}>
+        {rubric.map((c, i) => (
+          <div key={c.id} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <input value={c.label} onChange={(e) => setRubric((r) => r.map((x, j) => j === i ? { ...x, label: e.target.value } : x))} placeholder={t('criterion')} style={{ ...inputCss, height: 38 }} />
+            <input type="number" min={0} value={c.points} onChange={(e) => setRubric((r) => r.map((x, j) => j === i ? { ...x, points: Number(e.target.value) } : x))} style={{ ...inputCss, width: 80, height: 38 }} />
+            <button onClick={() => setRubric((r) => r.filter((_, j) => j !== i))} style={{ width: 38, height: 38, flex: 'none', borderRadius: 9, border: '1px solid var(--border)', background: '#fff', color: '#D14343', cursor: 'pointer' }}><Icon name="x" size={15} /></button>
+          </div>
+        ))}
+        <button onClick={() => setRubric((r) => [...r, { id: crypto.randomUUID(), label: '', points: 10 }])} style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>+ {t('addCriterion')}</button>
+        {rubric.length === 0 && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>{t('rubricHint')} <input type="number" min={0} value={points} onChange={(e) => setPoints(Number(e.target.value))} style={{ ...inputCss, width: 80, height: 32, display: 'inline-block' }} /> pts</div>}
+      </Field>
     </Modal>
   )
 }

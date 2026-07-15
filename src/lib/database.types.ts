@@ -10,14 +10,14 @@ export type Database = {
   public: {
     Tables: {
       assignments: {
-        Row: { id: string; institution_id: string; course_id: string; lesson_id: string | null; title: string; instructions: string | null; due_at: string | null; points: number; created_by: string | null; created_at: string }
-        Insert: { id?: string; institution_id: string; course_id: string; lesson_id?: string | null; title: string; instructions?: string | null; due_at?: string | null; points?: number; created_by?: string | null; created_at?: string }
+        Row: { id: string; institution_id: string; course_id: string; lesson_id: string | null; title: string; instructions: string | null; due_at: string | null; points: number; created_by: string | null; created_at: string; submission_types: string[]; allow_late: boolean; late_penalty: number; max_attempts: number; available_from: string | null; rubric: Json; max_file_mb: number; status: string }
+        Insert: { id?: string; institution_id: string; course_id: string; lesson_id?: string | null; title: string; instructions?: string | null; due_at?: string | null; points?: number; created_by?: string | null; created_at?: string; submission_types?: string[]; allow_late?: boolean; late_penalty?: number; max_attempts?: number; available_from?: string | null; rubric?: Json; max_file_mb?: number; status?: string }
         Update: Partial<Database['public']['Tables']['assignments']['Insert']>
         Relationships: []
       }
       assignment_submissions: {
-        Row: { id: string; assignment_id: string; student_id: string; body: string | null; link_url: string | null; status: string; grade: number | null; feedback: string | null; graded_by: string | null; submitted_at: string; graded_at: string | null }
-        Insert: { id?: string; assignment_id: string; student_id: string; body?: string | null; link_url?: string | null; status?: string; grade?: number | null; feedback?: string | null; graded_by?: string | null; submitted_at?: string; graded_at?: string | null }
+        Row: { id: string; assignment_id: string; student_id: string; body: string | null; link_url: string | null; status: string; grade: number | null; feedback: string | null; graded_by: string | null; submitted_at: string; graded_at: string | null; attempt: number; files: Json; is_late: boolean; rubric_scores: Json }
+        Insert: { id?: string; assignment_id: string; student_id: string; body?: string | null; link_url?: string | null; status?: string; grade?: number | null; feedback?: string | null; graded_by?: string | null; submitted_at?: string; graded_at?: string | null; attempt?: number; files?: Json; is_late?: boolean; rubric_scores?: Json }
         Update: Partial<Database['public']['Tables']['assignment_submissions']['Insert']>
         Relationships: []
       }
