@@ -32,7 +32,7 @@ const NAV: Record<string, NavItem[]> = {
   ],
 }
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: boolean; onClose?: () => void }) {
   const { me, signOut } = useAuth()
   const { t } = useI18n()
   const nav = useNavigate()
@@ -47,7 +47,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside style={{ width: 252, flex: 'none', background: 'linear-gradient(180deg,#0F2C4C 0%,#0B2038 100%)', display: 'flex', flexDirection: 'column', color: '#DCE4EE' }}>
+    <aside className={`app-sidebar${mobileOpen ? ' open' : ''}`} style={{ width: 252, flex: 'none', background: 'linear-gradient(180deg,#0F2C4C 0%,#0B2038 100%)', display: 'flex', flexDirection: 'column', color: '#DCE4EE' }}>
       <div style={{ padding: '22px 20px 18px', display: 'flex', alignItems: 'center', gap: 11, borderBottom: '1px solid rgba(255,255,255,.07)' }}>
         <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#E7B450,#D9A441)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0F2C4C', fontFamily: 'var(--display)', fontWeight: 800, fontSize: 19, boxShadow: '0 4px 14px rgba(217,164,65,.35)' }}>A</div>
         <div>
@@ -61,7 +61,7 @@ export default function Sidebar() {
         {items.map((it) => {
           const active = isActive(it.to)
           return (
-            <button key={it.to} onClick={() => nav(it.to)} style={{
+            <button key={it.to} onClick={() => { nav(it.to); onClose?.() }} style={{
               display: 'flex', alignItems: 'center', gap: 12, height: 42, borderRadius: 11, border: 'none', cursor: 'pointer',
               fontWeight: active ? 700 : 600, fontSize: 13.5, transition: 'all .16s',
               background: active ? 'rgba(217,164,65,.16)' : 'transparent', color: active ? '#F0C978' : '#B6C4D6',

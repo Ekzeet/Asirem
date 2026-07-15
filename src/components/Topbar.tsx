@@ -24,7 +24,7 @@ function usePageMeta(): { title: string; sub: string } {
   return { title: t('dashboard'), sub: '' }
 }
 
-export default function Topbar() {
+export default function Topbar({ onMenu }: { onMenu?: () => void }) {
   const { t, lang, setLang, roleName } = useI18n()
   const { me } = useAuth()
   const { title, sub } = usePageMeta()
@@ -34,12 +34,15 @@ export default function Topbar() {
 
   return (
     <header style={{ height: 66, flex: 'none', background: '#fff', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 16, padding: '0 26px' }}>
-      <div style={{ width: 250, flex: 'none' }}>
+      <button className="mobile-only" onClick={onMenu} aria-label="Menu" style={{ width: 40, height: 40, borderRadius: 11, border: '1px solid #E2E8F0', background: '#fff', color: '#5B6B82', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
+        <Icon name="menu" size={20} />
+      </button>
+      <div className="topbar-title" style={{ width: 250, flex: 'none' }}>
         <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 18, color: 'var(--navy-800)', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
         <div style={{ fontSize: 12.5, color: 'var(--muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div>
       </div>
       <div style={{ flex: 1 }} />
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <div className="desktop-only" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
         <Icon name="search" size={16} style={{ position: 'absolute', left: 12, color: '#9AA7B8' }} />
         <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`) }} placeholder={t('search')} style={{ width: 230, height: 40, border: '1px solid #E2E8F0', borderRadius: 11, background: '#F7F9FC', padding: '0 14px 0 36px', fontSize: 13.5, color: 'var(--navy-800)', outline: 'none' }} />
       </div>
