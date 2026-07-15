@@ -38,6 +38,15 @@ export default function Catalog() {
   async function instantEnroll(c: Course) {
     await supabase.from('enrollments').insert({ institution_id: inst, course_id: c.id, user_id: me!.userId, plan_id: oneTimePlan, status: 'active' })
     if (c.price_cents > 0) await supabase.from('orders').insert({ institution_id: inst, user_id: me!.userId, course_id: c.id, plan_id: oneTimePlan, amount_cents: c.price_cents, status: 'paid', provider: 'demo' })
+    // Best-effort: deliver the live-session Zoom link by email (in-app notification is auto-created by DB trigger).
+    try {
+      const { data: sess } = await supabase.auth.getSession()
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/enroll-fulfillment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session?.access_token}`, apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string },
+        body: JSON.stringify({ course_id: c.id }),
+      }).catch(() => {})
+    } catch { /* ignore */ }
     reload(); nav(`/student/course/${c.id}`)
   }
 

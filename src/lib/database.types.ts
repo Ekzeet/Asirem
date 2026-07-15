@@ -40,8 +40,8 @@ export type Database = {
         Relationships: []
       }
       courses: {
-        Row: { accent: string | null; category: string | null; cover_url: string | null; created_at: string; created_by: string | null; description: string | null; drip_enabled: boolean; icon: string | null; id: string; institution_id: string; instructor_id: string | null; level: string | null; price_cents: number; published_at: string | null; rating: number | null; status: string; subtitle: string | null; title: string }
-        Insert: { accent?: string | null; category?: string | null; cover_url?: string | null; created_at?: string; created_by?: string | null; description?: string | null; drip_enabled?: boolean; icon?: string | null; id?: string; institution_id: string; instructor_id?: string | null; level?: string | null; price_cents?: number; published_at?: string | null; rating?: number | null; status?: string; subtitle?: string | null; title: string }
+        Row: { accent: string | null; category: string | null; cover_url: string | null; created_at: string; created_by: string | null; description: string | null; drip_enabled: boolean; icon: string | null; id: string; institution_id: string; instructor_id: string | null; is_live: boolean; level: string | null; module_lock: boolean; price_cents: number; published_at: string | null; rating: number | null; status: string; subtitle: string | null; title: string; zoom_meeting_id: string | null; zoom_url: string | null }
+        Insert: { accent?: string | null; category?: string | null; cover_url?: string | null; created_at?: string; created_by?: string | null; description?: string | null; drip_enabled?: boolean; icon?: string | null; id?: string; institution_id: string; instructor_id?: string | null; is_live?: boolean; level?: string | null; module_lock?: boolean; price_cents?: number; published_at?: string | null; rating?: number | null; status?: string; subtitle?: string | null; title: string; zoom_meeting_id?: string | null; zoom_url?: string | null }
         Update: Partial<Database['public']['Tables']['courses']['Insert']>
         Relationships: []
       }

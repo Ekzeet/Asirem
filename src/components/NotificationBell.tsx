@@ -55,7 +55,7 @@ export default function NotificationBell() {
           {items.map((n) => {
             const [icon, tint, color] = KIND_ICON[n.kind] ?? KIND_ICON.info
             return (
-              <button key={n.id} onClick={() => { setOpen(false); if (n.link) nav(n.link) }} style={{ display: 'flex', gap: 11, width: '100%', padding: '11px 14px', border: 'none', borderTop: '1px solid var(--border-soft)', background: n.read_at ? '#fff' : '#F7FAFF', cursor: 'pointer', textAlign: 'left' }}>
+              <button key={n.id} onClick={() => { setOpen(false); if (n.link) { if (/^https?:\/\//.test(n.link)) { window.open(n.link, '_blank', 'noopener') } else { nav(n.link) } } }} style={{ display: 'flex', gap: 11, width: '100%', padding: '11px 14px', border: 'none', borderTop: '1px solid var(--border-soft)', background: n.read_at ? '#fff' : '#F7FAFF', cursor: 'pointer', textAlign: 'left' }}>
                 <div style={{ width: 32, height: 32, flex: 'none', borderRadius: 9, background: tint, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={icon} size={15} /></div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--navy-800)' }}>{n.title}</div>

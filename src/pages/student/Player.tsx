@@ -28,26 +28,52 @@ export default function Player() {
   const [playing, setPlaying] = useState(false)
 
   const { data, loading, reload } = useAsync(async () => {
-    const [{ data: course }, { data: sections }, { data: prog }] = await Promise.all([
-      supabase.from('courses').select('id,title,drip_enabled').eq('id', courseId!).single(),
+    const [{ data: course }, { data: sections }, { data: prog }, { data: quizzes }, { data: attempts }] = await Promise.all([
+      supabase.from('courses').select('id,title,drip_enabled,module_lock').eq('id', courseId!).single(),
       supabase.from('sections').select('id,title,position,lessons(id,title,duration,body,position,content_type,file_url,external_url,duration_seconds)').eq('course_id', courseId!).order('position'),
       supabase.from('lesson_progress').select('lesson_id, completed_at').eq('user_id', me!.userId),
+      supabase.from('quizzes').select('id, pass_score, lesson_id'),
+      supabase.from('quiz_attempts').select('quiz_id, score').eq('user_id', me!.userId),
     ])
     const doneSet = new Set((prog ?? []).filter((p) => p.completed_at).map((p) => p.lesson_id))
     const secs: Section[] = (sections ?? []).map((s: any) => ({
       id: s.id, title: s.title,
       lessons: (s.lessons ?? []).sort((a: any, b: any) => a.position - b.position).map((l: any) => ({ id: l.id, title: l.title, duration: l.duration, body: l.body, done: doneSet.has(l.id), content_type: l.content_type, file_url: l.file_url, external_url: l.external_url, duration_seconds: l.duration_seconds })),
     }))
-    return { course: course as { id: string; title: string; drip_enabled: boolean }, sections: secs }
+    // Per-section: does it have a quiz (module test) and did the user pass it?
+    const lessonIds = new Set(secs.flatMap((s) => s.lessons.map((l) => l.id)))
+    const bestScore: Record<string, number> = {}
+    for (const a of attempts ?? []) bestScore[a.quiz_id] = Math.max(bestScore[a.quiz_id] ?? 0, a.score ?? 0)
+    const quizByLesson: Record<string, { id: string; pass_score: number }> = {}
+    for (const q of quizzes ?? []) if (lessonIds.has(q.lesson_id)) quizByLesson[q.lesson_id] = { id: q.id, pass_score: q.pass_score }
+    const sectionPassed: Record<string, boolean> = {}
+    for (const s of secs) {
+      const secQuizzes = s.lessons.map((l) => quizByLesson[l.id]).filter(Boolean) as { id: string; pass_score: number }[]
+      if (secQuizzes.length > 0) sectionPassed[s.id] = secQuizzes.some((q) => (bestScore[q.id] ?? 0) >= q.pass_score)
+      else sectionPassed[s.id] = s.lessons.length > 0 && s.lessons.every((l) => l.done) // no test → all lessons done
+    }
+    return { course: course as { id: string; title: string; drip_enabled: boolean; module_lock: boolean }, sections: secs, sectionPassed }
   }, [courseId, me!.userId])
 
-  const flat = useMemo(() => data?.sections.flatMap((s) => s.lessons.map((l) => ({ ...l, sectionTitle: s.title }))) ?? [], [data])
+  // Sections unlocked when the previous module is "passed" (test passed, or all lessons done if no test)
+  const unlockedSections = useMemo(() => {
+    const set = new Set<string>()
+    const secs = data?.sections ?? []
+    const lock = data?.course.module_lock ?? false
+    secs.forEach((s, i) => { if (!lock || i === 0 || (data?.sectionPassed[secs[i - 1].id])) set.add(s.id) })
+    return set
+  }, [data])
+
+  const flat = useMemo(() => data?.sections.flatMap((s) => s.lessons.map((l) => ({ ...l, sectionTitle: s.title, sectionId: s.id }))) ?? [], [data])
   const drip = data?.course.drip_enabled ?? false
   const unlocked = useMemo(() => {
     const set = new Set<string>()
-    flat.forEach((l, i) => { if (!drip || i === 0 || l.done || flat[i - 1]?.done) set.add(l.id) })
+    flat.forEach((l, i) => {
+      const secOk = unlockedSections.has(l.sectionId)
+      if (secOk && (!drip || i === 0 || l.done || flat[i - 1]?.done)) set.add(l.id)
+    })
     return set
-  }, [flat, drip])
+  }, [flat, drip, unlockedSections])
 
   // Pick a default current lesson: first not-done, else first
   useEffect(() => {

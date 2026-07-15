@@ -8,6 +8,7 @@ import { BtnGhost, BtnPrimary, Field, Modal, inputCss, textareaCss } from './Mod
 export type EditableCourse = {
   id?: string; title: string; subtitle: string | null; description?: string | null; category: string | null
   level: string | null; price_cents: number; instructor_id: string | null; accent: string | null; icon: string | null; status: string
+  is_live?: boolean; zoom_url?: string | null; module_lock?: boolean
 }
 
 const ACCENTS = [
@@ -33,6 +34,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
   const [form, setForm] = useState<EditableCourse>(existing ?? {
     title: '', subtitle: '', description: '', category: 'Fiscalité', level: 'Débutant',
     price_cents: 9900, instructor_id: me!.role === 'teacher' ? me!.userId : null, accent: ACCENTS[0], icon: ICONS[0], status: 'draft',
+    is_live: false, zoom_url: '', module_lock: false,
   })
   const [teachers, setTeachers] = useState<{ id: string; name: string }[]>([])
   const [busy, setBusy] = useState(false)
@@ -54,6 +56,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
       category: form.category, level: form.level, price_cents: form.price_cents,
       instructor_id: form.instructor_id ?? (me!.role === 'teacher' ? me!.userId : null),
       accent: form.accent, icon: form.icon, status: form.status,
+      is_live: form.is_live ?? false, zoom_url: form.zoom_url || null, module_lock: form.module_lock ?? false,
       published_at: form.status === 'published' ? new Date().toISOString() : null,
     }
     let id = existing?.id
@@ -110,6 +113,18 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
           </select>
         </Field>
       )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '12px 14px', background: '#F7F9FC', border: '1px solid var(--border)', borderRadius: 11, marginBottom: 14 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, fontWeight: 600, color: 'var(--ink-soft)', cursor: 'pointer' }}>
+          <input type="checkbox" checked={!!form.is_live} onChange={(e) => set('is_live', e.target.checked)} /> {t('liveCourse')}
+        </label>
+        {form.is_live && (
+          <input value={form.zoom_url ?? ''} onChange={(e) => set('zoom_url', e.target.value)} placeholder={t('zoomUrlHint')} style={inputCss} />
+        )}
+        <label style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, fontWeight: 600, color: 'var(--ink-soft)', cursor: 'pointer' }}>
+          <input type="checkbox" checked={!!form.module_lock} onChange={(e) => set('module_lock', e.target.checked)} /> {t('moduleLock')}
+        </label>
+      </div>
 
       <Field label={t('cover')}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

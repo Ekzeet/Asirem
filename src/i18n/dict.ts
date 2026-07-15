@@ -56,6 +56,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     askQuestion: 'Pose une question sur ce cours…', noQuestions: 'Aucune question pour le moment', resolved: 'Résolu', markResolved: 'Marquer résolu', officialAnswer: 'Réponse officielle', answer: 'Répondre',
     badges: 'Badges', searchResults: 'Résultats de recherche', noResults: 'Aucun résultat',
     dropoff: 'Complétion par leçon', dropoffSub: 'Où les étudiants décrochent',
+    liveCourse: 'Cours en direct (Zoom)', zoomUrlHint: 'Lien Zoom (optionnel — sinon généré à l’achat)', moduleLock: 'Verrouiller les modules jusqu’au test',
   },
   en: {
     menu: 'Menu', viewAs: 'View as', search: 'Search a course, student…',
@@ -111,6 +112,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     askQuestion: 'Ask a question about this course…', noQuestions: 'No questions yet', resolved: 'Resolved', markResolved: 'Mark resolved', officialAnswer: 'Official answer', answer: 'Answer',
     badges: 'Badges', searchResults: 'Search results', noResults: 'No results',
     dropoff: 'Completion by lesson', dropoffSub: 'Where students drop off',
+    liveCourse: 'Live course (Zoom)', zoomUrlHint: 'Zoom link (optional — auto-generated on purchase)', moduleLock: 'Lock modules until the test is passed',
   },
   es: {
     menu: 'Menú', viewAs: 'Ver como', search: 'Buscar un curso, estudiante…',
@@ -166,6 +168,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     askQuestion: 'Haz una pregunta sobre este curso…', noQuestions: 'Aún no hay preguntas', resolved: 'Resuelto', markResolved: 'Marcar resuelto', officialAnswer: 'Respuesta oficial', answer: 'Responder',
     badges: 'Insignias', searchResults: 'Resultados', noResults: 'Sin resultados',
     dropoff: 'Finalización por lección', dropoffSub: 'Dónde abandonan los estudiantes',
+    liveCourse: 'Curso en directo (Zoom)', zoomUrlHint: 'Enlace Zoom (opcional — generado al comprar)', moduleLock: 'Bloquear módulos hasta aprobar el test',
   },
 }
 
