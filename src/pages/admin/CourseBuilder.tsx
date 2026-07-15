@@ -74,6 +74,9 @@ export default function CourseBuilder() {
         <button onClick={async () => { await supabase.from('courses').update({ drip_enabled: !course.drip_enabled }).eq('id', course.id); reload() }} title={t('dripHint')} style={{ height: 42, padding: '0 14px', borderRadius: 11, border: '1px solid var(--border)', background: course.drip_enabled ? '#EAF1FB' : '#fff', color: course.drip_enabled ? '#1B5FB0' : '#5B6B82', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
           <Icon name={course.drip_enabled ? 'lock' : 'unlock'} size={15} />{t('drip')}
         </button>
+        <button onClick={async () => { if (confirm(t('confirmDeleteCourse'))) { await supabase.from('courses').delete().eq('id', course.id); nav('/admin/courses') } }} title={t('delete')} style={{ height: 42, width: 42, borderRadius: 11, border: '1px solid #F1D5D5', background: '#fff', color: '#D14343', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="trash-2" size={16} />
+        </button>
         <BtnGhost onClick={() => setEditDetails(true)}>{t('editDetails')}</BtnGhost>
         <BtnPrimary onClick={togglePublish}><Icon name={course.status === 'published' ? 'eye-off' : 'send'} size={15} />{course.status === 'published' ? t('unpublish') : t('publish')}</BtnPrimary>
       </Card>

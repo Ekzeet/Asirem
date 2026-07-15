@@ -56,6 +56,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     askQuestion: 'Pose une question sur ce cours…', noQuestions: 'Aucune question pour le moment', resolved: 'Résolu', markResolved: 'Marquer résolu', officialAnswer: 'Réponse officielle', answer: 'Répondre',
     badges: 'Badges', searchResults: 'Résultats de recherche', noResults: 'Aucun résultat',
     dropoff: 'Complétion par leçon', dropoffSub: 'Où les étudiants décrochent',
+    delete: 'Supprimer', confirmDeleteCourse: 'Supprimer ce cours et tout son contenu ? Action irréversible.',
     liveCourse: 'Cours en direct (Zoom)', zoomUrlHint: 'Lien Zoom (optionnel — sinon généré à l’achat)', moduleLock: 'Verrouiller les modules jusqu’au test',
   },
   en: {
@@ -112,6 +113,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     askQuestion: 'Ask a question about this course…', noQuestions: 'No questions yet', resolved: 'Resolved', markResolved: 'Mark resolved', officialAnswer: 'Official answer', answer: 'Answer',
     badges: 'Badges', searchResults: 'Search results', noResults: 'No results',
     dropoff: 'Completion by lesson', dropoffSub: 'Where students drop off',
+    delete: 'Delete', confirmDeleteCourse: 'Delete this course and all its content? This cannot be undone.',
     liveCourse: 'Live course (Zoom)', zoomUrlHint: 'Zoom link (optional — auto-generated on purchase)', moduleLock: 'Lock modules until the test is passed',
   },
   es: {
@@ -168,6 +170,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     askQuestion: 'Haz una pregunta sobre este curso…', noQuestions: 'Aún no hay preguntas', resolved: 'Resuelto', markResolved: 'Marcar resuelto', officialAnswer: 'Respuesta oficial', answer: 'Responder',
     badges: 'Insignias', searchResults: 'Resultados', noResults: 'Sin resultados',
     dropoff: 'Finalización por lección', dropoffSub: 'Dónde abandonan los estudiantes',
+    delete: 'Eliminar', confirmDeleteCourse: '¿Eliminar este curso y todo su contenido? Acción irreversible.',
     liveCourse: 'Curso en directo (Zoom)', zoomUrlHint: 'Enlace Zoom (opcional — generado al comprar)', moduleLock: 'Bloquear módulos hasta aprobar el test',
   },
 }

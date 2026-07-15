@@ -26,7 +26,7 @@ export default function MyCourses() {
     ])
     const progByCourse: Record<string, { done: number; total: number; pct: number }> = {}
     for (const p of prog ?? []) progByCourse[p.course_id!] = { done: p.done ?? 0, total: p.total ?? 0, pct: p.pct ?? 0 }
-    const courses: MyCourse[] = (enr ?? []).map((e: any) => {
+    const courses: MyCourse[] = (enr ?? []).filter((e: any) => e.course).map((e: any) => {
       const pg = progByCourse[e.course_id] ?? { done: 0, total: 0, pct: 0 }
       return { id: e.course.id, title: e.course.title, category: e.course.category, accent: e.course.accent, instructor: e.course.instructor?.full_name ?? '—', done: pg.done, total: pg.total, pct: pg.pct }
     })
