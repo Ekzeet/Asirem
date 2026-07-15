@@ -136,13 +136,13 @@ export type Database = {
         Relationships: []
       }
       orders: {
-        Row: { amount_cents: number; coupon_id: string | null; course_id: string | null; created_at: string; id: string; institution_id: string; plan_id: string | null; status: string; user_id: string }
-        Insert: { amount_cents?: number; coupon_id?: string | null; course_id?: string | null; created_at?: string; id?: string; institution_id: string; plan_id?: string | null; status?: string; user_id: string }
+        Row: { amount_cents: number; coupon_id: string | null; course_id: string | null; created_at: string; id: string; institution_id: string; plan_id: string | null; status: string; user_id: string; provider: string; stripe_session_id: string | null }
+        Insert: { amount_cents?: number; coupon_id?: string | null; course_id?: string | null; created_at?: string; id?: string; institution_id: string; plan_id?: string | null; status?: string; user_id: string; provider?: string; stripe_session_id?: string | null }
         Update: Partial<Database['public']['Tables']['orders']['Insert']>
         Relationships: []
       }
       plans: {
-        Row: { code: string; created_at: string; id: string; institution_id: string; interval: string; name: string; position: number; price_cents: number }
+        Row: { code: string; created_at: string; id: string; institution_id: string; interval: string; name: string; position: number; price_cents: number; stripe_price_id: string | null }
         Insert: { code: string; created_at?: string; id?: string; institution_id: string; interval?: string; name: string; position?: number; price_cents?: number }
         Update: Partial<Database['public']['Tables']['plans']['Insert']>
         Relationships: []

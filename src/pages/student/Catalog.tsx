@@ -35,13 +35,34 @@ export default function Catalog() {
   if (loading || !data) return <Loader />
   const { courses, oneTimePlan } = data
 
+  async function instantEnroll(c: Course) {
+    await supabase.from('enrollments').insert({ institution_id: inst, course_id: c.id, user_id: me!.userId, plan_id: oneTimePlan, status: 'active' })
+    if (c.price_cents > 0) await supabase.from('orders').insert({ institution_id: inst, user_id: me!.userId, course_id: c.id, plan_id: oneTimePlan, amount_cents: c.price_cents, status: 'paid', provider: 'demo' })
+    reload(); nav(`/student/course/${c.id}`)
+  }
+
   async function enroll(c: Course) {
     setEnrolling(c.id)
-    await supabase.from('enrollments').insert({ institution_id: inst, course_id: c.id, user_id: me!.userId, plan_id: oneTimePlan, status: 'active' })
-    if (c.price_cents > 0) await supabase.from('orders').insert({ institution_id: inst, user_id: me!.userId, course_id: c.id, plan_id: oneTimePlan, amount_cents: c.price_cents, status: 'paid' })
+    if (c.price_cents > 0) {
+      // Try a real Stripe checkout; fall back to instant enroll if Stripe isn't configured.
+      try {
+        const { data: sess } = await supabase.auth.getSession()
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session?.access_token}`, apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string },
+          body: JSON.stringify({ course_id: c.id, success_url: `${window.location.origin}/student`, cancel_url: `${window.location.origin}/student/catalog` }),
+        })
+        if (res.ok) {
+          const j = await res.json()
+          if (j.url) { window.location.href = j.url; return }
+        }
+        // 501 not_configured or any error → demo fallback
+        await instantEnroll(c)
+      } catch { await instantEnroll(c) }
+    } else {
+      await instantEnroll(c)
+    }
     setEnrolling(null)
-    reload()
-    nav(`/student/course/${c.id}`)
   }
 
   return (

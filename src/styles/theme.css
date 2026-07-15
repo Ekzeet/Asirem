@@ -72,3 +72,21 @@ input, textarea { font-family: var(--sans); }
   .topbar-title { width: auto !important; flex: 1 !important; }
 }
 @media (min-width: 861px) { .nav-overlay { display: none; } }
+
+/* Collapse the common inline card grids on small screens (CSS !important beats inline) */
+@media (max-width: 760px) {
+  [style*="grid-template-columns:repeat(3,1fr)"],
+  [style*="grid-template-columns:repeat(2,1fr)"],
+  [style*="grid-template-columns:1.7fr 1fr"],
+  [style*="grid-template-columns:1.4fr 1fr"],
+  [style*="grid-template-columns:1.5fr 1fr"],
+  [style*="grid-template-columns:1fr 320px"],
+  [style*="grid-template-columns:220px 1fr 260px"] {
+    grid-template-columns: 1fr !important;
+  }
+  [style*="grid-template-columns:repeat(4,1fr)"] { grid-template-columns: repeat(2, 1fr) !important; }
+  /* Wide data tables scroll horizontally instead of breaking the page */
+  [style*="grid-template-columns:2.4fr"],
+  [style*="grid-template-columns:2fr 1.4fr"] { min-width: 560px; }
+  .table-scroll { overflow-x: auto; }
+}
