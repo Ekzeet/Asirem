@@ -255,6 +255,8 @@ export type Database = {
       verify_certificate: { Args: { p_serial: string }; Returns: Json }
       get_exam: { Args: { p_exam: string }; Returns: Json }
       grade_exam: { Args: { p_exam: string; p_answers: Json }; Returns: Json }
+      get_quiz: { Args: { p_lesson: string }; Returns: Json }
+      grade_quiz: { Args: { p_quiz: string; p_answers: Json }; Returns: Json }
       course_gradebook: { Args: { p_course_id: string }; Returns: { user_id: string; full_name: string; progress_pct: number; quiz_avg: number | null; assignment_avg: number | null }[] }
       course_dropoff: { Args: { p_course_id: string }; Returns: { lesson_id: string; title: string; ord: number; completed: number; enrolled: number }[] }
     }
