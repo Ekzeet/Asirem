@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from './Icon'
 
 export function Modal({ title, subtitle, onClose, children, footer, width = 520 }: {
@@ -15,7 +16,7 @@ export function Modal({ title, subtitle, onClose, children, footer, width = 520 
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  return (
+  return createPortal((
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(11,32,56,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 20 }}>
       <div onClick={(e) => e.stopPropagation()} className="lmsfade" style={{ width: '100%', maxWidth: width, maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: 18, boxShadow: '0 24px 60px rgba(11,32,56,.35)', overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '20px 22px', borderBottom: '1px solid var(--border)' }}>
@@ -29,7 +30,7 @@ export function Modal({ title, subtitle, onClose, children, footer, width = 520 
         {footer && <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '16px 22px', borderTop: '1px solid var(--border)', background: '#FAFBFD' }}>{footer}</div>}
       </div>
     </div>
-  )
+  ), document.body)
 }
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
