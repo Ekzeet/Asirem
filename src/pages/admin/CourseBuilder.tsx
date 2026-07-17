@@ -23,6 +23,7 @@ export default function CourseBuilder() {
   const [tab, setTab] = useState<'curriculum' | 'assignments' | 'grades'>('curriculum')
   const [editDetails, setEditDetails] = useState(false)
   const [quizLesson, setQuizLesson] = useState<Lesson | null>(null)
+  const [resLesson, setResLesson] = useState<Lesson | null>(null)
   const [lessonForm, setLessonForm] = useState<{ sectionId: string; lesson?: Lesson } | null>(null)
   const [newSection, setNewSection] = useState('')
   const [newAssign, setNewAssign] = useState(false)
@@ -108,6 +109,7 @@ export default function CourseBuilder() {
                   {l.is_preview && <span style={{ fontSize: 10.5, fontWeight: 700, color: '#1F8A5B', background: '#EAF6EF', padding: '2px 8px', borderRadius: 20 }}>{t('preview')}</span>}
                   {l.hasQuiz && <span style={{ fontSize: 10.5, fontWeight: 700, color: '#7C5CD6', background: '#F3EDFB', padding: '2px 8px', borderRadius: 20 }}>Quiz</span>}
                   <span style={{ fontSize: 11.5, color: '#9AA7B8', fontWeight: 600 }}>{l.duration}</span>
+                  <button onClick={() => setResLesson(l)} style={linkBtn}><Icon name="paperclip" size={14} /> {t('resources')}</button>
                   <button onClick={() => setQuizLesson(l)} style={linkBtn}><Icon name="clipboard-check" size={14} /> Quiz</button>
                   <button onClick={() => setLessonForm({ sectionId: s.id, lesson: l })} style={linkBtn}><Icon name="pencil" size={14} /></button>
                   <button onClick={() => delLesson(l.id)} style={{ ...linkBtn, color: '#D14343' }}><Icon name="trash-2" size={14} /></button>
@@ -149,6 +151,7 @@ export default function CourseBuilder() {
       {editDetails && <CourseFormModal existing={course} onClose={() => setEditDetails(false)} onSaved={() => { setEditDetails(false); reload() }} />}
       {lessonForm && <LessonModal courseId={course.id} sectionId={lessonForm.sectionId} lesson={lessonForm.lesson} count={sections.find((s) => s.id === lessonForm.sectionId)?.lessons.length ?? 0} onClose={() => setLessonForm(null)} onSaved={() => { setLessonForm(null); reload() }} />}
       {quizLesson && <QuizModal lesson={quizLesson} onClose={() => setQuizLesson(null)} onSaved={() => { setQuizLesson(null); reload() }} />}
+      {resLesson && <ResourcesModal courseId={course.id} lesson={resLesson} onClose={() => setResLesson(null)} />}
       {newAssign && <AssignmentModal courseId={course.id} institutionId={me!.institutionId} onClose={() => setNewAssign(false)} onSaved={() => { setNewAssign(false); reload() }} />}
       {editAssign && <AssignmentModal courseId={course.id} institutionId={me!.institutionId} existing={editAssign} onClose={() => setEditAssign(null)} onSaved={() => { setEditAssign(null); reload() }} />}
     </div>
@@ -210,6 +213,39 @@ function Gradebook({ courseId }: { courseId: string }) {
         </div>
       ))}
     </Card>
+  )
+}
+
+function ResourcesModal({ courseId, lesson, onClose }: { courseId: string; lesson: Lesson; onClose: () => void }) {
+  const { t } = useI18n()
+  const { data, loading, reload } = useAsync(async () => {
+    const { data } = await supabase.from('lesson_resources').select('id,name,size_label,kind,file_url,position').eq('lesson_id', lesson.id).order('position')
+    return (data ?? []) as { id: string; name: string; size_label: string | null; kind: string | null; file_url: string | null; position: number }[]
+  }, [lesson.id])
+
+  const kindIcon: Record<string, string> = { pdf: 'file-text', xlsx: 'table', docx: 'file', image: 'image', zip: 'archive' }
+  async function add(path: string, file: File) {
+    const ext = (file.name.split('.').pop() ?? '').toLowerCase()
+    const kind = ['pdf', 'xlsx', 'docx', 'zip', 'png', 'jpg', 'jpeg'].includes(ext) ? (ext === 'png' || ext === 'jpg' || ext === 'jpeg' ? 'image' : ext) : 'file'
+    await supabase.from('lesson_resources').insert({ lesson_id: lesson.id, name: file.name, file_url: path, kind, icon: kindIcon[kind] ?? 'file', size_label: `${Math.max(1, Math.round(file.size / 1024))} KB`, position: (data?.length ?? 0) })
+    reload()
+  }
+  async function del(id: string) { await supabase.from('lesson_resources').delete().eq('id', id); reload() }
+
+  return (
+    <Modal title={t('resources')} subtitle={lesson.title} onClose={onClose} width={520} footer={<BtnGhost onClick={onClose}>{t('done')}</BtnGhost>}>
+      {!loading && (data ?? []).length === 0 && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>{t('noData')}</div>}
+      {(data ?? []).map((r) => (
+        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 11, marginBottom: 8 }}>
+          <div style={{ width: 34, height: 34, flex: 'none', borderRadius: 9, background: '#EAF1FB', color: '#1B5FB0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={kindIcon[r.kind ?? ''] ?? 'file-text'} size={16} /></div>
+          <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy-800)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div><div style={{ fontSize: 11.5, color: '#9AA7B8', fontWeight: 600 }}>{r.size_label}</div></div>
+          <button onClick={() => del(r.id)} style={{ border: 'none', background: 'none', color: '#D14343', cursor: 'pointer' }}><Icon name="trash-2" size={15} /></button>
+        </div>
+      ))}
+      <div style={{ marginTop: 4 }}>
+        <FileUpload bucket="course-media" pathPrefix={courseId} label={t('attachFile')} onUploaded={add} />
+      </div>
+    </Modal>
   )
 }
 
