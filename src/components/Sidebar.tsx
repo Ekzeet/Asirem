@@ -22,11 +22,13 @@ const NAV: Record<string, NavItem[]> = {
     { to: '/admin/courses', key: 'courses', icon: 'book-open' },
     { to: '/admin/students', key: 'students', icon: 'graduation-cap' },
     { to: '/review', key: 'review', icon: 'clipboard-check' },
+    { to: '/exams', key: 'exams', icon: 'file-check' },
     { to: '/community', key: 'community', icon: 'messages-square' },
   ],
   student: [
     { to: '/student', key: 'myCourses', icon: 'book-open' },
     { to: '/student/catalog', key: 'catalog', icon: 'compass' },
+    { to: '/exams', key: 'exams', icon: 'file-check' },
     { to: '/community', key: 'community', icon: 'messages-square', badge: '3' },
     { to: '/student/certificates', key: 'certificates', icon: 'award' },
   ],
