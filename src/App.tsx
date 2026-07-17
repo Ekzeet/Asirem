@@ -13,6 +13,7 @@ const CourseBuilder = lazy(() => import('./pages/admin/CourseBuilder'))
 const AdminStudents = lazy(() => import('./pages/admin/Students'))
 const AdminTeachers = lazy(() => import('./pages/admin/Teachers'))
 const AdminSales = lazy(() => import('./pages/admin/Sales'))
+const AdminAudit = lazy(() => import('./pages/admin/Audit'))
 const Review = lazy(() => import('./pages/shared/Review'))
 const Community = lazy(() => import('./pages/community/Community'))
 const MyCourses = lazy(() => import('./pages/student/MyCourses'))
@@ -93,6 +94,7 @@ export default function App() {
         {(isStaff || isTeacher) && <Route path="/admin/students" element={<AdminStudents />} />}
         {isStaff && <Route path="/admin/teachers" element={<AdminTeachers />} />}
         {isStaff && <Route path="/admin/sales" element={<AdminSales />} />}
+        {isStaff && <Route path="/admin/audit" element={<AdminAudit />} />}
         {/* Teacher */}
         {isTeacher && <Route path="/teacher" element={<TeacherDashboard />} />}
         {/* Staff assignment review */}

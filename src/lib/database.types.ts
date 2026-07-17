@@ -123,6 +123,12 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['exam_attempts']['Insert']>
         Relationships: []
       }
+      audit_log: {
+        Row: { id: string; institution_id: string | null; actor_id: string | null; action: string; entity: string; entity_id: string | null; meta: Json; created_at: string }
+        Insert: { id?: string; institution_id?: string | null; actor_id?: string | null; action: string; entity: string; entity_id?: string | null; meta?: Json; created_at?: string }
+        Update: Partial<Database['public']['Tables']['audit_log']['Insert']>
+        Relationships: []
+      }
       badges: {
         Row: { id: string; institution_id: string; code: string; name: string; description: string | null; icon: string | null; color: string | null }
         Insert: { id?: string; institution_id: string; code: string; name: string; description?: string | null; icon?: string | null; color?: string | null }
