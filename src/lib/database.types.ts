@@ -99,6 +99,30 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['memberships']['Insert']>
         Relationships: []
       }
+      exams: {
+        Row: { id: string; institution_id: string; course_id: string; title: string; description: string | null; pass_score: number; status: string; created_by: string | null; created_at: string }
+        Insert: { id?: string; institution_id: string; course_id: string; title: string; description?: string | null; pass_score?: number; status?: string; created_by?: string | null; created_at?: string }
+        Update: Partial<Database['public']['Tables']['exams']['Insert']>
+        Relationships: []
+      }
+      exam_questions: {
+        Row: { id: string; exam_id: string; position: number; prompt: string; question_type: string; points: number; answer_text: string | null }
+        Insert: { id?: string; exam_id: string; position?: number; prompt: string; question_type?: string; points?: number; answer_text?: string | null }
+        Update: Partial<Database['public']['Tables']['exam_questions']['Insert']>
+        Relationships: []
+      }
+      exam_options: {
+        Row: { id: string; question_id: string; position: number; label: string; is_correct: boolean }
+        Insert: { id?: string; question_id: string; position?: number; label: string; is_correct?: boolean }
+        Update: Partial<Database['public']['Tables']['exam_options']['Insert']>
+        Relationships: []
+      }
+      exam_attempts: {
+        Row: { id: string; exam_id: string; user_id: string; score: number; passed: boolean; answers: Json; created_at: string }
+        Insert: { id?: string; exam_id: string; user_id: string; score?: number; passed?: boolean; answers?: Json; created_at?: string }
+        Update: Partial<Database['public']['Tables']['exam_attempts']['Insert']>
+        Relationships: []
+      }
       badges: {
         Row: { id: string; institution_id: string; code: string; name: string; description: string | null; icon: string | null; color: string | null }
         Insert: { id?: string; institution_id: string; code: string; name: string; description?: string | null; icon?: string | null; color?: string | null }
@@ -229,6 +253,8 @@ export type Database = {
       teacher_dashboard_stats: { Args: { p_institution_id: string; p_teacher_id?: string }; Returns: Json }
       top_courses: { Args: { p_institution_id: string; p_limit?: number }; Returns: { accent: string; icon: string; id: string; instructor: string; rating: number; revenue_cents: number; status: string; students: number; title: string }[] }
       verify_certificate: { Args: { p_serial: string }; Returns: Json }
+      get_exam: { Args: { p_exam: string }; Returns: Json }
+      grade_exam: { Args: { p_exam: string; p_answers: Json }; Returns: Json }
       course_gradebook: { Args: { p_course_id: string }; Returns: { user_id: string; full_name: string; progress_pct: number; quiz_avg: number | null; assignment_avg: number | null }[] }
       course_dropoff: { Args: { p_course_id: string }; Returns: { lesson_id: string; title: string; ord: number; completed: number; enrolled: number }[] }
     }
