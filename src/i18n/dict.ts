@@ -64,6 +64,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     submissionTypes: 'Types de rendu', type_text: 'Texte', type_file: 'Fichier', type_link: 'Lien', availableFrom: 'Disponible dès', maxAttempts: 'Tentatives max (0 = illimité)', allowLate: 'Autoriser les retards', latePenalty: 'Pénalité de retard', rubric: 'Barème', criterion: 'Critère', addCriterion: 'Ajouter un critère', rubricHint: 'Sans barème, note sur', editAssignment: 'Modifier le devoir', attempts: 'Tentatives', late: 'En retard', lateSubmitted: 'Rendu en retard', notStarted: 'À faire', assignmentClosed: 'Fermé', notYetAvailable: 'Bientôt disponible', submitLate: 'Rendre (en retard)', attachFile: 'Joindre un fichier', requestResubmit: 'Demander une reprise',
     delete: 'Supprimer', confirmDeleteCourse: 'Supprimer ce cours et tout son contenu ? Action irréversible.',
     liveCourse: 'Cours en direct (Zoom)', zoomUrlHint: 'Lien Zoom (optionnel — sinon généré à l’achat)', moduleLock: 'Verrouiller les modules jusqu’au test',
+    browseCourses: 'Parcourir les cours', terms: 'Conditions', privacy: 'Confidentialité', refund: 'Remboursement',
   },
   en: {
     menu: 'Menu', viewAs: 'View as', search: 'Search a course, student…',
@@ -127,6 +128,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     submissionTypes: 'Submission types', type_text: 'Text', type_file: 'File', type_link: 'Link', availableFrom: 'Available from', maxAttempts: 'Max attempts (0 = unlimited)', allowLate: 'Allow late', latePenalty: 'Late penalty', rubric: 'Rubric', criterion: 'Criterion', addCriterion: 'Add criterion', rubricHint: 'Without a rubric, grade out of', editAssignment: 'Edit assignment', attempts: 'Attempts', late: 'Late', lateSubmitted: 'Submitted late', notStarted: 'To do', assignmentClosed: 'Closed', notYetAvailable: 'Not yet available', submitLate: 'Submit (late)', attachFile: 'Attach file', requestResubmit: 'Request resubmission',
     delete: 'Delete', confirmDeleteCourse: 'Delete this course and all its content? This cannot be undone.',
     liveCourse: 'Live course (Zoom)', zoomUrlHint: 'Zoom link (optional — auto-generated on purchase)', moduleLock: 'Lock modules until the test is passed',
+    browseCourses: 'Browse courses', terms: 'Terms', privacy: 'Privacy', refund: 'Refund',
   },
   es: {
     menu: 'Menú', viewAs: 'Ver como', search: 'Buscar un curso, estudiante…',
@@ -190,6 +192,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     submissionTypes: 'Tipos de entrega', type_text: 'Texto', type_file: 'Archivo', type_link: 'Enlace', availableFrom: 'Disponible desde', maxAttempts: 'Intentos máx (0 = ilimitado)', allowLate: 'Permitir retraso', latePenalty: 'Penalización por retraso', rubric: 'Rúbrica', criterion: 'Criterio', addCriterion: 'Añadir criterio', rubricHint: 'Sin rúbrica, nota sobre', editAssignment: 'Editar tarea', attempts: 'Intentos', late: 'Tarde', lateSubmitted: 'Entregado tarde', notStarted: 'Por hacer', assignmentClosed: 'Cerrado', notYetAvailable: 'Aún no disponible', submitLate: 'Entregar (tarde)', attachFile: 'Adjuntar archivo', requestResubmit: 'Solicitar reenvío',
     delete: 'Eliminar', confirmDeleteCourse: '¿Eliminar este curso y todo su contenido? Acción irreversible.',
     liveCourse: 'Curso en directo (Zoom)', zoomUrlHint: 'Enlace Zoom (opcional — generado al comprar)', moduleLock: 'Bloquear módulos hasta aprobar el test',
+    browseCourses: 'Explorar cursos', terms: 'Términos', privacy: 'Privacidad', refund: 'Reembolso',
   },
 }
 

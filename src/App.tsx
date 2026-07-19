@@ -26,6 +26,12 @@ const Search = lazy(() => import('./pages/Search'))
 const Exams = lazy(() => import('./pages/Exams'))
 const ExamBuilder = lazy(() => import('./pages/ExamBuilder'))
 const ExamPlayer = lazy(() => import('./pages/ExamPlayer'))
+const PublicLayoutC = lazy(() => import('./components/PublicLayout'))
+const Home = lazy(() => import('./pages/public/Home'))
+const PublicCatalog = lazy(() => import('./pages/public/PublicCatalog'))
+const CourseSales = lazy(() => import('./pages/public/CourseSales'))
+const Legal = lazy(() => import('./pages/public/Legal'))
+const CheckoutReturn = lazy(() => import('./pages/public/CheckoutReturn'))
 
 function Loading() {
   const { t } = useI18n()
@@ -69,10 +75,14 @@ export default function App() {
     return (
       <Suspense fallback={<Loading />}>
         <Routes>
-          {/* Public certificate verification — no auth required */}
           <Route path="/verify/:serial" element={<Verify />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
+          <Route path="/courses" element={<PublicLayoutC><PublicCatalog /></PublicLayoutC>} />
+          <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
+          <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
+          <Route path="/" element={<PublicLayoutC><Home /></PublicLayoutC>} />
+          <Route path="*" element={<PublicLayoutC><Home /></PublicLayoutC>} />
         </Routes>
       </Suspense>
     )
@@ -86,6 +96,10 @@ export default function App() {
     <Routes>
       <Route path="/verify/:serial" element={<Verify />} />
       <Route path="/login" element={<Navigate to={roleHome(me.role)} replace />} />
+      <Route path="/courses" element={<PublicLayoutC><PublicCatalog /></PublicLayoutC>} />
+      <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
+      <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
+      <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
       <Route element={<Layout />}>
         {/* Admin */}
         {isStaff && <Route path="/admin" element={<AdminDashboard />} />}
