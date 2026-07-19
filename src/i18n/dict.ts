@@ -65,6 +65,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     delete: 'Supprimer', confirmDeleteCourse: 'Supprimer ce cours et tout son contenu ? Action irréversible.',
     liveCourse: 'Cours en direct (Zoom)', zoomUrlHint: 'Lien Zoom (optionnel — sinon généré à l’achat)', moduleLock: 'Verrouiller les modules jusqu’au test',
     browseCourses: 'Parcourir les cours', terms: 'Conditions', privacy: 'Confidentialité', refund: 'Remboursement',
+    free: 'Gratuit', hours: 'h', heroTitle: 'Devenez préparateur fiscal certifié', heroSub: 'Des cours pratiques en fiscalité, à votre rythme, avec certificat.',
   },
   en: {
     menu: 'Menu', viewAs: 'View as', search: 'Search a course, student…',
@@ -129,6 +130,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     delete: 'Delete', confirmDeleteCourse: 'Delete this course and all its content? This cannot be undone.',
     liveCourse: 'Live course (Zoom)', zoomUrlHint: 'Zoom link (optional — auto-generated on purchase)', moduleLock: 'Lock modules until the test is passed',
     browseCourses: 'Browse courses', terms: 'Terms', privacy: 'Privacy', refund: 'Refund',
+    free: 'Free', hours: 'h', heroTitle: 'Become a certified tax preparer', heroSub: 'Practical tax courses, at your own pace, with a certificate.',
   },
   es: {
     menu: 'Menú', viewAs: 'Ver como', search: 'Buscar un curso, estudiante…',
@@ -193,6 +195,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     delete: 'Eliminar', confirmDeleteCourse: '¿Eliminar este curso y todo su contenido? Acción irreversible.',
     liveCourse: 'Curso en directo (Zoom)', zoomUrlHint: 'Enlace Zoom (opcional — generado al comprar)', moduleLock: 'Bloquear módulos hasta aprobar el test',
     browseCourses: 'Explorar cursos', terms: 'Términos', privacy: 'Privacidad', refund: 'Reembolso',
+    free: 'Gratis', hours: 'h', heroTitle: 'Conviértete en preparador fiscal certificado', heroSub: 'Cursos prácticos de fiscalidad, a tu ritmo, con certificado.',
   },
 }
 
