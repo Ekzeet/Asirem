@@ -1,1 +1,66 @@
-export default function CourseSales() { return <div style={{ padding: 24 }}>CourseSales</div> }
+import { useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
+import { useAsync } from '../../hooks/useAsync'
+import { useI18n } from '../../i18n/I18nContext'
+import { Loader } from '../../components/ui'
+import { startCheckout } from '../../lib/checkout'
+
+function money(cents: number, currency: string) {
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency: (currency || 'usd').toUpperCase() }).format((cents || 0) / 100)
+}
+
+export default function CourseSales() {
+  const { slug } = useParams()
+  const { t } = useI18n()
+  const [preview, setPreview] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const { data, loading } = useAsync(async () => {
+    const { data } = await supabase.rpc('get_public_course', { p_slug: slug! })
+    return data as any
+  }, [slug])
+  if (loading) return <Loader />
+  if (!data) return <div style={{ padding: 24 }}>{t('noData')}</div>
+  const c = data
+
+  async function playPreview(lessonId: string) {
+    const { data, error } = await supabase.functions.invoke('get-preview-url', { body: { lesson_id: lessonId } })
+    if (!error && data?.url) setPreview(data.url as string)
+  }
+  async function buy() {
+    setBusy(true)
+    try { await startCheckout({ courseId: c.id }) } finally { setBusy(false) }
+  }
+
+  return (
+    <div style={{ maxWidth: 1000, margin: '0 auto', padding: 24, display: 'grid', gridTemplateColumns: '1fr 320px', gap: 28 }}>
+      <div>
+        <h1 style={{ fontFamily: 'var(--display)', color: 'var(--navy-800)', fontSize: 30 }}>{c.title}</h1>
+        <p style={{ color: '#5B6B82', fontSize: 16, fontWeight: 600 }}>{c.subtitle}</p>
+        {preview && <video src={preview} controls style={{ width: '100%', borderRadius: 12, margin: '14px 0', background: '#000' }} />}
+        <h2 style={{ fontFamily: 'var(--display)', color: 'var(--navy-800)', fontSize: 18, margin: '18px 0 10px' }}>{t('curriculum')}</h2>
+        {(c.sections ?? []).map((s: any) => (
+          <div key={s.id} style={{ border: '1px solid var(--border-soft)', borderRadius: 12, marginBottom: 10, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', fontWeight: 800, color: 'var(--navy-800)', background: '#F7F9FC' }}>{s.title}</div>
+            {(s.lessons ?? []).map((l: any) => (
+              <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', borderTop: '1px solid var(--border-soft)' }}>
+                <span style={{ flex: 1, color: '#334', fontSize: 14 }}>{l.title}</span>
+                {l.is_preview
+                  ? <button onClick={() => playPreview(l.id)} style={{ border: 0, background: 'transparent', color: 'var(--navy-800)', fontWeight: 800, cursor: 'pointer' }}>{t('preview')}</button>
+                  : <span style={{ color: '#B7C0CD', fontSize: 12, fontWeight: 700 }}>🔒</span>}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <aside>
+        <div style={{ position: 'sticky', top: 20, border: '1px solid var(--border-soft)', borderRadius: 14, padding: 18, background: '#fff' }}>
+          <div style={{ fontWeight: 900, fontSize: 26, color: 'var(--navy-800)' }}>{c.price_cents ? money(c.price_cents, c.currency) : t('free')}</div>
+          {c.credit_hours ? <div style={{ color: '#5B6B82', fontWeight: 700, margin: '4px 0' }}>{c.credit_hours} {t('hours')} · {t('certificateOfCompletion')}</div> : null}
+          <button onClick={buy} disabled={busy} style={{ width: '100%', marginTop: 12, background: 'var(--gold-500,#E7B450)', color: '#0F2C4C', border: 0, padding: '12px', borderRadius: 10, fontWeight: 800, cursor: 'pointer' }}>{busy ? '…' : t('enrollNow')}</button>
+          <div style={{ color: '#8494A8', fontSize: 12, fontWeight: 600, marginTop: 8, textAlign: 'center' }}>{t('moneyBack')}</div>
+        </div>
+      </aside>
+    </div>
+  )
+}
