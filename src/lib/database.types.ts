@@ -265,6 +265,8 @@ export type Database = {
       grade_quiz: { Args: { p_quiz: string; p_answers: Json }; Returns: Json }
       course_gradebook: { Args: { p_course_id: string }; Returns: { user_id: string; full_name: string; progress_pct: number; quiz_avg: number | null; assignment_avg: number | null }[] }
       course_dropoff: { Args: { p_course_id: string }; Returns: { lesson_id: string; title: string; ord: number; completed: number; enrolled: number }[] }
+      list_public_courses: { Args: Record<string, never>; Returns: { id: string; slug: string; title: string; subtitle: string | null; category: string | null; level: string | null; price_cents: number; currency: string; rating: number | null; credit_hours: number | null; accent: string | null; icon: string | null; instructor_name: string | null }[] }
+      get_public_course: { Args: { p_slug: string }; Returns: Json }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
