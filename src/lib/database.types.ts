@@ -40,8 +40,8 @@ export type Database = {
         Relationships: []
       }
       courses: {
-        Row: { accent: string | null; category: string | null; cover_url: string | null; created_at: string; created_by: string | null; description: string | null; drip_enabled: boolean; icon: string | null; id: string; institution_id: string; instructor_id: string | null; is_live: boolean; level: string | null; module_lock: boolean; price_cents: number; published_at: string | null; rating: number | null; status: string; subtitle: string | null; title: string; zoom_meeting_id: string | null; zoom_url: string | null }
-        Insert: { accent?: string | null; category?: string | null; cover_url?: string | null; created_at?: string; created_by?: string | null; description?: string | null; drip_enabled?: boolean; icon?: string | null; id?: string; institution_id: string; instructor_id?: string | null; is_live?: boolean; level?: string | null; module_lock?: boolean; price_cents?: number; published_at?: string | null; rating?: number | null; status?: string; subtitle?: string | null; title: string; zoom_meeting_id?: string | null; zoom_url?: string | null }
+        Row: { accent: string | null; category: string | null; cover_url: string | null; created_at: string; created_by: string | null; credit_hours: number | null; description: string | null; drip_enabled: boolean; icon: string | null; id: string; institution_id: string; instructor_id: string | null; is_live: boolean; level: string | null; module_lock: boolean; price_cents: number; published_at: string | null; rating: number | null; slug: string; status: string; subtitle: string | null; title: string; zoom_meeting_id: string | null; zoom_url: string | null }
+        Insert: { accent?: string | null; category?: string | null; cover_url?: string | null; created_at?: string; created_by?: string | null; credit_hours?: number | null; description?: string | null; drip_enabled?: boolean; icon?: string | null; id?: string; institution_id: string; instructor_id?: string | null; is_live?: boolean; level?: string | null; module_lock?: boolean; price_cents?: number; published_at?: string | null; rating?: number | null; slug?: string; status?: string; subtitle?: string | null; title: string; zoom_meeting_id?: string | null; zoom_url?: string | null }
         Update: Partial<Database['public']['Tables']['courses']['Insert']>
         Relationships: []
       }
@@ -100,8 +100,8 @@ export type Database = {
         Relationships: []
       }
       exams: {
-        Row: { id: string; institution_id: string; course_id: string; title: string; description: string | null; pass_score: number; status: string; created_by: string | null; created_at: string }
-        Insert: { id?: string; institution_id: string; course_id: string; title: string; description?: string | null; pass_score?: number; status?: string; created_by?: string | null; created_at?: string }
+        Row: { id: string; institution_id: string; course_id: string; title: string; description: string | null; pass_score: number; status: string; created_by: string | null; created_at: string; time_limit_minutes: number | null }
+        Insert: { id?: string; institution_id: string; course_id: string; title: string; description?: string | null; pass_score?: number; status?: string; created_by?: string | null; created_at?: string; time_limit_minutes?: number | null }
         Update: Partial<Database['public']['Tables']['exams']['Insert']>
         Relationships: []
       }
@@ -166,8 +166,8 @@ export type Database = {
         Relationships: []
       }
       orders: {
-        Row: { amount_cents: number; coupon_id: string | null; course_id: string | null; created_at: string; id: string; institution_id: string; plan_id: string | null; status: string; user_id: string; provider: string; stripe_session_id: string | null }
-        Insert: { amount_cents?: number; coupon_id?: string | null; course_id?: string | null; created_at?: string; id?: string; institution_id: string; plan_id?: string | null; status?: string; user_id: string; provider?: string; stripe_session_id?: string | null }
+        Row: { amount_cents: number; coupon_id: string | null; course_id: string | null; created_at: string; id: string; institution_id: string; plan_id: string | null; status: string; user_id: string; provider: string; stripe_session_id: string | null; tax_cents: number }
+        Insert: { amount_cents?: number; coupon_id?: string | null; course_id?: string | null; created_at?: string; id?: string; institution_id: string; plan_id?: string | null; status?: string; user_id: string; provider?: string; stripe_session_id?: string | null; tax_cents?: number }
         Update: Partial<Database['public']['Tables']['orders']['Insert']>
         Relationships: []
       }
@@ -202,9 +202,9 @@ export type Database = {
         Relationships: []
       }
       profiles: {
-        Row: { avatar_url: string | null; created_at: string; full_name: string | null; id: string }
-        Insert: { avatar_url?: string | null; created_at?: string; full_name?: string | null; id: string }
-        Update: Partial<{ avatar_url: string | null; full_name: string | null; id: string }>
+        Row: { avatar_url: string | null; created_at: string; full_name: string | null; id: string; ptin: string | null }
+        Insert: { avatar_url?: string | null; created_at?: string; full_name?: string | null; id: string; ptin?: string | null }
+        Update: Partial<{ avatar_url: string | null; full_name: string | null; id: string; ptin: string | null }>
         Relationships: []
       }
       quiz_attempts: {
