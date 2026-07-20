@@ -51,6 +51,11 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
   async function save() {
     if (!form.title.trim()) { setError('Title required'); return }
     setBusy(true); setError(null)
+    // slug is NOT NULL + unique per institution; auto-derive from the title when the
+    // admin leaves it blank so course creation never collides on an empty slug.
+    const slug = ((form.slug ?? '').trim() ||
+      (form.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+        + '-' + Math.random().toString(36).slice(2, 6)))
     const payload = {
       institution_id: me!.institutionId,
       title: form.title.trim(), subtitle: form.subtitle, description: form.description,
@@ -58,7 +63,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
       instructor_id: form.instructor_id ?? (me!.role === 'teacher' ? me!.userId : null),
       accent: form.accent, icon: form.icon, status: form.status,
       is_live: form.is_live ?? false, zoom_url: form.zoom_url || null, module_lock: form.module_lock ?? false,
-      credit_hours: form.credit_hours ?? null, slug: (form.slug ?? '').trim(),
+      credit_hours: form.credit_hours ?? null, slug,
       published_at: form.status === 'published' ? new Date().toISOString() : null,
     }
     let id = existing?.id
