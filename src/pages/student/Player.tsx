@@ -7,6 +7,7 @@ import { useAsync } from '../../hooks/useAsync'
 import { Icon } from '../../components/Icon'
 import { Avatar, Loader } from '../../components/ui'
 import { FileUpload } from '../../components/FileUpload'
+import { ReviewForm } from '../../components/ReviewForm'
 import { relTime } from '../../lib/format'
 
 type Lesson = { id: string; title: string; duration: string | null; body: string | null; done: boolean; content_type: string; file_url: string | null; external_url: string | null; duration_seconds: number | null }
@@ -177,6 +178,10 @@ export default function Player() {
           {tab === 'qa' && <QAPanel courseId={courseId!} />}
 
           {tab === 'notes' && <NotesPanel key={currentId} lessonId={currentId!} initial={detail.data?.note ?? ''} />}
+
+          <div style={{ marginTop: 24 }}>
+            <ReviewForm courseId={courseId!} institutionId={me!.institutionId} />
+          </div>
         </div>
       </div>
 
