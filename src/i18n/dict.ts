@@ -75,6 +75,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     refundBody: 'Asirem Academy propose une garantie satisfait ou remboursé de 30 jours sur l’achat de ses cours. Si un cours ne vous convient pas, vous pouvez demander un remboursement intégral dans les 30 jours suivant la date d’achat, sans justification requise.\n\nPour effectuer une demande, contactez notre support avec votre email d’achat et le nom du cours concerné. Le remboursement est effectué sur le moyen de paiement utilisé lors de l’achat, généralement sous quelques jours ouvrés.\n\nPassé le délai de 30 jours, les achats ne sont plus remboursables, sauf obligation légale contraire. Les abonnements peuvent être annulés à tout moment pour éviter un renouvellement futur ; l’accès reste actif jusqu’à la fin de la période déjà payée.',
     reviews: 'Avis', noReviews: 'Aucun avis pour le moment', writeReview: 'Laisser un avis', verifiedPurchase: 'Achat vérifié', by: 'Par',
     rateThisCourse: 'Noter ce cours', yourReview: 'Ta note', reviewTitle: 'Titre de ton avis (optionnel)', reviewSaved: 'Avis enregistré', updateReview: 'Mettre à jour l’avis',
+    instructorProfile: 'Profil du formateur', coursesBy: 'Cours de', credentials: 'Qualifications', instructorNotFound: 'Formateur introuvable',
   },
   en: {
     menu: 'Menu', viewAs: 'View as', search: 'Search a course, student…',
@@ -149,6 +150,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     refundBody: 'Asirem Academy offers a 30-day money-back guarantee on course purchases. If a course isn’t right for you, you can request a full refund within 30 days of the purchase date, no questions asked.\n\nTo request a refund, contact our support team with the email used for the purchase and the name of the course. Refunds are issued to the original payment method, typically within a few business days.\n\nAfter the 30-day window, purchases are no longer refundable except where required by law. Subscriptions can be cancelled at any time to prevent future renewal; access remains active until the end of the period already paid for.',
     reviews: 'Reviews', noReviews: 'No reviews yet', writeReview: 'Write a review', verifiedPurchase: 'Verified purchase', by: 'By',
     rateThisCourse: 'Rate this course', yourReview: 'Your rating', reviewTitle: 'Review title (optional)', reviewSaved: 'Review saved', updateReview: 'Update review',
+    instructorProfile: 'Instructor profile', coursesBy: 'Courses by', credentials: 'Credentials', instructorNotFound: 'Instructor not found',
   },
   es: {
     menu: 'Menú', viewAs: 'Ver como', search: 'Buscar un curso, estudiante…',
@@ -223,6 +225,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     refundBody: 'Asirem Academy ofrece una garantía de devolución de 30 días en la compra de sus cursos. Si un curso no cumple tus expectativas, puedes solicitar un reembolso completo dentro de los 30 días posteriores a la fecha de compra, sin necesidad de justificación.\n\nPara solicitar el reembolso, contacta con nuestro soporte indicando el email de la compra y el nombre del curso. El reembolso se realiza al mismo método de pago utilizado en la compra, normalmente en unos pocos días hábiles.\n\nPasado el plazo de 30 días, las compras ya no son reembolsables, salvo que la ley disponga lo contrario. Las suscripciones pueden cancelarse en cualquier momento para evitar una renovación futura; el acceso permanece activo hasta el final del periodo ya pagado.',
     reviews: 'Reseñas', noReviews: 'Aún no hay reseñas', writeReview: 'Escribir una reseña', verifiedPurchase: 'Compra verificada', by: 'Por',
     rateThisCourse: 'Valorar este curso', yourReview: 'Tu valoración', reviewTitle: 'Título de tu reseña (opcional)', reviewSaved: 'Reseña guardada', updateReview: 'Actualizar reseña',
+    instructorProfile: 'Perfil del formador', coursesBy: 'Cursos de', credentials: 'Cualificaciones', instructorNotFound: 'Formador no encontrado',
   },
 }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
 import { useI18n } from '../../i18n/I18nContext'
@@ -113,6 +113,16 @@ export default function CourseSales() {
         <div style={{ position: 'sticky', top: 20, border: '1px solid var(--border-soft)', borderRadius: 14, padding: 18, background: '#fff' }}>
           <div style={{ fontWeight: 900, fontSize: 26, color: 'var(--navy-800)' }}>{c.price_cents ? money(c.price_cents, c.currency) : t('free')}</div>
           {c.credit_hours ? <div style={{ color: '#5B6B82', fontWeight: 700, margin: '4px 0' }}>{c.credit_hours} {t('hours')} · {t('certificateOfCompletion')}</div> : null}
+          {c.instructor_name ? (
+            <div style={{ color: '#8494A8', fontSize: 13, fontWeight: 600, margin: '4px 0 8px' }}>
+              {t('by')}{' '}
+              {c.instructor_id ? (
+                <Link to={`/instructors/${c.instructor_id}`} style={{ color: 'var(--navy-800)', fontWeight: 800, textDecoration: 'none' }}>{c.instructor_name}</Link>
+              ) : (
+                <span style={{ color: 'var(--navy-800)', fontWeight: 800 }}>{c.instructor_name}</span>
+              )}
+            </div>
+          ) : null}
           <button onClick={buy} disabled={busy} style={{ width: '100%', marginTop: 12, background: 'var(--gold-500,#E7B450)', color: '#0F2C4C', border: 0, padding: '12px', borderRadius: 10, fontWeight: 800, cursor: 'pointer' }}>{busy ? '…' : t('enrollNow')}</button>
           <div style={{ color: '#8494A8', fontSize: 12, fontWeight: 600, marginTop: 8, textAlign: 'center' }}>{t('moneyBack')}</div>
         </div>
