@@ -67,6 +67,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     browseCourses: 'Parcourir les cours', terms: 'Conditions', privacy: 'Confidentialité', refund: 'Remboursement',
     free: 'Gratuit', hours: 'h', heroTitle: 'Devenez préparateur fiscal certifié', heroSub: 'Des cours pratiques en fiscalité, à votre rythme, avec certificat.',
     certificateOfCompletion: 'Certificat de réussite', enrollNow: 'S’inscrire maintenant', moneyBack: 'Garantie satisfait ou remboursé 30 jours',
+    enterEmail: 'Votre email pour recevoir l’accès', purchaseThanks: 'Merci pour votre achat !', purchaseThanksSub: 'Vérifiez votre email pour définir votre mot de passe, puis connectez-vous pour commencer.', purchaseCancelled: 'Paiement annulé', purchaseCancelledSub: 'Aucun montant n’a été prélevé.',
   },
   en: {
     menu: 'Menu', viewAs: 'View as', search: 'Search a course, student…',
@@ -133,6 +134,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     browseCourses: 'Browse courses', terms: 'Terms', privacy: 'Privacy', refund: 'Refund',
     free: 'Free', hours: 'h', heroTitle: 'Become a certified tax preparer', heroSub: 'Practical tax courses, at your own pace, with a certificate.',
     certificateOfCompletion: 'Certificate of completion', enrollNow: 'Enroll now', moneyBack: '30-day money-back guarantee',
+    enterEmail: 'Your email to receive access', purchaseThanks: 'Thank you for your purchase!', purchaseThanksSub: 'Check your email to set your password, then log in to start learning.', purchaseCancelled: 'Payment cancelled', purchaseCancelledSub: 'You were not charged.',
   },
   es: {
     menu: 'Menú', viewAs: 'Ver como', search: 'Buscar un curso, estudiante…',
@@ -199,6 +201,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
     browseCourses: 'Explorar cursos', terms: 'Términos', privacy: 'Privacidad', refund: 'Reembolso',
     free: 'Gratis', hours: 'h', heroTitle: 'Conviértete en preparador fiscal certificado', heroSub: 'Cursos prácticos de fiscalidad, a tu ritmo, con certificado.',
     certificateOfCompletion: 'Certificado de finalización', enrollNow: 'Inscríbete ahora', moneyBack: 'Garantía de devolución de 30 días',
+    enterEmail: 'Tu email para recibir el acceso', purchaseThanks: '¡Gracias por tu compra!', purchaseThanksSub: 'Revisa tu email para establecer tu contraseña y luego inicia sesión para empezar.', purchaseCancelled: 'Pago cancelado', purchaseCancelledSub: 'No se te ha cobrado.',
   },
 }
 

@@ -28,8 +28,15 @@ export default function CourseSales() {
     if (!error && data?.url) setPreview(data.url as string)
   }
   async function buy() {
+    // Guest buyers (no session) supply an email so the webhook can provision their account.
+    const { data: sess } = await supabase.auth.getSession()
+    let email: string | undefined
+    if (!sess?.session) {
+      email = window.prompt(t('enterEmail')) ?? undefined
+      if (!email) return
+    }
     setBusy(true)
-    try { await startCheckout({ courseId: c.id }) } finally { setBusy(false) }
+    try { await startCheckout({ courseId: c.id, email }) } finally { setBusy(false) }
   }
 
   return (
