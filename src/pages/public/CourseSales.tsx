@@ -28,6 +28,8 @@ export default function CourseSales() {
     if (!error && data?.url) setPreview(data.url as string)
   }
   async function buy() {
+    // Free courses don't go through Stripe — send the visitor to sign in and self-enroll.
+    if (!c.price_cents) { window.location.href = '/login'; return }
     // Guest buyers (no session) supply an email so the webhook can provision their account.
     const { data: sess } = await supabase.auth.getSession()
     let email: string | undefined
