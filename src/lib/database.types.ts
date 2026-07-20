@@ -202,9 +202,9 @@ export type Database = {
         Relationships: []
       }
       profiles: {
-        Row: { avatar_url: string | null; created_at: string; full_name: string | null; id: string; ptin: string | null }
-        Insert: { avatar_url?: string | null; created_at?: string; full_name?: string | null; id: string; ptin?: string | null }
-        Update: Partial<{ avatar_url: string | null; full_name: string | null; id: string; ptin: string | null }>
+        Row: { avatar_url: string | null; bio: string | null; created_at: string; credentials: string[] | null; full_name: string | null; id: string; ptin: string | null }
+        Insert: { avatar_url?: string | null; bio?: string | null; created_at?: string; credentials?: string[] | null; full_name?: string | null; id: string; ptin?: string | null }
+        Update: Partial<{ avatar_url: string | null; bio: string | null; credentials: string[] | null; full_name: string | null; id: string; ptin: string | null }>
         Relationships: []
       }
       quiz_attempts: {
@@ -235,6 +235,12 @@ export type Database = {
         Row: { course_id: string; created_at: string; id: string; position: number; title: string }
         Insert: { course_id: string; created_at?: string; id?: string; position?: number; title: string }
         Update: Partial<Database['public']['Tables']['sections']['Insert']>
+        Relationships: []
+      }
+      course_reviews: {
+        Row: { id: string; institution_id: string; course_id: string; user_id: string; rating: number; title: string | null; body: string | null; status: string; created_at: string }
+        Insert: { id?: string; institution_id: string; course_id: string; user_id: string; rating: number; title?: string | null; body?: string | null; status?: string; created_at?: string }
+        Update: Partial<Database['public']['Tables']['course_reviews']['Insert']>
         Relationships: []
       }
     }
