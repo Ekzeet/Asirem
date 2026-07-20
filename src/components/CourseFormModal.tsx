@@ -9,6 +9,7 @@ export type EditableCourse = {
   id?: string; title: string; subtitle: string | null; description?: string | null; category: string | null
   level: string | null; price_cents: number; instructor_id: string | null; accent: string | null; icon: string | null; status: string
   is_live?: boolean; zoom_url?: string | null; module_lock?: boolean
+  credit_hours?: number | null; slug?: string
 }
 
 const ACCENTS = [
@@ -34,7 +35,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
   const [form, setForm] = useState<EditableCourse>(existing ?? {
     title: '', subtitle: '', description: '', category: 'Fiscalité', level: 'Débutant',
     price_cents: 9900, instructor_id: me!.role === 'teacher' ? me!.userId : null, accent: ACCENTS[0], icon: ICONS[0], status: 'draft',
-    is_live: false, zoom_url: '', module_lock: false,
+    is_live: false, zoom_url: '', module_lock: false, credit_hours: null, slug: '',
   })
   const [teachers, setTeachers] = useState<{ id: string; name: string }[]>([])
   const [busy, setBusy] = useState(false)
@@ -57,6 +58,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
       instructor_id: form.instructor_id ?? (me!.role === 'teacher' ? me!.userId : null),
       accent: form.accent, icon: form.icon, status: form.status,
       is_live: form.is_live ?? false, zoom_url: form.zoom_url || null, module_lock: form.module_lock ?? false,
+      credit_hours: form.credit_hours ?? null, slug: (form.slug ?? '').trim(),
       published_at: form.status === 'published' ? new Date().toISOString() : null,
     }
     let id = existing?.id
@@ -103,6 +105,11 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
             <option value="published">{t('published')}</option>
           </select>
         </Field>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Field label={t('creditHours')}><input type="number" step="0.5" min="0" value={form.credit_hours ?? ''} onChange={(e) => set('credit_hours', e.target.value === '' ? null : Number(e.target.value))} style={inputCss} /></Field>
+        <Field label={t('slug')}><input value={form.slug ?? ''} onChange={(e) => set('slug', e.target.value)} style={inputCss} /></Field>
       </div>
 
       {isStaff && (

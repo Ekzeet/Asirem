@@ -6,7 +6,7 @@ import { useAsync } from '../../hooks/useAsync'
 import { Icon } from '../../components/Icon'
 import { Loader, PageWrap } from '../../components/ui'
 
-function makeCertificatePdf(opts: { name: string; course: string; date: string; serial: string }) {
+function makeCertificatePdf(opts: { name: string; course: string; date: string; serial: string; creditHours?: number | null }) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
   const W = doc.internal.pageSize.getWidth()
   const H = doc.internal.pageSize.getHeight()
@@ -25,7 +25,7 @@ function makeCertificatePdf(opts: { name: string; course: string; date: string; 
   doc.setTextColor(90, 107, 130); doc.setFont('helvetica', 'normal'); doc.setFontSize(13)
   doc.text('has successfully completed', W / 2, 220, { align: 'center' })
   doc.setTextColor(27, 95, 176); doc.setFont('helvetica', 'bold'); doc.setFontSize(20)
-  doc.text(opts.course, W / 2, 256, { align: 'center', maxWidth: W - 160 })
+  doc.text(opts.creditHours ? `${opts.course} · ${opts.creditHours} h` : opts.course, W / 2, 256, { align: 'center', maxWidth: W - 160 })
   // footer
   doc.setTextColor(120, 138, 160); doc.setFont('helvetica', 'normal'); doc.setFontSize(11)
   doc.text(opts.date, W / 2, H - 96, { align: 'center' })
@@ -34,7 +34,7 @@ function makeCertificatePdf(opts: { name: string; course: string; date: string; 
   doc.save(`Asirem-${opts.serial}.pdf`)
 }
 
-type Cert = { id: string; serial: string; issued_at: string; title: string }
+type Cert = { id: string; serial: string; issued_at: string; title: string; credit_hours: number | null }
 
 export default function Certificates() {
   const { me } = useAuth()
@@ -43,10 +43,10 @@ export default function Certificates() {
   const { data, loading } = useAsync(async () => {
     const { data: rows } = await supabase
       .from('certificates')
-      .select('id, serial, issued_at, course:courses(title)')
+      .select('id, serial, issued_at, course:courses(title, credit_hours)')
       .eq('user_id', me!.userId)
       .order('issued_at', { ascending: false })
-    return (rows ?? []).map((r: any) => ({ id: r.id, serial: r.serial, issued_at: r.issued_at, title: r.course?.title ?? '—' })) as Cert[]
+    return (rows ?? []).map((r: any) => ({ id: r.id, serial: r.serial, issued_at: r.issued_at, title: r.course?.title ?? '—', credit_hours: r.course?.credit_hours ?? null })) as Cert[]
   }, [me!.userId])
 
   if (loading || !data) return <Loader />
@@ -65,7 +65,7 @@ export default function Certificates() {
                 <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 13, letterSpacing: .5 }}>ASIREM ACADEMY</div>
               </div>
               <div style={{ fontSize: 11, color: '#9DB4D0', fontWeight: 700, position: 'relative' }}>{t('certificate')}</div>
-              <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 18, lineHeight: 1.3, marginTop: 4, position: 'relative' }}>{c.title}</div>
+              <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 18, lineHeight: 1.3, marginTop: 4, position: 'relative' }}>{c.title}{c.credit_hours ? ` · ${c.credit_hours} ${t('hours')}` : ''}</div>
             </div>
             <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
@@ -75,7 +75,7 @@ export default function Certificates() {
                   <Icon name="shield-check" size={12} />{c.serial}
                 </a>
               </div>
-              <button onClick={() => makeCertificatePdf({ name: me!.fullName, course: c.title, date: fmt(c.issued_at), serial: c.serial })} style={{ height: 40, padding: '0 16px', borderRadius: 11, border: '1px solid var(--border)', background: '#fff', color: 'var(--navy-800)', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
+              <button onClick={() => makeCertificatePdf({ name: me!.fullName, course: c.title, date: fmt(c.issued_at), serial: c.serial, creditHours: c.credit_hours })} style={{ height: 40, padding: '0 16px', borderRadius: 11, border: '1px solid var(--border)', background: '#fff', color: 'var(--navy-800)', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
                 <Icon name="download" size={16} />{t('downloadCert')}
               </button>
             </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useI18n } from '../i18n/I18nContext'
 import { supabase } from '../lib/supabase'
@@ -8,7 +8,13 @@ import { Card, Loader } from '../components/ui'
 import { BtnPrimary } from '../components/Modal'
 
 type Q = { id: string; prompt: string; question_type: string; points: number; options: { id: string; label: string }[] }
-type Exam = { id: string; title: string; description: string | null; pass_score: number; questions: Q[] }
+type Exam = { id: string; title: string; description: string | null; pass_score: number; time_limit_minutes?: number | null; questions: Q[] }
+
+function fmtCountdown(totalSeconds: number) {
+  const m = Math.floor(totalSeconds / 60)
+  const s = totalSeconds % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
 
 export default function ExamPlayer() {
   const { examId } = useParams()
@@ -17,15 +23,12 @@ export default function ExamPlayer() {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ score: number; passed: boolean; pass_score: number } | null>(null)
+  const [remaining, setRemaining] = useState<number | null>(null)
 
   const { data, loading } = useAsync(async () => {
     const { data } = await supabase.rpc('get_exam', { p_exam: examId! })
     return data as unknown as Exam | null
   }, [examId])
-
-  if (loading) return <Loader />
-  if (!data) return <div style={{ padding: 40, color: 'var(--muted)' }}>{t('noData')}</div>
-  const exam = data
 
   async function submit() {
     setBusy(true)
@@ -33,6 +36,24 @@ export default function ExamPlayer() {
     setBusy(false)
     setResult(r as any)
   }
+
+  // Start the countdown once the exam (with its time limit) has loaded.
+  useEffect(() => {
+    if (data?.time_limit_minutes) setRemaining(data.time_limit_minutes * 60)
+  }, [data])
+
+  // Tick the countdown down every second; auto-submit when it reaches 0.
+  useEffect(() => {
+    if (remaining === null || result) return
+    if (remaining <= 0) { submit(); return }
+    const id = setInterval(() => setRemaining((r) => (r === null ? null : r - 1)), 1000)
+    return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remaining, result])
+
+  if (loading) return <Loader />
+  if (!data) return <div style={{ padding: 40, color: 'var(--muted)' }}>{t('noData')}</div>
+  const exam = data
 
   if (result) {
     return (
@@ -49,7 +70,14 @@ export default function ExamPlayer() {
   return (
     <div className="lmsfade" style={{ padding: '22px 30px 46px', maxWidth: 720 }}>
       <button onClick={() => nav('/exams')} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 14, padding: 0 }}><Icon name="arrow-left" size={15} /> {t('exams')}</button>
-      <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 22, color: 'var(--navy-800)' }}>{exam.title}</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 22, color: 'var(--navy-800)' }}>{exam.title}</div>
+        {remaining !== null && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, fontWeight: 800, color: remaining <= 60 ? '#D14343' : 'var(--navy-800)', background: remaining <= 60 ? '#FBEBEB' : '#EEF2F7', padding: '7px 14px', borderRadius: 20, flex: 'none' }}>
+            <Icon name="clock" size={15} />{fmtCountdown(remaining)}
+          </div>
+        )}
+      </div>
       {exam.description && <div style={{ fontSize: 13.5, color: '#5B6B82', lineHeight: 1.6, margin: '6px 0 4px' }}>{exam.description}</div>}
       <div style={{ fontSize: 12.5, color: '#9AA7B8', fontWeight: 600, marginBottom: 20 }}>{exam.questions.length} {t('questions').toLowerCase()} · {t('passScore')} {exam.pass_score}%</div>
 

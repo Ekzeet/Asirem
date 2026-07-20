@@ -13,7 +13,7 @@ import { FileUpload } from '../../components/FileUpload'
 type Lesson = { id: string; title: string; content_type: string; duration: string | null; duration_seconds: number | null; file_url: string | null; external_url: string | null; is_preview: boolean; position: number; hasQuiz: boolean }
 type Section = { id: string; title: string; position: number; lessons: Lesson[] }
 type Assignment = { id: string; title: string; instructions: string | null; due_at: string | null; points: number; submission_types: string[]; status: string; available_from: string | null; allow_late: boolean; late_penalty: number; max_attempts: number; rubric: any }
-type Course = { id: string; title: string; status: string; category: string | null; accent: string | null; icon: string | null; subtitle: string | null; level: string | null; price_cents: number; instructor_id: string | null; drip_enabled: boolean }
+type Course = { id: string; title: string; status: string; category: string | null; accent: string | null; icon: string | null; subtitle: string | null; level: string | null; price_cents: number; instructor_id: string | null; drip_enabled: boolean; credit_hours: number | null; slug: string }
 
 export default function CourseBuilder() {
   const { courseId } = useParams()
@@ -31,7 +31,7 @@ export default function CourseBuilder() {
 
   const { data, loading, reload } = useAsync(async () => {
     const [{ data: course }, { data: sections }, { data: quizzes }, { data: assignments }] = await Promise.all([
-      supabase.from('courses').select('id,title,status,category,accent,icon,subtitle,level,price_cents,instructor_id,drip_enabled').eq('id', courseId!).single(),
+      supabase.from('courses').select('id,title,status,category,accent,icon,subtitle,level,price_cents,instructor_id,drip_enabled,credit_hours,slug').eq('id', courseId!).single(),
       supabase.from('sections').select('id,title,position,lessons(id,title,content_type,duration,duration_seconds,file_url,external_url,is_preview,position)').eq('course_id', courseId!).order('position'),
       supabase.from('quizzes').select('lesson_id'),
       supabase.from('assignments').select('id,title,instructions,due_at,points,submission_types,status,available_from,allow_late,late_penalty,max_attempts,rubric').eq('course_id', courseId!).order('created_at'),
