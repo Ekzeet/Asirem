@@ -33,6 +33,7 @@ const CourseSales = lazy(() => import('./pages/public/CourseSales'))
 const InstructorProfile = lazy(() => import('./pages/public/InstructorProfile'))
 const Legal = lazy(() => import('./pages/public/Legal'))
 const CheckoutReturn = lazy(() => import('./pages/public/CheckoutReturn'))
+const Unsubscribe = lazy(() => import('./pages/public/Unsubscribe'))
 
 function Loading() {
   const { t } = useI18n()
@@ -83,6 +84,7 @@ export default function App() {
           <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
           <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
           <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
+          <Route path="/unsubscribe/:token" element={<PublicLayoutC><Unsubscribe /></PublicLayoutC>} />
           <Route path="/" element={<PublicLayoutC><Home /></PublicLayoutC>} />
           <Route path="*" element={<PublicLayoutC><Home /></PublicLayoutC>} />
         </Routes>
@@ -103,6 +105,7 @@ export default function App() {
       <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
       <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
       <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
+      <Route path="/unsubscribe/:token" element={<PublicLayoutC><Unsubscribe /></PublicLayoutC>} />
       <Route element={<Layout />}>
         {/* Admin */}
         {isStaff && <Route path="/admin" element={<AdminDashboard />} />}
