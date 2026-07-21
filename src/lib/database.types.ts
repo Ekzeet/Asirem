@@ -274,6 +274,7 @@ export type Database = {
       list_public_courses: { Args: Record<string, never>; Returns: { id: string; slug: string; title: string; subtitle: string | null; category: string | null; level: string | null; price_cents: number; currency: string; rating: number | null; credit_hours: number | null; accent: string | null; icon: string | null; instructor_name: string | null; review_count: number; enrolled_count: number }[] }
       get_public_course: { Args: { p_slug: string }; Returns: Json }
       list_course_reviews: { Args: { p_slug: string }; Returns: { id: string; rating: number; title: string | null; body: string | null; created_at: string; author_name: string | null }[] }
+      list_recent_reviews: { Args: { p_limit?: number }; Returns: { id: string; rating: number; title: string | null; body: string | null; created_at: string; author_name: string | null; course_title: string | null; course_slug: string | null }[] }
       get_public_instructor: { Args: { p_id: string }; Returns: Json }
     }
     Enums: Record<string, never>
