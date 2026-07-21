@@ -90,3 +90,23 @@ input, textarea { font-family: var(--sans); }
   [style*="grid-template-columns:2fr 1.4fr"] { min-width: 560px; }
   .table-scroll { overflow-x: auto; }
 }
+
+/* Media never overflows its container on small screens */
+img, video { max-width: 100%; }
+
+/* Reliable two-column layout that collapses on mobile (class beats inline-style guessing) */
+.two-col { display: grid; grid-template-columns: 1fr 320px; gap: 28px; }
+@media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
+
+/* Safety net: browsers serialize React inline styles WITH a space after the colon,
+   which the no-space selectors above don't catch. Collapse the common grids here too. */
+@media (max-width: 760px) {
+  [style*="grid-template-columns: 1fr 320px"],
+  [style*="grid-template-columns: repeat(3, 1fr)"],
+  [style*="grid-template-columns: repeat(2, 1fr)"],
+  [style*="grid-template-columns: 2fr 320px"] { grid-template-columns: 1fr !important; }
+  [style*="grid-template-columns: repeat(4, 1fr)"] { grid-template-columns: repeat(2, 1fr) !important; }
+  /* Course player: stack the main area and the lesson-list aside */
+  .player-shell { flex-direction: column !important; height: auto !important; }
+  .player-aside { width: 100% !important; border-left: none !important; border-top: 1px solid var(--border) !important; }
+}
