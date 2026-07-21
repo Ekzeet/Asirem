@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
 import { Icon } from '../../components/Icon'
 import { Loader, ProgressBar } from '../../components/ui'
+import ReferralCard from '../../components/ReferralCard'
 
 type MyCourse = {
   id: string; title: string; category: string | null; accent: string | null
@@ -89,6 +90,7 @@ export default function MyCourses() {
           ))}
         </div>
       )}
+      <ReferralCard />
       <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 17, color: 'var(--navy-800)', marginBottom: 14 }}>{t('myCourses')}</div>
       {courses.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 14 }}>{t('noCourses')}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>

@@ -34,6 +34,10 @@ const InstructorProfile = lazy(() => import('./pages/public/InstructorProfile'))
 const Legal = lazy(() => import('./pages/public/Legal'))
 const CheckoutReturn = lazy(() => import('./pages/public/CheckoutReturn'))
 const Unsubscribe = lazy(() => import('./pages/public/Unsubscribe'))
+const Paths = lazy(() => import('./pages/public/Paths'))
+const PathSales = lazy(() => import('./pages/public/PathSales'))
+const Pricing = lazy(() => import('./pages/public/Pricing'))
+const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'))
 
 function Loading() {
   const { t } = useI18n()
@@ -85,6 +89,9 @@ export default function App() {
           <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
           <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
           <Route path="/unsubscribe/:token" element={<PublicLayoutC><Unsubscribe /></PublicLayoutC>} />
+          <Route path="/paths" element={<PublicLayoutC><Paths /></PublicLayoutC>} />
+          <Route path="/paths/:slug" element={<PublicLayoutC><PathSales /></PublicLayoutC>} />
+          <Route path="/pricing" element={<PublicLayoutC><Pricing /></PublicLayoutC>} />
           <Route path="/" element={<PublicLayoutC><Home /></PublicLayoutC>} />
           <Route path="*" element={<PublicLayoutC><Home /></PublicLayoutC>} />
         </Routes>
@@ -106,6 +113,9 @@ export default function App() {
       <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
       <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
       <Route path="/unsubscribe/:token" element={<PublicLayoutC><Unsubscribe /></PublicLayoutC>} />
+      <Route path="/paths" element={<PublicLayoutC><Paths /></PublicLayoutC>} />
+      <Route path="/paths/:slug" element={<PublicLayoutC><PathSales /></PublicLayoutC>} />
+      <Route path="/pricing" element={<PublicLayoutC><Pricing /></PublicLayoutC>} />
       <Route element={<Layout />}>
         {/* Admin */}
         {isStaff && <Route path="/admin" element={<AdminDashboard />} />}
@@ -115,6 +125,7 @@ export default function App() {
         {isStaff && <Route path="/admin/teachers" element={<AdminTeachers />} />}
         {isStaff && <Route path="/admin/sales" element={<AdminSales />} />}
         {isStaff && <Route path="/admin/audit" element={<AdminAudit />} />}
+        {isStaff && <Route path="/admin/analytics" element={<AdminAnalytics />} />}
         {/* Teacher */}
         {isTeacher && <Route path="/teacher" element={<TeacherDashboard />} />}
         {/* Staff assignment review */}
