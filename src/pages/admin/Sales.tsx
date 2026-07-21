@@ -82,7 +82,7 @@ export default function AdminSales() {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
+      <div className="two-col" style={{ gap: 16 }}>
         <Card style={{ overflow: 'hidden' }}>
           <div style={{ padding: '16px 22px', fontFamily: 'var(--display)', fontWeight: 700, fontSize: 16, color: 'var(--navy-800)', borderBottom: '1px solid #EEF2F7' }}>{t('recentTx')}</div>
           <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 12, padding: '11px 22px', background: '#FAFBFD', fontSize: 11, fontWeight: 800, color: '#8494A8', textTransform: 'uppercase', letterSpacing: .5, borderBottom: '1px solid #EEF2F7' }}>

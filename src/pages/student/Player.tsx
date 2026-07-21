@@ -117,7 +117,7 @@ export default function Player() {
   ]
 
   return (
-    <div className="lmsfade" style={{ display: 'flex', height: '100%' }}>
+    <div className="lmsfade player-shell" style={{ display: 'flex', height: '100%' }}>
       <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', paddingBottom: 40 }}>
         <MediaPlayer key={current.id} lesson={current} userId={me!.userId} progressPct={pct} onCompleted={reload} />
 
@@ -186,7 +186,7 @@ export default function Player() {
       </div>
 
       {/* Lesson list */}
-      <aside style={{ width: 340, flex: 'none', background: '#fff', borderLeft: '1px solid var(--border)', overflowY: 'auto' }}>
+      <aside className="player-aside" style={{ width: 340, flex: 'none', background: '#fff', borderLeft: '1px solid var(--border)', overflowY: 'auto' }}>
         <div style={{ padding: '18px 20px', borderBottom: '1px solid #EEF2F7' }}>
           <button onClick={() => nav('/student')} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 10, padding: 0 }}>
             <Icon name="arrow-left" size={15} /> {t('backToCourses')}

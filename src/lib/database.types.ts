@@ -129,6 +129,18 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['audit_log']['Insert']>
         Relationships: []
       }
+      email_prefs: {
+        Row: { user_id: string; institution_id: string | null; welcome: boolean; receipt: boolean; progress_nudge: boolean; winback: boolean; unsubscribed_all: boolean; token: string; created_at: string }
+        Insert: { user_id: string; institution_id?: string | null; welcome?: boolean; receipt?: boolean; progress_nudge?: boolean; winback?: boolean; unsubscribed_all?: boolean; token?: string; created_at?: string }
+        Update: Partial<Database['public']['Tables']['email_prefs']['Insert']>
+        Relationships: []
+      }
+      email_log: {
+        Row: { id: string; user_id: string; kind: string; entity_id: string | null; sent_at: string }
+        Insert: { id?: string; user_id: string; kind: string; entity_id?: string | null; sent_at?: string }
+        Update: Partial<Database['public']['Tables']['email_log']['Insert']>
+        Relationships: []
+      }
       badges: {
         Row: { id: string; institution_id: string; code: string; name: string; description: string | null; icon: string | null; color: string | null }
         Insert: { id?: string; institution_id: string; code: string; name: string; description?: string | null; icon?: string | null; color?: string | null }
@@ -275,6 +287,9 @@ export type Database = {
       get_public_course: { Args: { p_slug: string }; Returns: Json }
       list_course_reviews: { Args: { p_slug: string }; Returns: { id: string; rating: number; title: string | null; body: string | null; created_at: string; author_name: string | null }[] }
       list_recent_reviews: { Args: { p_limit?: number }; Returns: { id: string; rating: number; title: string | null; body: string | null; created_at: string; author_name: string | null; course_title: string | null; course_slug: string | null }[] }
+      get_email_prefs: { Args: { p_token: string }; Returns: Json }
+      set_email_unsubscribed: { Args: { p_token: string; p_all: boolean }; Returns: boolean }
+      current_streak: { Args: Record<string, never>; Returns: number }
       get_public_instructor: { Args: { p_id: string }; Returns: Json }
     }
     Enums: Record<string, never>

@@ -66,7 +66,7 @@ export default function CourseSales() {
   }
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto', padding: 24, display: 'grid', gridTemplateColumns: '1fr 320px', gap: 28 }}>
+    <div className="two-col" style={{ maxWidth: 1000, margin: '0 auto', padding: 24 }}>
       <div>
         <h1 style={{ fontFamily: 'var(--display)', color: 'var(--navy-800)', fontSize: 30 }}>{c.title}</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0 6px' }}>
