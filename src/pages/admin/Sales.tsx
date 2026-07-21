@@ -10,7 +10,7 @@ import { BtnGhost, BtnPrimary, Field, Modal, inputCss } from '../../components/M
 
 type Stats = { revenue_cents: number; sales: number; subscriptions: number; avg_order_cents: number }
 type Mrr = { mrr_cents: number; delta: number | null }
-type Tx = { id: string; name: string; course: string; plan: string; amount: number; date: string }
+type Tx = { id: string; name: string; course: string; plan: string; amount: number; date: string; status: string; refundable: boolean }
 type Coupon = { code: string; discount_type: string; amount: number; uses_count: number }
 
 export default function AdminSales() {
@@ -19,6 +19,7 @@ export default function AdminSales() {
   const inst = me!.institutionId
 
   const [showCoupon, setShowCoupon] = useState(false)
+  const [refunding, setRefunding] = useState<string | null>(null)
 
   const { data, loading, reload } = useAsync(async () => {
     const [stats, mrr, orders, coupons] = await Promise.all([
@@ -26,7 +27,7 @@ export default function AdminSales() {
       supabase.rpc('mrr', { p_institution_id: inst }),
       supabase
         .from('orders')
-        .select('id, amount_cents, created_at, plan:plans(name), course:courses(title), buyer:profiles!orders_user_profile_fkey(full_name)')
+        .select('id, amount_cents, created_at, status, stripe_session_id, provider, plan:plans(name), course:courses(title), buyer:profiles!orders_user_profile_fkey(full_name)')
         .eq('institution_id', inst)
         .order('created_at', { ascending: false })
         .limit(8),
@@ -39,6 +40,8 @@ export default function AdminSales() {
       plan: o.plan?.name ?? '—',
       amount: o.amount_cents,
       date: o.created_at,
+      status: o.status,
+      refundable: o.status === 'paid' && o.provider === 'stripe' && !!o.stripe_session_id,
     }))
     return { stats: stats.data as unknown as Stats, mrr: mrr.data as unknown as Mrr, tx, coupons: (coupons.data ?? []) as Coupon[] }
   }, [inst])
@@ -46,6 +49,15 @@ export default function AdminSales() {
   if (loading || !data) return <Loader />
   const { stats, mrr, tx, coupons } = data
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR', { day: '2-digit', month: 'short' })
+
+  async function doRefund(id: string) {
+    if (!window.confirm(t('confirmRefund'))) return
+    setRefunding(id)
+    const { data: res, error } = await supabase.functions.invoke('refund-order', { body: { order_id: id } })
+    setRefunding(null)
+    if (error || !(res as any)?.ok) { alert((res as any)?.error ?? error?.message ?? 'refund_failed'); return }
+    reload()
+  }
 
   const cards = [
     { icon: 'dollar-sign', color: '#1F8A5B', label: t('revenue30'), value: money(stats.revenue_cents) },
@@ -57,7 +69,7 @@ export default function AdminSales() {
     const low = p.toLowerCase()
     return low.includes('premium') ? ['#EAF1FB', '#1B5FB0'] : low.includes('pack') ? ['#F3EDFB', '#7C5CD6'] : ['#FBF1E1', '#C99A2E']
   }
-  const gridCols = '2fr 1.4fr 1fr 1fr'
+  const gridCols = '2fr 1.4fr 1fr 1fr 90px'
 
   return (
     <PageWrap>
@@ -74,7 +86,7 @@ export default function AdminSales() {
         <Card style={{ overflow: 'hidden' }}>
           <div style={{ padding: '16px 22px', fontFamily: 'var(--display)', fontWeight: 700, fontSize: 16, color: 'var(--navy-800)', borderBottom: '1px solid #EEF2F7' }}>{t('recentTx')}</div>
           <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 12, padding: '11px 22px', background: '#FAFBFD', fontSize: 11, fontWeight: 800, color: '#8494A8', textTransform: 'uppercase', letterSpacing: .5, borderBottom: '1px solid #EEF2F7' }}>
-            <span>{t('customer')}</span><span>{t('course')}</span><span>{t('plan')}</span><span style={{ textAlign: 'right' }}>{t('amount')}</span>
+            <span>{t('customer')}</span><span>{t('course')}</span><span>{t('plan')}</span><span style={{ textAlign: 'right' }}>{t('amount')}</span><span />
           </div>
           {tx.map((x) => {
             const [bg, fg] = planChip(x.plan)
@@ -89,7 +101,14 @@ export default function AdminSales() {
                 </div>
                 <span style={{ fontSize: 12, color: '#3C4A5E', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.course}</span>
                 <span style={{ justifySelf: 'start', fontSize: 11, fontWeight: 700, color: fg, background: bg, padding: '3px 9px', borderRadius: 20 }}>{x.plan}</span>
-                <span style={{ textAlign: 'right', fontFamily: 'var(--display)', fontWeight: 800, fontSize: 14, color: '#1F8A5B' }}>{moneyFull(x.amount)}</span>
+                <span style={{ textAlign: 'right', fontFamily: 'var(--display)', fontWeight: 800, fontSize: 14, color: x.status === 'refunded' ? '#9AA7B8' : '#1F8A5B', textDecoration: x.status === 'refunded' ? 'line-through' : 'none' }}>{moneyFull(x.amount)}</span>
+                <span style={{ justifySelf: 'end' }}>
+                  {x.status === 'refunded'
+                    ? <span style={{ fontSize: 10.5, fontWeight: 800, color: '#9AA7B8', textTransform: 'uppercase' }}>{t('refunded')}</span>
+                    : x.refundable
+                      ? <button onClick={() => doRefund(x.id)} disabled={refunding === x.id} style={{ fontSize: 11, fontWeight: 700, color: '#D14343', background: '#FBEBEB', border: 'none', borderRadius: 8, padding: '4px 9px', cursor: 'pointer' }}>{refunding === x.id ? '…' : t('refundOrder')}</button>
+                      : null}
+                </span>
               </div>
             )
           })}
