@@ -129,6 +129,12 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['audit_log']['Insert']>
         Relationships: []
       }
+      subscriptions: {
+        Row: { id: string; institution_id: string; user_id: string; plan_id: string | null; status: string; stripe_subscription_id: string | null; current_period_end: string | null; created_at: string }
+        Insert: { id?: string; institution_id: string; user_id: string; plan_id?: string | null; status?: string; stripe_subscription_id?: string | null; current_period_end?: string | null; created_at?: string }
+        Update: Partial<Database['public']['Tables']['subscriptions']['Insert']>
+        Relationships: []
+      }
       email_prefs: {
         Row: { user_id: string; institution_id: string | null; welcome: boolean; receipt: boolean; progress_nudge: boolean; winback: boolean; unsubscribed_all: boolean; token: string; created_at: string }
         Insert: { user_id: string; institution_id?: string | null; welcome?: boolean; receipt?: boolean; progress_nudge?: boolean; winback?: boolean; unsubscribed_all?: boolean; token?: string; created_at?: string }
@@ -290,6 +296,16 @@ export type Database = {
       get_email_prefs: { Args: { p_token: string }; Returns: Json }
       set_email_unsubscribed: { Args: { p_token: string; p_all: boolean }; Returns: boolean }
       current_streak: { Args: Record<string, never>; Returns: number }
+      list_public_paths: { Args: Record<string, never>; Returns: { id: string; slug: string; title: string; subtitle: string | null; price_cents: number; currency: string; accent: string | null; icon: string | null; course_count: number }[] }
+      list_public_plans: { Args: Record<string, never>; Returns: { id: string; code: string; name: string; price_cents: number; bill_interval: string; currency: string }[] }
+      get_public_path: { Args: { p_slug: string }; Returns: Json }
+      path_progress: { Args: { p_path: string }; Returns: Json }
+      has_active_subscription: { Args: { p_institution: string }; Returns: boolean }
+      my_referral_code: { Args: Record<string, never>; Returns: string }
+      referral_stats: { Args: Record<string, never>; Returns: Json }
+      log_page_event: { Args: { p_path: string; p_institution: string | null; p_session: string | null }; Returns: undefined }
+      funnel_stats: { Args: { p_institution: string; p_days?: number }; Returns: Json }
+      cohort_retention: { Args: { p_institution: string }; Returns: { cohort: string; enrolled: number; completed: number }[] }
       get_public_instructor: { Args: { p_id: string }; Returns: Json }
     }
     Enums: Record<string, never>

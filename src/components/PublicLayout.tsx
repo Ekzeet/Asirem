@@ -9,6 +9,8 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
       <header style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 24px', borderBottom: '1px solid var(--border-soft)', background: '#fff' }}>
         <Link to="/" style={{ fontFamily: 'var(--display)', fontWeight: 800, color: 'var(--navy-800)', fontSize: 18, textDecoration: 'none' }}>Asirem Academy</Link>
         <Link to="/courses" style={{ marginLeft: 8, color: '#5B6B82', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>{t('browseCourses')}</Link>
+        <Link to="/paths" style={{ color: '#5B6B82', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>{t('learningPaths')}</Link>
+        <Link to="/pricing" style={{ color: '#5B6B82', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>{t('membership')}</Link>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
           <select value={lang} onChange={(e) => setLang(e.target.value as any)} aria-label="Language"
             style={{ border: '1px solid var(--border-soft)', borderRadius: 8, padding: '6px 8px', fontWeight: 700, color: '#5B6B82' }}>
