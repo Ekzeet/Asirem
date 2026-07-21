@@ -4,13 +4,21 @@ import { useAsync } from '../../hooks/useAsync'
 import { useI18n } from '../../i18n/I18nContext'
 import { Loader } from '../../components/ui'
 import { StarRating } from '../../components/StarRating'
+import { useDocumentHead } from '../../lib/seo'
 
 function money(cents: number, currency: string) {
   return new Intl.NumberFormat(undefined, { style: 'currency', currency: (currency || 'usd').toUpperCase() }).format((cents || 0) / 100)
 }
 
-export default function PublicCatalog() {
+export default function PublicCatalog({ seo = false }: { seo?: boolean }) {
   const { t } = useI18n()
+  // Only the standalone /courses route manages the document head; when embedded in Home,
+  // Home owns the head (empty opts = no-op) to avoid two effects fighting over title/JSON-LD.
+  useDocumentHead(seo ? {
+    title: 'Asirem Academy · ' + t('browseCourses'),
+    description: t('heroSub'),
+    jsonLd: { '@context': 'https://schema.org', '@type': 'ItemList', name: t('browseCourses') },
+  } : {})
   const { data, loading } = useAsync(async () => {
     const { data } = await supabase.rpc('list_public_courses')
     return data ?? []

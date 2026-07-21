@@ -79,7 +79,7 @@ export default function App() {
           <Route path="/verify/:serial" element={<Verify />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
-          <Route path="/courses" element={<PublicLayoutC><PublicCatalog /></PublicLayoutC>} />
+          <Route path="/courses" element={<PublicLayoutC><PublicCatalog seo /></PublicLayoutC>} />
           <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
           <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
           <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
@@ -98,7 +98,7 @@ export default function App() {
     <Routes>
       <Route path="/verify/:serial" element={<Verify />} />
       <Route path="/login" element={<Navigate to={roleHome(me.role)} replace />} />
-      <Route path="/courses" element={<PublicLayoutC><PublicCatalog /></PublicLayoutC>} />
+      <Route path="/courses" element={<PublicLayoutC><PublicCatalog seo /></PublicLayoutC>} />
       <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
       <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
       <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />

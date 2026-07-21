@@ -3,12 +3,18 @@ import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
 import { useI18n } from '../../i18n/I18nContext'
 import { StarRating } from '../../components/StarRating'
+import { useDocumentHead } from '../../lib/seo'
 import PublicCatalog from './PublicCatalog'
 
 type Testimonial = { id: string; rating: number; title: string | null; body: string | null; author_name: string | null; course_title: string | null; course_slug: string | null }
 
 export default function Home() {
   const { t } = useI18n()
+  useDocumentHead({
+    title: 'Asirem Academy',
+    description: t('heroSub'),
+    jsonLd: { '@context': 'https://schema.org', '@type': 'Organization', name: 'Asirem Academy', description: t('heroSub') },
+  })
   const { data: testimonials } = useAsync(async () => {
     const { data } = await supabase.rpc('list_recent_reviews', { p_limit: 6 })
     return (data ?? []) as Testimonial[]
