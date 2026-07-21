@@ -11,3 +11,4 @@ vite.config.js
 vite.config.d.ts
 tsconfig.tsbuildinfo
 skills-lock.json
+public/sitemap.xml

@@ -202,9 +202,9 @@ export type Database = {
         Relationships: []
       }
       profiles: {
-        Row: { avatar_url: string | null; created_at: string; full_name: string | null; id: string; ptin: string | null }
-        Insert: { avatar_url?: string | null; created_at?: string; full_name?: string | null; id: string; ptin?: string | null }
-        Update: Partial<{ avatar_url: string | null; full_name: string | null; id: string; ptin: string | null }>
+        Row: { avatar_url: string | null; bio: string | null; created_at: string; credentials: string[] | null; full_name: string | null; id: string; ptin: string | null }
+        Insert: { avatar_url?: string | null; bio?: string | null; created_at?: string; credentials?: string[] | null; full_name?: string | null; id: string; ptin?: string | null }
+        Update: Partial<{ avatar_url: string | null; bio: string | null; credentials: string[] | null; full_name: string | null; id: string; ptin: string | null }>
         Relationships: []
       }
       quiz_attempts: {
@@ -237,6 +237,12 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['sections']['Insert']>
         Relationships: []
       }
+      course_reviews: {
+        Row: { id: string; institution_id: string; course_id: string; user_id: string; rating: number; title: string | null; body: string | null; status: string; created_at: string }
+        Insert: { id?: string; institution_id: string; course_id: string; user_id: string; rating: number; title?: string | null; body?: string | null; status?: string; created_at?: string }
+        Update: Partial<Database['public']['Tables']['course_reviews']['Insert']>
+        Relationships: []
+      }
     }
     Views: {
       course_progress: {
@@ -265,8 +271,11 @@ export type Database = {
       grade_quiz: { Args: { p_quiz: string; p_answers: Json }; Returns: Json }
       course_gradebook: { Args: { p_course_id: string }; Returns: { user_id: string; full_name: string; progress_pct: number; quiz_avg: number | null; assignment_avg: number | null }[] }
       course_dropoff: { Args: { p_course_id: string }; Returns: { lesson_id: string; title: string; ord: number; completed: number; enrolled: number }[] }
-      list_public_courses: { Args: Record<string, never>; Returns: { id: string; slug: string; title: string; subtitle: string | null; category: string | null; level: string | null; price_cents: number; currency: string; rating: number | null; credit_hours: number | null; accent: string | null; icon: string | null; instructor_name: string | null }[] }
+      list_public_courses: { Args: Record<string, never>; Returns: { id: string; slug: string; title: string; subtitle: string | null; category: string | null; level: string | null; price_cents: number; currency: string; rating: number | null; credit_hours: number | null; accent: string | null; icon: string | null; instructor_name: string | null; review_count: number; enrolled_count: number }[] }
       get_public_course: { Args: { p_slug: string }; Returns: Json }
+      list_course_reviews: { Args: { p_slug: string }; Returns: { id: string; rating: number; title: string | null; body: string | null; created_at: string; author_name: string | null }[] }
+      list_recent_reviews: { Args: { p_limit?: number }; Returns: { id: string; rating: number; title: string | null; body: string | null; created_at: string; author_name: string | null; course_title: string | null; course_slug: string | null }[] }
+      get_public_instructor: { Args: { p_id: string }; Returns: Json }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

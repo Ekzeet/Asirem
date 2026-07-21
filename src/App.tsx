@@ -30,6 +30,7 @@ const PublicLayoutC = lazy(() => import('./components/PublicLayout'))
 const Home = lazy(() => import('./pages/public/Home'))
 const PublicCatalog = lazy(() => import('./pages/public/PublicCatalog'))
 const CourseSales = lazy(() => import('./pages/public/CourseSales'))
+const InstructorProfile = lazy(() => import('./pages/public/InstructorProfile'))
 const Legal = lazy(() => import('./pages/public/Legal'))
 const CheckoutReturn = lazy(() => import('./pages/public/CheckoutReturn'))
 
@@ -78,8 +79,9 @@ export default function App() {
           <Route path="/verify/:serial" element={<Verify />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
-          <Route path="/courses" element={<PublicLayoutC><PublicCatalog /></PublicLayoutC>} />
+          <Route path="/courses" element={<PublicLayoutC><PublicCatalog seo /></PublicLayoutC>} />
           <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
+          <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
           <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
           <Route path="/" element={<PublicLayoutC><Home /></PublicLayoutC>} />
           <Route path="*" element={<PublicLayoutC><Home /></PublicLayoutC>} />
@@ -96,8 +98,9 @@ export default function App() {
     <Routes>
       <Route path="/verify/:serial" element={<Verify />} />
       <Route path="/login" element={<Navigate to={roleHome(me.role)} replace />} />
-      <Route path="/courses" element={<PublicLayoutC><PublicCatalog /></PublicLayoutC>} />
+      <Route path="/courses" element={<PublicLayoutC><PublicCatalog seo /></PublicLayoutC>} />
       <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
+      <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
       <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
       <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
       <Route element={<Layout />}>
