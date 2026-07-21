@@ -17,12 +17,14 @@ export default function MyCourses() {
   const nav = useNavigate()
 
   const { data, loading } = useAsync(async () => {
-    const [{ data: enr }, { data: prog }, { data: certs }, { data: pts }, { data: ubadges }] = await Promise.all([
+    const [{ data: enr }, { data: prog }, { data: certs }, { data: pts }, { data: ubadges }, { data: streakData }, { data: pub }] = await Promise.all([
       supabase.from('enrollments').select('course_id, course:courses(id,title,category,accent,icon,instructor:profiles!courses_instructor_id_fkey(full_name))').eq('user_id', me!.userId),
       supabase.from('course_progress').select('course_id, done, total, pct').eq('user_id', me!.userId),
       supabase.from('certificates').select('id').eq('user_id', me!.userId),
       supabase.from('points_ledger').select('points').eq('user_id', me!.userId),
       supabase.from('user_badges').select('badge:badges(name,icon,color)').eq('user_id', me!.userId),
+      supabase.rpc('current_streak'),
+      supabase.rpc('list_public_courses'),
     ])
     const progByCourse: Record<string, { done: number; total: number; pct: number }> = {}
     for (const p of prog ?? []) progByCourse[p.course_id!] = { done: p.done ?? 0, total: p.total ?? 0, pct: p.pct ?? 0 }
@@ -33,18 +35,24 @@ export default function MyCourses() {
     const points = (pts ?? []).reduce((s, p) => s + (p.points ?? 0), 0)
     const inProgress = courses.filter((c) => c.pct > 0 && c.pct < 100).length
     const badges = (ubadges ?? []).map((b: any) => b.badge).filter(Boolean) as { name: string; icon: string | null; color: string | null }[]
-    return { courses, certificates: (certs ?? []).length, points, inProgress, badges }
+    // Continue-learning: the least-finished course still in progress (else the first enrolled).
+    const continueCourse = [...courses].filter((c) => c.pct < 100).sort((a, b) => b.pct - a.pct)[0] ?? courses[0] ?? null
+    // Recommended next: a published course the student isn't enrolled in.
+    const enrolledIds = new Set((enr ?? []).map((e: any) => e.course_id))
+    const recommended = ((pub ?? []) as any[]).filter((c) => !enrolledIds.has(c.id))[0] ?? null
+    return { courses, certificates: (certs ?? []).length, points, inProgress, badges, streak: (streakData as number) ?? 0, continueCourse, recommended }
   }, [me!.userId])
 
   if (loading || !data) return <Loader />
-  const { courses, certificates, points, inProgress, badges } = data
+  const { courses, certificates, points, inProgress, badges, streak, continueCourse, recommended } = data
   const firstName = me!.fullName.split(' ')[0]
 
   const heroStats = [
     { v: String(inProgress), l: t('inProgress') },
     { v: String(courses.length), l: t('enrolledCourses').toLowerCase() },
     { v: String(certificates), l: t('certificates').toLowerCase() },
-    { v: points.toLocaleString(), l: t('points'), gold: true },
+    { v: points.toLocaleString(), l: t('points') },
+    { v: `🔥 ${streak}`, l: t('dayStreak'), gold: true },
   ]
 
   return (
@@ -54,7 +62,12 @@ export default function MyCourses() {
         <div style={{ position: 'relative', maxWidth: 560 }}>
           <div style={{ fontSize: 13, color: '#9DB4D0', fontWeight: 700, marginBottom: 6 }}>{t('welcomeBack')}, {firstName} 👋</div>
           <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 24, lineHeight: 1.25, marginBottom: 16 }}>{t('continueLearning')}</div>
-          <div style={{ display: 'flex', gap: 26 }}>
+          {continueCourse && (
+            <button onClick={() => nav(`/student/course/${continueCourse.id}`)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--gold-500,#E7B450)', color: '#0F2C4C', border: 0, padding: '10px 18px', borderRadius: 10, fontWeight: 800, fontSize: 13.5, cursor: 'pointer', marginBottom: 18 }}>
+              <Icon name="play" size={15} fill="#0F2C4C" /> {continueCourse.title}
+            </button>
+          )}
+          <div style={{ display: 'flex', gap: 26, flexWrap: 'wrap' }}>
             {heroStats.map((s, i) => (
               <div key={i}>
                 <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 22, color: s.gold ? '#F2C766' : '#fff' }}>{s.v}</div>
@@ -96,6 +109,19 @@ export default function MyCourses() {
           </div>
         ))}
       </div>
+
+      {recommended && (
+        <div style={{ marginTop: 28 }}>
+          <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 17, color: 'var(--navy-800)', marginBottom: 14 }}>{t('recommendedNext')}</div>
+          <div onClick={() => nav(`/courses/${recommended.slug}`)} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 16, cursor: 'pointer', maxWidth: 520 }}>
+            <div style={{ width: 56, height: 56, flex: 'none', borderRadius: 12, background: recommended.accent ?? 'linear-gradient(135deg,#0F2C4C,#1B4B7F)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><Icon name="compass" size={22} /></div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 14.5, color: 'var(--navy-800)' }}>{recommended.title}</div>
+              <div style={{ fontSize: 12.5, color: '#8494A8', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{recommended.subtitle}</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
