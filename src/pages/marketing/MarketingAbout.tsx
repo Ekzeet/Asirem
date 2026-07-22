@@ -1,9 +1,11 @@
 import { useDocumentHead } from '../../lib/seo'
 import { Corners } from './CourseCard'
+import { IMG, coverStyle } from './images'
 
 const wrap = { maxWidth: 1180, margin: '0 auto' } as const
 
 const stats = [['1,200+', 'Students trained'], ['95%', 'Success rate'], ['12', 'Years of experience'], ['8', 'Programs']]
+const teamImg = [IMG.team1, IMG.team2, IMG.team3]
 const values = [
   { title: 'Rigor', body: 'Taxation leaves no room for approximation. We train for precision and compliance.' },
   { title: 'Accessibility', body: 'Clear programs, built for people starting from scratch — no jargon, no gatekeeping.' },
@@ -26,8 +28,8 @@ export default function MarketingAbout() {
           <p style={{ fontSize: 16, lineHeight: 1.65, color: 'var(--color-neutral-700)', margin: '24px 0 0' }}>Asirem Academy is a brand of Expert Media Group and Expert Financial Group. From life and health insurance to tax preparation services, we make it simple to protect what matters most — and we train the next generation of tax professionals.</p>
           <p style={{ fontSize: 16, lineHeight: 1.65, color: 'var(--color-neutral-700)', margin: '16px 0 0' }}>Our mission: to pass on concrete skills and recognized certification so anyone can build a stable, rewarding career.</p>
         </div>
-        <figure className="blueprint duotone" style={{ aspectRatio: '5/6', background: 'var(--color-accent-100)', display: 'grid', placeItems: 'center' }}>
-          <span style={{ color: 'var(--color-neutral-600)', fontSize: 13 }}>Photo — the team / office</span>
+        <figure className="blueprint duotone" style={{ aspectRatio: '5/6', background: 'var(--color-accent-100)' }}>
+          <img src={IMG.about} alt="The Asirem team" style={coverStyle} />
           <Corners />
         </figure>
       </section>
@@ -59,10 +61,10 @@ export default function MarketingAbout() {
       <section style={{ ...wrap, padding: 'clamp(24px,3vw,40px) clamp(20px,5vw,64px) clamp(48px,7vw,88px)' }}>
         <span className="mkt-kicker" style={{ marginBottom: 32 }}>The team</span>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'clamp(24px,4vw,48px)' }} className="grid-3">
-          {team.map((m) => (
+          {team.map((m, i) => (
             <div key={m.name} style={{ textAlign: 'center' }}>
-              <figure className="blueprint duotone" style={{ margin: '0 auto 18px', width: 150, height: 150, background: 'var(--color-accent-100)', display: 'grid', placeItems: 'center' }}>
-                <span style={{ color: 'var(--color-neutral-600)', fontSize: 12 }}>Portrait</span>
+              <figure className="blueprint duotone" style={{ margin: '0 auto 18px', width: 150, height: 150, background: 'var(--color-accent-100)' }}>
+                <img src={teamImg[i]} alt={m.name} style={coverStyle} />
                 <Corners />
               </figure>
               <h3 style={{ fontSize: 20, textTransform: 'uppercase', margin: '0 0 4px' }}>{m.name}</h3>

@@ -1,5 +1,6 @@
 import { useDocumentHead } from '../../lib/seo'
 import { Corners } from './CourseCard'
+import { IMG, coverStyle } from './images'
 
 const wrap = { maxWidth: 1180, margin: '0 auto' } as const
 
@@ -26,8 +27,8 @@ export default function MarketingBlog() {
       <section style={{ ...wrap, padding: '0 clamp(20px,5vw,64px) clamp(32px,4vw,48px)' }}>
         <article className="blueprint grid-2" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', background: 'transparent' }}>
           <Corners />
-          <figure className="duotone" style={{ minHeight: 280, position: 'relative', borderRight: '1px solid var(--color-divider)', background: 'var(--color-accent-100)', display: 'grid', placeItems: 'center' }}>
-            <span style={{ color: 'var(--color-neutral-600)', fontSize: 13 }}>Featured image</span>
+          <figure className="duotone" style={{ minHeight: 280, position: 'relative', borderRight: '1px solid var(--color-divider)', background: 'var(--color-accent-100)' }}>
+            <img src={IMG.blog} alt={featured.title} style={coverStyle} />
           </figure>
           <div style={{ padding: 'clamp(24px,3vw,40px)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 14 }}><span className="tag tag-outline">{featured.cat}</span><span style={{ fontSize: 13, color: 'var(--color-neutral-600)' }}>{featured.date}</span></div>

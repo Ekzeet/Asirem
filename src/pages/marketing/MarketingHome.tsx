@@ -4,6 +4,7 @@ import { useAsync } from '../../hooks/useAsync'
 import { useDocumentHead } from '../../lib/seo'
 import CourseCard, { Corners, PublicCourse } from './CourseCard'
 import { Arrow } from './MarketingLayout'
+import { IMG, coverStyle } from './images'
 
 const wrap = { maxWidth: 1180, margin: '0 auto' } as const
 
@@ -58,8 +59,8 @@ export default function MarketingHome() {
             ))}
           </div>
         </div>
-        <figure className="blueprint duotone" style={{ aspectRatio: '4/5', background: 'var(--color-accent-100)', display: 'grid', placeItems: 'center' }}>
-          <span style={{ color: 'var(--color-neutral-600)', fontSize: 13, padding: 20, textAlign: 'center' }}>Photo — training / students</span>
+        <figure className="blueprint duotone" style={{ aspectRatio: '4/5', background: 'var(--color-accent-100)' }}>
+          <img src={IMG.hero} alt="Tax professional at work" style={coverStyle} loading="eager" />
           <Corners />
         </figure>
       </section>
