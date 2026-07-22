@@ -1,6 +1,7 @@
 import { useDocumentHead } from '../../lib/seo'
 import { Corners } from './CourseCard'
-import { IMG, coverStyle } from './images'
+import { IMG } from './images'
+import Photo from './Photo'
 
 const wrap = { maxWidth: 1180, margin: '0 auto' } as const
 
@@ -29,7 +30,7 @@ export default function MarketingAbout() {
           <p style={{ fontSize: 16, lineHeight: 1.65, color: 'var(--color-neutral-700)', margin: '16px 0 0' }}>Our mission: to pass on concrete skills and recognized certification so anyone can build a stable, rewarding career.</p>
         </div>
         <figure className="blueprint duotone" style={{ aspectRatio: '5/6', background: 'var(--color-accent-100)' }}>
-          <img src={IMG.about} alt="The Asirem team" style={coverStyle} />
+          <Photo src={IMG.about} alt="The Asirem team" label="Photo — the team / office" />
           <Corners />
         </figure>
       </section>
@@ -64,7 +65,7 @@ export default function MarketingAbout() {
           {team.map((m, i) => (
             <div key={m.name} style={{ textAlign: 'center' }}>
               <figure className="blueprint duotone" style={{ margin: '0 auto 18px', width: 150, height: 150, background: 'var(--color-accent-100)' }}>
-                <img src={teamImg[i]} alt={m.name} style={coverStyle} />
+                <Photo src={teamImg[i]} alt={m.name} label="Portrait" />
                 <Corners />
               </figure>
               <h3 style={{ fontSize: 20, textTransform: 'uppercase', margin: '0 0 4px' }}>{m.name}</h3>
