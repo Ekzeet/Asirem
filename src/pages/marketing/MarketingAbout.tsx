@@ -30,7 +30,7 @@ export default function MarketingAbout() {
           <p style={{ fontSize: 16, lineHeight: 1.65, color: 'var(--color-neutral-700)', margin: '16px 0 0' }}>Our mission: to pass on concrete skills and recognized certification so anyone can build a stable, rewarding career.</p>
         </div>
         <figure className="blueprint duotone" style={{ aspectRatio: '5/6', background: 'var(--color-accent-100)' }}>
-          <Photo src={IMG.about} alt="The Asirem team" label="Photo — the team / office" />
+          <Photo src={IMG.about} alt="The Asirem team" label="Photo — the team / office" eager />
           <Corners />
         </figure>
       </section>

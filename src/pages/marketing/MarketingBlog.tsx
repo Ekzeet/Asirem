@@ -29,7 +29,7 @@ export default function MarketingBlog() {
         <article className="blueprint grid-2" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', background: 'transparent' }}>
           <Corners />
           <figure className="duotone" style={{ minHeight: 280, position: 'relative', borderRight: '1px solid var(--color-divider)', background: 'var(--color-accent-100)' }}>
-            <Photo src={IMG.blog} alt={featured.title} label="Featured image" />
+            <Photo src={IMG.blog} alt={featured.title} label="Featured image" eager />
           </figure>
           <div style={{ padding: 'clamp(24px,3vw,40px)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 14 }}><span className="tag tag-outline">{featured.cat}</span><span style={{ fontSize: 13, color: 'var(--color-neutral-600)' }}>{featured.date}</span></div>
