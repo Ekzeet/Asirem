@@ -129,6 +129,12 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['audit_log']['Insert']>
         Relationships: []
       }
+      blog_posts: {
+        Row: { id: string; institution_id: string; author_id: string | null; title: string; slug: string; excerpt: string | null; body: string | null; category: string | null; cover_url: string | null; read_minutes: number | null; featured: boolean; status: string; published_at: string | null; created_at: string; updated_at: string }
+        Insert: { id?: string; institution_id: string; author_id?: string | null; title: string; slug: string; excerpt?: string | null; body?: string | null; category?: string | null; cover_url?: string | null; read_minutes?: number | null; featured?: boolean; status?: string; published_at?: string | null; created_at?: string; updated_at?: string }
+        Update: Partial<Database['public']['Tables']['blog_posts']['Insert']>
+        Relationships: []
+      }
       subscriptions: {
         Row: { id: string; institution_id: string; user_id: string; plan_id: string | null; status: string; stripe_subscription_id: string | null; current_period_end: string | null; created_at: string }
         Insert: { id?: string; institution_id: string; user_id: string; plan_id?: string | null; status?: string; stripe_subscription_id?: string | null; current_period_end?: string | null; created_at?: string }
@@ -297,6 +303,8 @@ export type Database = {
       set_email_unsubscribed: { Args: { p_token: string; p_all: boolean }; Returns: boolean }
       current_streak: { Args: Record<string, never>; Returns: number }
       list_public_paths: { Args: Record<string, never>; Returns: { id: string; slug: string; title: string; subtitle: string | null; price_cents: number; currency: string; accent: string | null; icon: string | null; course_count: number }[] }
+      list_public_posts: { Args: Record<string, never>; Returns: { id: string; slug: string; title: string; excerpt: string | null; category: string | null; cover_url: string | null; read_minutes: number | null; featured: boolean; published_at: string | null; author_name: string | null }[] }
+      get_public_post: { Args: { p_slug: string }; Returns: Json }
       list_public_plans: { Args: Record<string, never>; Returns: { id: string; code: string; name: string; price_cents: number; bill_interval: string; currency: string }[] }
       get_public_path: { Args: { p_slug: string }; Returns: Json }
       path_progress: { Args: { p_path: string }; Returns: Json }

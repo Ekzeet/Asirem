@@ -38,6 +38,8 @@ const Paths = lazy(() => import('./pages/public/Paths'))
 const PathSales = lazy(() => import('./pages/public/PathSales'))
 const Pricing = lazy(() => import('./pages/public/Pricing'))
 const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'))
+const AdminBlog = lazy(() => import('./pages/admin/Blog'))
+const MarketingPost = lazy(() => import('./pages/marketing/MarketingPost'))
 const MarketingLayoutC = lazy(() => import('./pages/marketing/MarketingLayout'))
 const MarketingHome = lazy(() => import('./pages/marketing/MarketingHome'))
 const MarketingCourses = lazy(() => import('./pages/marketing/MarketingCourses'))
@@ -99,6 +101,7 @@ export default function App() {
           <Route path="/paths/:slug" element={<PublicLayoutC><PathSales /></PublicLayoutC>} />
           <Route path="/pricing" element={<PublicLayoutC><Pricing /></PublicLayoutC>} />
           <Route path="/blog" element={<MarketingLayoutC><MarketingBlog /></MarketingLayoutC>} />
+          <Route path="/blog/:slug" element={<MarketingLayoutC><MarketingPost /></MarketingLayoutC>} />
           <Route path="/about" element={<MarketingLayoutC><MarketingAbout /></MarketingLayoutC>} />
           <Route path="/contact" element={<MarketingLayoutC><MarketingContact /></MarketingLayoutC>} />
           <Route path="/catalog" element={<PublicLayoutC><PublicCatalog seo /></PublicLayoutC>} />
@@ -127,6 +130,7 @@ export default function App() {
       <Route path="/paths/:slug" element={<PublicLayoutC><PathSales /></PublicLayoutC>} />
       <Route path="/pricing" element={<PublicLayoutC><Pricing /></PublicLayoutC>} />
       <Route path="/blog" element={<MarketingLayoutC><MarketingBlog /></MarketingLayoutC>} />
+      <Route path="/blog/:slug" element={<MarketingLayoutC><MarketingPost /></MarketingLayoutC>} />
       <Route path="/about" element={<MarketingLayoutC><MarketingAbout /></MarketingLayoutC>} />
       <Route path="/contact" element={<MarketingLayoutC><MarketingContact /></MarketingLayoutC>} />
       <Route element={<Layout />}>
@@ -139,6 +143,7 @@ export default function App() {
         {isStaff && <Route path="/admin/sales" element={<AdminSales />} />}
         {isStaff && <Route path="/admin/audit" element={<AdminAudit />} />}
         {isStaff && <Route path="/admin/analytics" element={<AdminAnalytics />} />}
+        {isStaff && <Route path="/admin/blog" element={<AdminBlog />} />}
         {/* Teacher */}
         {isTeacher && <Route path="/teacher" element={<TeacherDashboard />} />}
         {/* Staff assignment review */}
