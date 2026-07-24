@@ -6,6 +6,7 @@ import { AuthProvider } from './auth/AuthContext'
 import { I18nProvider } from './i18n/I18nContext'
 import { captureRef } from './lib/checkout'
 import './styles/theme.css'
+import './styles/marketing.css'
 
 // Stash any ?ref= referral code before the router strips it.
 captureRef()

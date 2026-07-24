@@ -17,6 +17,7 @@ const NAV: Record<string, NavItem[]> = {
     { to: '/admin/sales', key: 'sales', icon: 'credit-card' },
     { to: '/admin/audit', key: 'audit', icon: 'shield' },
     { to: '/admin/analytics', key: 'analytics', icon: 'trending-up' },
+    { to: '/admin/blog', key: 'blog', icon: 'file-text' },
     { to: '/community', key: 'community', icon: 'messages-square', badge: '12' },
   ],
   teacher: [
