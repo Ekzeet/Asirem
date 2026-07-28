@@ -38,12 +38,19 @@ export default function AdminTeachers() {
     return rows.sort((a, b) => b.students - a.students)
   }, [inst])
 
+  async function approve(userId: string) {
+    const { error } = await supabase.rpc('approve_teacher', { p_user: userId })
+    if (error) { alert(error.message); return }
+    reload()
+  }
+
   if (loading || !data) return <Loader />
+  const pending = data.filter((tc) => tc.status !== 'active').length
 
   return (
     <PageWrap>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 18 }}>
-        <div style={{ fontSize: 13, color: '#7C8AA0', fontWeight: 600 }}>{data.length} {t('instructors')}</div>
+        <div style={{ fontSize: 13, color: '#7C8AA0', fontWeight: 600 }}>{data.length} {t('instructors')}{pending > 0 && <span style={{ color: '#C99A2E', fontWeight: 800 }}> · {pending} {t('pendingApproval')}</span>}</div>
         <div style={{ flex: 1 }} />
         <button onClick={() => setShowInvite(true)} style={{ height: 40, padding: '0 16px', borderRadius: 11, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
           <Icon name="user-plus" size={16} />{t('inviteTeacher')}
@@ -64,6 +71,11 @@ export default function AdminTeachers() {
               <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: '#EAF3FF', color: '#1B5FB0' }}>{t('instructor').replace(/s$/, '')}</span>
               <StatusChip status={tc.status} />
             </div>
+            {tc.status !== 'active' && (
+              <button onClick={() => approve(tc.userId)} style={{ width: '100%', marginBottom: 12, height: 34, borderRadius: 9, border: 'none', cursor: 'pointer', background: '#EAF6EF', color: '#1F8A5B', fontWeight: 800, fontSize: 12.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Icon name="check" size={15} /> {t('approve')}
+              </button>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, textAlign: 'center', paddingTop: 14, borderTop: '1px solid var(--border-soft)' }}>
               {[
                 { v: tc.courses, l: t('courses') },

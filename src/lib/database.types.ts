@@ -305,6 +305,7 @@ export type Database = {
       list_public_paths: { Args: Record<string, never>; Returns: { id: string; slug: string; title: string; subtitle: string | null; price_cents: number; currency: string; accent: string | null; icon: string | null; course_count: number }[] }
       list_public_posts: { Args: Record<string, never>; Returns: { id: string; slug: string; title: string; excerpt: string | null; category: string | null; cover_url: string | null; read_minutes: number | null; featured: boolean; published_at: string | null; author_name: string | null }[] }
       get_public_post: { Args: { p_slug: string }; Returns: Json }
+      approve_teacher: { Args: { p_user: string }; Returns: undefined }
       list_public_plans: { Args: Record<string, never>; Returns: { id: string; code: string; name: string; price_cents: number; bill_interval: string; currency: string }[] }
       get_public_path: { Args: { p_slug: string }; Returns: Json }
       path_progress: { Args: { p_path: string }; Returns: Json }

@@ -80,11 +80,27 @@ VITE_SUPABASE_ANON_KEY</pre>
   )
 }
 
+function PendingNotice() {
+  const { t } = useI18n()
+  const { signOut } = useAuth()
+  return (
+    <div className="center-fill" style={{ background: 'var(--bg)', padding: 24 }}>
+      <div style={{ maxWidth: 440, background: '#fff', border: '1px solid var(--border)', borderRadius: 16, padding: '30px 32px', textAlign: 'center' }}>
+        <div style={{ fontSize: 34, marginBottom: 8 }}>⏳</div>
+        <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 20, color: 'var(--navy-800)', marginBottom: 10 }}>{t('pendingTitle')}</div>
+        <div style={{ fontSize: 14, color: 'var(--ink-soft)', lineHeight: 1.6, marginBottom: 18 }}>{t('pendingBody')}</div>
+        <button onClick={() => signOut()} style={{ height: 40, padding: '0 20px', borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: '#5B6B82', fontWeight: 700, cursor: 'pointer' }}>{t('signOut')}</button>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const { session, me, loading } = useAuth()
 
   if (!supabaseConfigured) return <ConfigNotice />
   if (loading) return <Loading />
+  if (session && !me) return <PendingNotice />
   if (!session || !me) {
     return (
       <Suspense fallback={<Loading />}>
