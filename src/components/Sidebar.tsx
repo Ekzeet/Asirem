@@ -44,6 +44,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
   const loc = useLocation()
   if (!me) return null
   const items = NAV[me.role] ?? NAV.student
+  const isAdmin = me.role === 'institution_admin' || me.role === 'super_admin'
 
   const isActive = (to: string) => (to === '/admin' || to === '/teacher' || to === '/student' ? loc.pathname === to : loc.pathname.startsWith(to))
 
@@ -83,6 +84,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
       </nav>
 
       <div style={{ padding: '12px 14px 16px', borderTop: '1px solid rgba(255,255,255,.07)' }}>
+        {isAdmin && (<>
         <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: .8, color: '#6E84A0', textTransform: 'uppercase', marginBottom: 9 }}>{t('viewAs')}</div>
         <div style={{ display: 'flex', gap: 6, background: 'rgba(255,255,255,.05)', padding: 4, borderRadius: 11 }}>
           {DEMO_ACCOUNTS.map((a) => {
@@ -96,6 +98,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
             )
           })}
         </div>
+        </>)}
         <button onClick={() => signOut()} style={{ marginTop: 10, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 36, borderRadius: 9, border: '1px solid rgba(255,255,255,.08)', background: 'transparent', color: '#8FA3BC', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>
           <Icon name="log-out" size={15} /> {t('signOut')}
         </button>
