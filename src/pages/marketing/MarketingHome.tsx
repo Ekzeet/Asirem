@@ -4,7 +4,7 @@ import { useAsync } from '../../hooks/useAsync'
 import { useDocumentHead } from '../../lib/seo'
 import CourseCard, { Corners, PublicCourse } from './CourseCard'
 import { Arrow } from './MarketingLayout'
-import { HeroSection, LogosSection } from '../../components/ui/hero-1'
+import HeroBrand from './HeroBrand'
 
 const wrap = { maxWidth: 1180, margin: '0 auto' } as const
 
@@ -39,11 +39,8 @@ export default function MarketingHome() {
 
   return (
     <div style={{ animation: 'fadeUp .4s ease both' }}>
-      {/* Hero (shadcn component) */}
-      <div className="relative">
-        <HeroSection />
-        <LogosSection />
-      </div>
+      {/* Hero — brand navy, EduFlex-style */}
+      <HeroBrand />
 
       {/* Why */}
       <section style={{ ...wrap, padding: 'clamp(40px,6vw,72px) clamp(20px,5vw,64px)' }}>
