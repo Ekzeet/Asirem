@@ -7,21 +7,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;700&family=Barlow+Condensed:wght@400;600&display=swap');
 
 .mkt {
-  --color-bg: #f2f2f3;
-  --color-surface: #e9e9ea;
-  --color-text: #1d1f20;
-  --color-accent: #5980a6;
-  --color-accent-2: #728fab;
-  --color-divider: color-mix(in srgb, #1d1f20 16%, transparent);
+  /* Asirem Tax Academy brand palette: deep navy + metallic gold on warm white. */
+  --color-bg: #f6f5f1;
+  --color-surface: #ecebe4;
+  --color-text: #0b2143;          /* navy — text + headings */
+  --color-accent: #c6a052;        /* gold — highlights, buttons, borders */
+  --color-accent-2: #0b2143;      /* navy — duotone photo tint, dark blocks */
+  --color-divider: color-mix(in srgb, #0b2143 15%, transparent);
 
-  --color-neutral-600: #7a7a7d;
-  --color-neutral-700: #5d5d60;
-  --color-neutral-800: #424244;
+  --color-neutral-600: #6b7078;
+  --color-neutral-700: #454a54;
+  --color-neutral-800: #2a2f37;
 
-  --color-accent-100: #eef6ff;
-  --color-accent-700: #416180;
-  --color-accent-800: #2c455d;
-  --color-accent-900: #1d2d3d;
+  --color-accent-100: #f4edd8;    /* gold tint — card image bg, tags */
+  --color-accent-700: #9a7b30;    /* darker gold — eyebrow labels (readable on white) */
+  --color-accent-800: #7d6427;
+  --color-accent-900: #0b2143;    /* navy — dark CTA / stat blocks */
 
   --font-heading: "Barlow Condensed", system-ui, sans-serif;
   --font-body: "Barlow", system-ui, sans-serif;
@@ -57,12 +58,12 @@
 .mkt .blueprint > .corner.br { bottom: -6px; right: -6px; }
 
 .mkt .duotone { position: relative; overflow: hidden; }
-.mkt .duotone::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--color-accent); mix-blend-mode: color; }
+.mkt .duotone::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--color-accent-2); mix-blend-mode: color; }
 
 /* — buttons — */
 .mkt .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; text-decoration: none; font-family: var(--font-heading); font-weight: 600; font-size: 14px; line-height: 1.2; color: var(--color-text); background: transparent; border: 1px solid var(--color-divider); border-radius: var(--radius-md); padding: 8px 14px; }
 .mkt .btn svg { display: block; }
-.mkt .btn-primary { background: var(--color-accent); color: var(--color-bg); border-color: var(--color-accent); }
+.mkt .btn-primary { background: var(--color-accent); color: #0b2143; border-color: var(--color-accent); }
 .mkt .btn-primary:hover { background: var(--color-accent-700); border-color: var(--color-accent-700); }
 .mkt .btn-secondary:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
 .mkt .btn-ghost { color: var(--color-accent); border-color: transparent; padding-inline: 4px; }
