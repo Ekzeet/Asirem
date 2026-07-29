@@ -1,0 +1,29 @@
+/* Tailwind v4 for the shadcn components. Imported WITHOUT preflight so it never resets
+   the existing plain-CSS app (theme.css / marketing.css / inline styles stay untouched).
+   Only the utility classes the shadcn hero uses are emitted. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* shadcn design tokens, mapped to the Asirem brand palette so the component looks on-brand. */
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #0f1720;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f1720;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f1720;
+  --color-primary: #0f2c4c;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #eef2f7;
+  --color-secondary-foreground: #0f2c4c;
+  --color-muted: #f2f4f7;
+  --color-muted-foreground: #64748b;
+  --color-accent: #eef2f7;
+  --color-accent-foreground: #0f2c4c;
+  --color-destructive: #d14343;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e5e9f0;
+  --color-input: #e5e9f0;
+  --color-ring: #5980a6;
+}

@@ -4,8 +4,7 @@ import { useAsync } from '../../hooks/useAsync'
 import { useDocumentHead } from '../../lib/seo'
 import CourseCard, { Corners, PublicCourse } from './CourseCard'
 import { Arrow } from './MarketingLayout'
-import { IMG } from './images'
-import Photo from './Photo'
+import { HeroSection, LogosSection } from '../../components/ui/hero-1'
 
 const wrap = { maxWidth: 1180, margin: '0 auto' } as const
 
@@ -40,31 +39,11 @@ export default function MarketingHome() {
 
   return (
     <div style={{ animation: 'fadeUp .4s ease both' }}>
-      {/* Hero */}
-      <section style={{ ...wrap, padding: 'clamp(48px,7vw,92px) clamp(20px,5vw,64px) clamp(40px,5vw,60px)', display: 'grid', gridTemplateColumns: 'minmax(0,1.15fr) minmax(0,.85fr)', gap: 'clamp(28px,5vw,72px)', alignItems: 'center' }} className="grid-2">
-        <div>
-          <Kicker>Professional training · Tax & Insurance</Kicker>
-          <h1 style={{ fontWeight: 600, textTransform: 'uppercase', fontSize: 'clamp(40px,5.4vw,76px)', lineHeight: 1.02, letterSpacing: '.01em' }}>
-            <span style={{ display: 'block' }}>Launch your career</span>
-            <span style={{ display: 'block' }}>in tax</span>
-            <span style={{ display: 'block', color: 'var(--color-accent)' }}>preparation.</span>
-          </h1>
-          <p style={{ fontSize: 17, lineHeight: 1.6, maxWidth: '52ch', color: 'var(--color-neutral-700)', margin: '26px 0 0' }}>Gain practical skills, master professional software, and get ready to earn a living in the tax industry — guided by Asirem's experts.</p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 30 }}>
-            <button type="button" className="btn btn-primary" onClick={() => nav('/contact')} style={{ padding: '12px 22px', fontSize: 15 }}>Pre-register</button>
-            <button type="button" className="btn btn-secondary" onClick={() => nav('/courses')} style={{ padding: '12px 22px', fontSize: 15 }}>View courses</button>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 28, marginTop: 40, paddingTop: 26, borderTop: '1px solid var(--color-divider)' }}>
-            {stats.map(([v, l]) => (
-              <div key={l}><div style={{ fontFamily: 'var(--font-heading)', fontSize: 30, lineHeight: 1 }}>{v}</div><div style={{ fontSize: 12, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--color-neutral-600)', marginTop: 6 }}>{l}</div></div>
-            ))}
-          </div>
-        </div>
-        <figure className="blueprint duotone" style={{ aspectRatio: '4/5', background: 'var(--color-accent-100)' }}>
-          <Photo src={IMG.hero} alt="Tax professional at work" label="Photo — training / students" eager />
-          <Corners />
-        </figure>
-      </section>
+      {/* Hero (shadcn component) */}
+      <div className="relative">
+        <HeroSection />
+        <LogosSection />
+      </div>
 
       {/* Why */}
       <section style={{ ...wrap, padding: 'clamp(40px,6vw,72px) clamp(20px,5vw,64px)' }}>
