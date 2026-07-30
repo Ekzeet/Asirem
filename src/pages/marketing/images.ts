@@ -4,6 +4,8 @@
 
 export const IMG = {
   hero: '/images/marketing/hero.jpg',
+  classroom: '/images/marketing/classroom.jpg',
+  promo: '/images/marketing/promo.jpg',
   about: '/images/marketing/about.jpg',
   blog: '/images/marketing/blog.jpg',
   team1: '/images/marketing/team-1.jpg',
