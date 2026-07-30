@@ -28,7 +28,7 @@ export default function HeroBrand() {
         {/* Left */}
         <div>
           <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 'clamp(38px,5.4vw,68px)', lineHeight: 1.04, letterSpacing: '-.01em', margin: 0 }}>
-            A new way to learn <br />&amp; <span style={{ color: GOLD }}>launch your tax career</span>
+            A new way to learn <br />&amp; <span style={{ color: GOLD }}>launch your career</span>
           </h1>
           <p style={{ fontSize: 'clamp(15px,1.6vw,19px)', lineHeight: 1.6, color: 'rgba(255,255,255,.72)', maxWidth: '46ch', margin: '22px 0 0' }}>
             Asirem Academy gives you practical courses and expert instructors to build a career in tax preparation and insurance — at your own pace.

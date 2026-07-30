@@ -94,9 +94,9 @@ function IllusCertificate() {
 }
 
 const items = [
-  { title: 'Concrete skills', desc: 'Real return scenarios, not abstract theory. You practice on genuine files from week one — reviewed and graded by your instructor.', illus: <IllusReturns /> },
+  { title: 'Concrete skills', desc: 'Real scenarios, not abstract theory. You practice on genuine files from week one.', illus: <IllusReturns /> },
   { title: 'Professional software', desc: 'Master the tax tools used by firms. You graduate job-ready, able to prepare individual and small-business returns for real clients.', illus: <IllusSoftware /> },
-  { title: 'Recognized certification', desc: 'Guided AFSP / IRS exam prep, with support all the way to your certification — and a verifiable certificate to prove it.', illus: <IllusCertificate /> },
+  { title: 'Recognized certification', desc: 'Guided AFSP / Exam prep, with support all the way to your certification.', illus: <IllusCertificate /> },
 ]
 
 export default function Features() {
