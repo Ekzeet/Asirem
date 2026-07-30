@@ -5,6 +5,7 @@ import { useDocumentHead } from '../../lib/seo'
 import CourseCard, { Corners, PublicCourse } from './CourseCard'
 import { Arrow } from './MarketingLayout'
 import HeroBrand from './HeroBrand'
+import Features from './Features'
 
 const wrap = { maxWidth: 1180, margin: '0 auto' } as const
 
@@ -24,11 +25,6 @@ export default function MarketingHome() {
     return ((data ?? []) as PublicCourse[]).slice(0, 3)
   }, [])
 
-  const why = [
-    { t: 'Concrete skills', d: 'Real return scenarios, not abstract theory. You practice on genuine files from week one.', icon: <path d="M12 3 5 6v5c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6l-7-3Z M9 12l2 2 4-4" /> },
-    { t: 'Professional software', d: 'Master the tax tools used by firms. You graduate job-ready, able to handle real clients.', icon: <><rect x="5" y="3" width="14" height="18" rx="1.5" /><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" /></> },
-    { t: 'Recognized certification', d: 'Guided AFSP / IRS exam prep, with support all the way to your certification.', icon: <><circle cx="12" cy="9" r="5" /><path d="m9 13.5-1.5 7 4.5-2.7 4.5 2.7-1.5-7" /></> },
-  ]
   const steps = [
     { no: '01', name: 'Pre-registration', dur: '10 min', detail: 'Reserve your spot online in minutes, no commitment.' },
     { no: '02', name: 'Online training', dur: '3–8 weeks', detail: 'Videos, hands-on exercises and professional software, at your own pace.' },
@@ -42,21 +38,8 @@ export default function MarketingHome() {
       {/* Hero — brand navy, EduFlex-style */}
       <HeroBrand />
 
-      {/* Why */}
-      <section style={{ ...wrap, padding: 'clamp(40px,6vw,72px) clamp(20px,5vw,64px)' }}>
-        <Kicker>01 · Why Asirem Academy</Kicker>
-        <hr style={{ height: 1, border: 0, background: 'var(--color-divider)', margin: '0 0 32px' }} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'clamp(20px,3vw,40px)' }} className="grid-3">
-          {why.map((w) => (
-            <div key={w.t} className="blueprint" style={{ padding: 26 }}>
-              <Corners />
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{w.icon}</svg>
-              <h3 style={{ fontSize: 22, textTransform: 'uppercase', margin: '18px 0 8px' }}>{w.t}</h3>
-              <p style={{ fontSize: 15, lineHeight: 1.6, color: 'var(--color-neutral-700)' }}>{w.d}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Features (replaces the old Why grid) */}
+      <Features />
 
       {/* Featured courses (real data) */}
       {featured && featured.length > 0 && (
