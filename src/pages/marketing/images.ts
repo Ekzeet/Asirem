@@ -3,6 +3,9 @@
 // exists, the <Photo> component shows a labelled placeholder instead of a broken image.
 
 export const IMG = {
+  logoColor: '/images/marketing/logo-color.png',
+  logoBlack: '/images/marketing/logo-black.png',
+  logoWhite: '/images/marketing/logo-white.png',
   hero: '/images/marketing/hero.jpg',
   classroom: '/images/marketing/classroom.jpg',
   promo: '/images/marketing/promo.jpg',

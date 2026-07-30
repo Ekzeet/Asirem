@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { IMG } from './images'
 
 const NAV = [
   { to: '/', label: 'Home' },
@@ -22,7 +23,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
     <div className="mkt" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <nav className="mkt-nav">
-        <span className="brand" onClick={() => nav('/')}>ASIREM<span style={{ color: 'var(--color-accent)', fontWeight: 600 }}> ACADEMY</span></span>
+        <img className="brand" src={IMG.logoColor} alt="Asirem Tax Academy" onClick={() => nav('/')} style={{ height: 38, width: 'auto', display: 'block' }} />
         {NAV.map((n) => (
           <Link key={n.to} to={n.to} aria-current={cur(n.to) ? 'page' : undefined}>{n.label}</Link>
         ))}
@@ -35,7 +36,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
       <footer style={{ borderTop: '1px solid var(--color-divider)', background: 'var(--color-surface)' }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: 'clamp(40px,5vw,64px) clamp(20px,5vw,64px) clamp(28px,3vw,40px)', display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1.2fr', gap: 'clamp(24px,4vw,56px)' }} className="grid-2">
           <div>
-            <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 20, letterSpacing: '.02em', marginBottom: 14 }}>ASIREM<span style={{ color: 'var(--color-accent)' }}> ACADEMY</span></div>
+            <img src={IMG.logoBlack} alt="Asirem Tax Academy" style={{ height: 44, width: 'auto', display: 'block', marginBottom: 14 }} />
             <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--color-neutral-700)', maxWidth: '34ch' }}>Train in tax preparation and insurance, and launch a career that protects families' financial futures.</p>
           </div>
           <div>
