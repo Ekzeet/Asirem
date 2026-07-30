@@ -35,8 +35,8 @@ export default function HeroBrand() {
           </p>
 
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 32 }}>
-            <button onClick={() => nav('/contact')} style={{ background: GOLD, color: NAVY, border: 0, borderRadius: 12, padding: '14px 26px', fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 15.5, cursor: 'pointer', letterSpacing: '.01em' }}>Join the Class</button>
-            <button onClick={() => nav('/courses')} style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,.28)', borderRadius: 12, padding: '14px 26px', fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 15.5, cursor: 'pointer' }}>Learn more</button>
+            <button onClick={() => nav('/courses')} style={{ background: GOLD, color: NAVY, border: 0, borderRadius: 12, padding: '14px 26px', fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 15.5, cursor: 'pointer', letterSpacing: '.01em' }}>Join the Class</button>
+            <button onClick={() => nav('/about')} style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,.28)', borderRadius: 12, padding: '14px 26px', fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 15.5, cursor: 'pointer' }}>Learn more</button>
           </div>
 
           <div style={{ display: 'flex', gap: 'clamp(20px,3vw,40px)', flexWrap: 'wrap', marginTop: 44 }}>
