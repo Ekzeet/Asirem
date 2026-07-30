@@ -58,10 +58,10 @@ export default function HeroBrand() {
           {/* decorative shapes */}
           <div style={{ position: 'absolute', top: '2%', left: '14%', width: 96, height: 96, borderRadius: '50%', background: '#12335a' }} />
           <div style={{ position: 'absolute', bottom: '3%', right: '1%', width: 74, height: 74, borderRadius: 14, background: GOLD }} />
-          {/* photos — Tax Preparer promo takes the prominent slot; woman-at-desk photo below */}
-          <div style={photo(IMG.promo, { top: '4%', right: '2%', width: '55%', height: '50%', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundColor: NAVY })} />
-          <div style={photo(IMG.classroom, { bottom: '9%', right: '12%', width: '56%', aspectRatio: '3 / 2' })} />
-          <div style={photo(IMG.hero, { bottom: '0%', left: '0%', width: '46%', aspectRatio: '1 / 1' })} />
+          {/* photos — Tax Preparer promo takes the prominent (square) slot; woman-at-desk photo below */}
+          <div style={photo(IMG.promo, { top: '0%', right: '0%', width: '56%', aspectRatio: '1 / 1' })} />
+          <div style={photo(IMG.classroom, { bottom: '6%', right: '10%', width: '52%', aspectRatio: '3 / 2' })} />
+          <div style={photo(IMG.hero, { bottom: '0%', left: '0%', width: '42%', aspectRatio: '3 / 4' })} />
         </div>
       </div>
     </section>
