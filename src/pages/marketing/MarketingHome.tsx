@@ -28,7 +28,7 @@ export default function MarketingHome() {
   const steps = [
     { no: '01', name: 'Pre-registration', dur: '10 min', detail: 'Reserve your spot online in minutes, no commitment.' },
     { no: '02', name: 'Online training', dur: '3–8 weeks', detail: 'Videos, hands-on exercises and professional software, at your own pace.' },
-    { no: '03', name: 'Certification', dur: '1–3 weeks', detail: 'Sit the AFSP / IRS exam, supported by our certified instructors.' },
+    { no: '03', name: 'Certification', dur: '8 - 12 weeks', detail: 'AFSP / supported by our certified instructors.' },
     { no: '04', name: 'Launch your practice', dur: 'Tax season', detail: 'Start earning a living in the tax industry from your very first season.' },
   ]
   const stats = [['1,200+', 'Students trained'], ['95%', 'Success rate'], ['12 yrs', 'Of expertise']]

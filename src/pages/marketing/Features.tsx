@@ -38,7 +38,7 @@ function IllusReturns() {
       <div style={{ ...card, left: 22, width: '80%', display: 'flex', gap: 10, alignItems: 'center' }}>
         <Avatar letter="SC" />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 800, fontSize: 12.5, color: navy }}>Schedule C · Small business</div>
+          <div style={{ fontWeight: 800, fontSize: 12.5, color: navy }}>Individual taxation, sole proprietorship, Schedule C and small business taxation</div>
           <div style={{ fontSize: 11.5, color: '#7a808c' }}>Real client file, week one.</div>
         </div>
         <span style={{ fontSize: 11, fontWeight: 800, color: navy, background: '#f4edd8', padding: '3px 8px', borderRadius: 20 }}>96%</span>
@@ -86,7 +86,7 @@ function IllusCertificate() {
         </div>
         <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13.5, color: navy, textTransform: 'uppercase', letterSpacing: '.04em' }}>Certificate of Completion</div>
         <div style={{ margin: '8px auto 12px', height: 2, width: '55%', background: '#e8eaf0' }} />
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10.5, fontWeight: 800, color: '#7a808c', marginBottom: 5 }}><span>AFSP exam prep</span><span style={{ color: navy }}>100%</span></div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10.5, fontWeight: 800, color: '#7a808c', marginBottom: 5 }}><span>Guided AFSP / With support all the way to your certification.</span><span style={{ color: navy }}>100%</span></div>
         <div style={{ height: 7, borderRadius: 4, background: '#eef0f4', overflow: 'hidden' }}><div style={{ height: '100%', width: '100%', background: gold }} /></div>
       </div>
     </div>
