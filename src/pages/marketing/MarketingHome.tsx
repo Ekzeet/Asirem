@@ -67,7 +67,7 @@ export default function MarketingHome() {
             <span style={{ borderLeft: '1px solid var(--color-divider)', padding: '12px 22px', fontSize: 13, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-neutral-700)' }}>Program · 4 steps</span>
           </header>
           {steps.map((s) => (
-            <div key={s.no} style={{ display: 'grid', gridTemplateColumns: '64px 1.1fr 22% 2fr', gap: '12px 16px', alignItems: 'baseline', padding: '16px 22px', borderBottom: '1px solid color-mix(in srgb,var(--color-text) 8%,transparent)' }}>
+            <div key={s.no} className="mkt-step" style={{ display: 'grid', gridTemplateColumns: '64px 1.1fr 22% 2fr', gap: '12px 16px', alignItems: 'baseline', padding: '16px 22px', borderBottom: '1px solid color-mix(in srgb,var(--color-text) 8%,transparent)' }}>
               <span style={{ fontFamily: 'var(--font-heading)', fontSize: 15, color: 'var(--color-accent-700)' }}>{s.no}</span>
               <span style={{ fontFamily: 'var(--font-heading)', fontSize: 19, textTransform: 'uppercase' }}>{s.name}</span>
               <span style={{ whiteSpace: 'nowrap' }}>{s.dur}</span>
@@ -86,7 +86,7 @@ export default function MarketingHome() {
 
       {/* CTA */}
       <section style={{ ...wrap, padding: '0 clamp(20px,5vw,64px) clamp(48px,7vw,88px)' }}>
-        <div className="blueprint" style={{ background: 'var(--color-accent-900)', color: 'var(--color-bg)', padding: 'clamp(32px,5vw,56px)', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '24px 40px', alignItems: 'center' }}>
+        <div className="blueprint mkt-cta" style={{ background: 'var(--color-accent-900)', color: 'var(--color-bg)', padding: 'clamp(32px,5vw,56px)', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '24px 40px', alignItems: 'center' }}>
           <Corners />
           <div>
             <h2 style={{ fontSize: 'clamp(28px,3.4vw,40px)', textTransform: 'uppercase', margin: '0 0 10px', lineHeight: 1.05 }}>Our very first course is online.</h2>

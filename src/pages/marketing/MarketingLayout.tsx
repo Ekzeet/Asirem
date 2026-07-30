@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { IMG } from './images'
 
@@ -19,16 +19,25 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
   const loc = useLocation()
   const nav = useNavigate()
   const cur = (to: string) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to))
+  const [menuOpen, setMenuOpen] = useState(false)
+  const close = () => setMenuOpen(false)
 
   return (
     <div className="mkt" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <nav className="mkt-nav">
-        <img className="brand" src={IMG.logoColor} alt="Asirem Tax Academy" onClick={() => nav('/')} style={{ height: 38, width: 'auto', display: 'block' }} />
-        {NAV.map((n) => (
-          <Link key={n.to} to={n.to} aria-current={cur(n.to) ? 'page' : undefined}>{n.label}</Link>
-        ))}
-        <Link to="/login" style={{ color: 'var(--color-neutral-700)' }}>Log in</Link>
-        <button type="button" className="btn btn-primary" onClick={() => nav('/contact')}>Pre-register</button>
+        <img className="brand" src={IMG.logoColor} alt="Asirem Tax Academy" onClick={() => { nav('/'); close() }} style={{ height: 38, width: 'auto', display: 'block' }} />
+        <button type="button" className="mkt-burger" aria-label="Menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}>
+          {menuOpen
+            ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>}
+        </button>
+        <div className={`mkt-nav-links${menuOpen ? ' open' : ''}`}>
+          {NAV.map((n) => (
+            <Link key={n.to} to={n.to} aria-current={cur(n.to) ? 'page' : undefined} onClick={close}>{n.label}</Link>
+          ))}
+          <Link to="/login" style={{ color: 'var(--color-neutral-700)' }} onClick={close}>Log in</Link>
+          <button type="button" className="btn btn-primary" onClick={() => { nav('/contact'); close() }}>Pre-register</button>
+        </div>
       </nav>
 
       <main style={{ flex: 1 }}>{children}</main>
