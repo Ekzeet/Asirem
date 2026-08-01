@@ -41,8 +41,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: '1fr 1fr', background: 'var(--bg)' }}>
-      <div style={{ background: 'linear-gradient(160deg,#0F2C4C 0%,#0B2038 100%)', color: '#fff', padding: '54px 56px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
+    <div className="login-split" style={{ minHeight: 'calc(100vh - 66px)', display: 'grid', gridTemplateColumns: '1fr 1fr', background: 'var(--bg)' }}>
+      <div className="login-aside" style={{ background: 'linear-gradient(160deg,#0F2C4C 0%,#0B2038 100%)', color: '#fff', padding: '54px 56px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', right: -80, top: -60, width: 320, height: 320, borderRadius: '50%', background: 'rgba(217,164,65,.14)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
           <div style={{ width: 46, height: 46, borderRadius: 12, background: 'linear-gradient(135deg,#E7B450,#D9A441)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0F2C4C', fontFamily: 'var(--display)', fontWeight: 800, fontSize: 23, boxShadow: '0 4px 14px rgba(217,164,65,.35)' }}>A</div>

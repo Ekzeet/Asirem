@@ -109,4 +109,7 @@ img, video { max-width: 100%; }
   /* Course player: stack the main area and the lesson-list aside */
   .player-shell { flex-direction: column !important; height: auto !important; }
   .player-aside { width: 100% !important; border-left: none !important; border-top: 1px solid var(--border) !important; }
+  /* Login: single column, hide the decorative branded panel */
+  .login-split { grid-template-columns: 1fr !important; }
+  .login-aside { display: none !important; }
 }

@@ -106,7 +106,7 @@ export default function App() {
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/verify/:serial" element={<Verify />} />
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<MarketingLayoutC><LoginPage /></MarketingLayoutC>} />
           <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
           <Route path="/courses" element={<MarketingLayoutC><MarketingCourses /></MarketingLayoutC>} />
           <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
