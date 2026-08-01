@@ -55,7 +55,7 @@ export default function LoginPage() {
           <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 34, lineHeight: 1.2, marginBottom: 14 }}>{t('welcome')}</div>
           <div style={{ fontSize: 15, color: '#9DB4D0', lineHeight: 1.6 }}>{t('tagline')}</div>
         </div>
-        <div style={{ position: 'relative', fontSize: 12.5, color: '#6E84A0', fontWeight: 600 }}>Tax · Insurance · Medicare · Finance</div>
+        <div style={{ position: 'relative', fontSize: 12.5, color: '#6E84A0', fontWeight: 600 }}>Tax. Insurance. And More...</div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
