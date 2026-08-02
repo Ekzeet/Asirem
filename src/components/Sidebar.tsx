@@ -43,7 +43,12 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
   const nav = useNavigate()
   const loc = useLocation()
   if (!me) return null
-  const items = NAV[me.role] ?? NAV.student
+  let items = NAV[me.role] ?? NAV.student
+  // A student who hasn't bought a course yet only gets to browse the catalog —
+  // no community, exams, certificates or course content until they enroll.
+  if (me.role === 'student' && !me.hasCourses) {
+    items = items.filter((it) => it.to === '/student' || it.to === '/student/catalog')
+  }
   const isAdmin = me.role === 'institution_admin' || me.role === 'super_admin'
 
   const isActive = (to: string) => (to === '/admin' || to === '/teacher' || to === '/student' ? loc.pathname === to : loc.pathname.startsWith(to))

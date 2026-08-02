@@ -132,6 +132,10 @@ export default function App() {
 
   const isStaff = me.role === 'institution_admin' || me.role === 'super_admin'
   const isTeacher = me.role === 'teacher'
+  // A student with no purchased course is limited to browsing/buying — course content,
+  // community and exams are gated behind buying at least one course.
+  const studentLocked = me.role === 'student' && !me.hasCourses
+  const lockTo = <Navigate to="/student/catalog" replace />
 
   return (
     <Suspense fallback={<Loading />}>
@@ -170,14 +174,14 @@ export default function App() {
         {/* Student */}
         <Route path="/student" element={<MyCourses />} />
         <Route path="/student/catalog" element={<Catalog />} />
-        <Route path="/student/course/:courseId" element={<Player />} />
-        <Route path="/student/certificates" element={<Certificates />} />
+        <Route path="/student/course/:courseId" element={studentLocked ? lockTo : <Player />} />
+        <Route path="/student/certificates" element={studentLocked ? lockTo : <Certificates />} />
         {/* Shared */}
-        <Route path="/community" element={<Community />} />
+        <Route path="/community" element={studentLocked ? lockTo : <Community />} />
         <Route path="/search" element={<Search />} />
-        <Route path="/exams" element={<Exams />} />
+        <Route path="/exams" element={studentLocked ? lockTo : <Exams />} />
         {(isStaff || isTeacher) && <Route path="/exams/:examId/build" element={<ExamBuilder />} />}
-        <Route path="/exams/:examId/take" element={<ExamPlayer />} />
+        <Route path="/exams/:examId/take" element={studentLocked ? lockTo : <ExamPlayer />} />
       </Route>
       <Route path="*" element={<Navigate to={roleHome(me.role)} replace />} />
     </Routes>
