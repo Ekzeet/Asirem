@@ -98,7 +98,7 @@ export default function AdminCourses() {
                   {c.rating != null && <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#C99A2E' }}>★ {c.rating}</span>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid var(--border-soft)' }}>
-                  <span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 17, color: 'var(--navy-800)' }}>{c.price_cents === 0 ? (lang === 'fr' ? 'Gratuit' : lang === 'es' ? 'Gratis' : 'Free') : moneyFull(c.price_cents)}</span>
+                  <span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 17, color: 'var(--navy-800)' }}>{c.price_cents === 0 ? (lang === 'es' ? 'Gratis' : 'Free') : moneyFull(c.price_cents)}</span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: '#1F8A5B' }}>{money((counts[c.id] ?? 0) * c.price_cents)} {t('earned')}</span>
                 </div>
               </div>

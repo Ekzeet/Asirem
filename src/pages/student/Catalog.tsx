@@ -90,7 +90,7 @@ export default function Catalog() {
               <div style={{ fontSize: 12, color: '#8494A8', fontWeight: 600, marginBottom: 6 }}>{c.instructor?.full_name ?? '—'}</div>
               {c.subtitle && <div style={{ fontSize: 12.5, color: '#5B6B82', lineHeight: 1.5, marginBottom: 12, flex: 1 }}>{c.subtitle}</div>}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid var(--border-soft)' }}>
-                <span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 17, color: 'var(--navy-800)' }}>{c.price_cents === 0 ? (lang === 'fr' ? 'Gratuit' : lang === 'es' ? 'Gratis' : 'Free') : moneyFull(c.price_cents)}</span>
+                <span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 17, color: 'var(--navy-800)' }}>{c.price_cents === 0 ? (lang === 'es' ? 'Gratis' : 'Free') : moneyFull(c.price_cents)}</span>
                 <button onClick={() => enroll(c)} disabled={enrolling === c.id} style={{ height: 38, padding: '0 16px', borderRadius: 10, background: 'linear-gradient(135deg,#E7B450,#D9A441)', color: '#0F2C4C', border: 'none', fontWeight: 800, fontSize: 12.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Icon name="plus" size={15} />{t('enroll')}
                 </button>

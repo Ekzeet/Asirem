@@ -140,7 +140,7 @@ export default function Player() {
                 {[
                   { icon: 'clock', label: t('duration'), value: current.duration ?? '—' },
                   { icon: 'bar-chart-2', label: t('level'), value: lang === 'en' ? 'Intermediate' : lang === 'es' ? 'Intermedio' : 'Intermédiaire' },
-                  { icon: 'globe', label: 'Audio', value: 'FR · EN · ES' },
+                  { icon: 'globe', label: 'Audio', value: 'EN · ES' },
                 ].map((m, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 15px', background: '#fff', border: '1px solid var(--border)', borderRadius: 12 }}>
                     <Icon name={m.icon} size={17} color="#D9A441" />

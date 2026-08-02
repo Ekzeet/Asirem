@@ -94,7 +94,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
         <div style={{ display: 'flex', gap: 6, background: 'rgba(255,255,255,.05)', padding: 4, borderRadius: 11 }}>
           {DEMO_ACCOUNTS.map((a) => {
             const active = me.role === a.role
-            const short = a.role === 'institution_admin' ? 'Admin' : a.role === 'teacher' ? 'Prof' : 'Élève'
+            const short = a.role === 'institution_admin' ? 'Admin' : a.role === 'teacher' ? 'Teacher' : 'Student'
             return (
               <button key={a.email} title={a.name} onClick={() => switchTo(a.email)} style={{
                 flex: 1, height: 34, border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--display)', fontWeight: 700, fontSize: 12,

@@ -129,7 +129,7 @@ export default function Community() {
             {events.map((e) => {
               const d = new Date(e.starts_at)
               const mon = d.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR', { month: 'short' }).toUpperCase().replace('.', '')
-              const time = d.toLocaleTimeString(lang === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })
+              const time = d.toLocaleTimeString(lang === 'es' ? 'es-ES' : 'en-US', { hour: '2-digit', minute: '2-digit' })
               return (
                 <div key={e.id} style={{ display: 'flex', gap: 11, padding: '9px 0', borderTop: '1px solid #F3F6FA' }}>
                   <div style={{ width: 44, flex: 'none', textAlign: 'center', background: '#F2F6FB', borderRadius: 9, padding: '6px 0' }}>

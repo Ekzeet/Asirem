@@ -15,10 +15,10 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
 
-  const signupCopy = lang === 'fr' ? 'Espace formateur' : lang === 'es' ? 'Espacio instructor' : 'Instructor sign-up'
-  const toLogin = lang === 'fr' ? 'Déjà un compte ? Se connecter' : lang === 'es' ? '¿Ya tienes cuenta? Inicia sesión' : 'Already have an account? Log in'
-  const toSignup = lang === 'fr' ? 'Formateur ? Créer un compte' : lang === 'es' ? '¿Instructor? Crea una cuenta' : 'Instructor? Create an account'
-  const studentNote = lang === 'fr' ? 'Étudiant ? Ton compte est créé automatiquement à l’achat d’un cours.' : lang === 'es' ? '¿Estudiante? Tu cuenta se crea al comprar un curso.' : 'Student? Your account is created when you buy a course.'
+  const signupCopy = lang === 'es' ? 'Espacio instructor' : 'Instructor sign-up'
+  const toLogin = lang === 'es' ? '¿Ya tienes cuenta? Inicia sesión' : 'Already have an account? Log in'
+  const toSignup = lang === 'es' ? '¿Instructor? Crea una cuenta' : 'Instructor? Create an account'
+  const studentNote = lang === 'es' ? '¿Estudiante? Tu cuenta se crea al comprar un curso.' : 'Student? Your account is created when you buy a course.'
 
   async function submit(e?: React.FormEvent) {
     e?.preventDefault()
@@ -36,7 +36,7 @@ export default function LoginPage() {
     })
     setBusy(false)
     if (error) { setError(error.message); return }
-    if (!data.session) { setInfo(lang === 'fr' ? 'Compte créé — vérifie ton email pour confirmer, puis connecte-toi.' : 'Account created — check your email to confirm, then log in.'); setMode('login') }
+    if (!data.session) { setInfo(lang === 'es' ? 'Cuenta creada — revisa tu email para confirmar y luego inicia sesión.' : 'Account created — check your email to confirm, then log in.'); setMode('login') }
     // else: session active → AuthContext picks up the teacher role on next tick.
   }
 
@@ -61,7 +61,7 @@ export default function LoginPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
         <div style={{ width: '100%', maxWidth: 380 }}>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4, marginBottom: 26 }}>
-            {(['FR', 'EN', 'ES'] as const).map((c) => {
+            {(['EN', 'ES'] as const).map((c) => {
               const active = lang === c.toLowerCase()
               return <button key={c} onClick={() => setLang(c.toLowerCase() as any)} style={{ width: 36, height: 30, border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 800, fontSize: 12, background: active ? 'var(--navy-800)' : '#EEF2F7', color: active ? '#fff' : 'var(--muted)' }}>{c}</button>
             })}
