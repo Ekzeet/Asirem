@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
 import { useI18n } from '../../i18n/I18nContext'
 import { Loader } from '../../components/ui'
-import { startCheckout } from '../../lib/checkout'
 import { StarRating } from '../../components/StarRating'
 import { useDocumentHead } from '../../lib/seo'
 
@@ -16,6 +15,7 @@ function money(cents: number, currency: string) {
 
 export default function CourseSales() {
   const { slug } = useParams()
+  const nav = useNavigate()
   const { t, lang } = useI18n()
   const [preview, setPreview] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -51,18 +51,12 @@ export default function CourseSales() {
     const { data, error } = await supabase.functions.invoke('get-preview-url', { body: { lesson_id: lessonId } })
     if (!error && data?.url) setPreview(data.url as string)
   }
-  async function buy() {
+  function buy() {
     // Free courses don't go through Stripe — send the visitor to sign in and self-enroll.
     if (!c.price_cents) { window.location.href = '/login'; return }
-    // Guest buyers (no session) supply an email so the webhook can provision their account.
-    const { data: sess } = await supabase.auth.getSession()
-    let email: string | undefined
-    if (!sess?.session) {
-      email = window.prompt(t('enterEmail')) ?? undefined
-      if (!email) return
-    }
+    // Paid: go to the checkout page, which gates on account creation/login before Stripe.
     setBusy(true)
-    try { await startCheckout({ courseId: c.id, email }) } finally { setBusy(false) }
+    nav(`/checkout?course=${slug}`, { state: { item: { kind: 'course', id: c.id, title: c.title, priceCents: c.price_cents, currency: c.currency } } })
   }
 
   return (

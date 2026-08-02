@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
 import { useI18n } from '../../i18n/I18nContext'
 import { useDocumentHead } from '../../lib/seo'
-import { startCheckout } from '../../lib/checkout'
 import { Loader } from '../../components/ui'
 
 function money(cents: number, currency: string) {
@@ -13,6 +12,7 @@ function money(cents: number, currency: string) {
 
 export default function PathSales() {
   const { slug } = useParams()
+  const nav = useNavigate()
   const { t } = useI18n()
   const [busy, setBusy] = useState(false)
   const { data, loading } = useAsync(async () => {
@@ -24,13 +24,10 @@ export default function PathSales() {
   if (!data) return <div style={{ padding: 24 }}>{t('noData')}</div>
   const p = data
 
-  async function buy() {
+  function buy() {
     if (!p.price_cents) { window.location.href = '/login'; return }
-    const { data: sess } = await supabase.auth.getSession()
-    let email: string | undefined
-    if (!sess?.session) { email = window.prompt(t('enterEmail')) ?? undefined; if (!email) return }
     setBusy(true)
-    try { await startCheckout({ pathId: p.id, email }) } finally { setBusy(false) }
+    nav(`/checkout?path=${slug}`, { state: { item: { kind: 'path', id: p.id, title: p.title, priceCents: p.price_cents, currency: p.currency } } })
   }
 
   return (

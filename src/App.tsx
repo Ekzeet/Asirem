@@ -33,6 +33,7 @@ const CourseSales = lazy(() => import('./pages/public/CourseSales'))
 const InstructorProfile = lazy(() => import('./pages/public/InstructorProfile'))
 const Legal = lazy(() => import('./pages/public/Legal'))
 const CheckoutReturn = lazy(() => import('./pages/public/CheckoutReturn'))
+const Checkout = lazy(() => import('./pages/public/Checkout'))
 const Unsubscribe = lazy(() => import('./pages/public/Unsubscribe'))
 const Paths = lazy(() => import('./pages/public/Paths'))
 const PathSales = lazy(() => import('./pages/public/PathSales'))
@@ -108,6 +109,7 @@ export default function App() {
           <Route path="/verify/:serial" element={<Verify />} />
           <Route path="/login" element={<MarketingLayoutC><LoginPage /></MarketingLayoutC>} />
           <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
+          <Route path="/checkout" element={<PublicLayoutC><Checkout /></PublicLayoutC>} />
           <Route path="/courses" element={<MarketingLayoutC><MarketingCourses /></MarketingLayoutC>} />
           <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
           <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
@@ -141,6 +143,7 @@ export default function App() {
       <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
       <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
       <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
+      <Route path="/checkout" element={<PublicLayoutC><Checkout /></PublicLayoutC>} />
       <Route path="/unsubscribe/:token" element={<PublicLayoutC><Unsubscribe /></PublicLayoutC>} />
       <Route path="/paths" element={<PublicLayoutC><Paths /></PublicLayoutC>} />
       <Route path="/paths/:slug" element={<PublicLayoutC><PathSales /></PublicLayoutC>} />
