@@ -20,6 +20,18 @@ const inputCss: React.CSSProperties = {
   fontSize: 15, fontWeight: 600, color: 'var(--navy-800)', background: '#fff', outline: 'none',
 }
 
+/** Step pill in the "1 Account — 2 Payment" progress header. */
+function StepPill({ n, label, state }: { n: number; label: string; state: 'done' | 'active' | 'todo' }) {
+  const bg = state === 'active' ? 'var(--navy-800)' : state === 'done' ? 'var(--gold-500,#E7B450)' : '#E7ECF3'
+  const fg = state === 'todo' ? '#8494A8' : state === 'done' ? '#0F2C4C' : '#fff'
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ width: 24, height: 24, borderRadius: '50%', background: bg, color: fg, display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 13 }}>{state === 'done' ? '✓' : n}</span>
+      <span style={{ fontWeight: 800, fontSize: 13.5, color: state === 'todo' ? '#8494A8' : 'var(--navy-800)' }}>{label}</span>
+    </div>
+  )
+}
+
 export default function Checkout() {
   const [sp] = useSearchParams()
   const loc = useLocation()
@@ -28,8 +40,12 @@ export default function Checkout() {
   useDocumentHead({ title: 'Checkout · Asirem Academy' })
 
   const [session, setSession] = useState<Session | null | undefined>(undefined)
+  const [step, setStep] = useState<1 | 2>(1)
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      if (data.session) setStep(2) // already signed in → skip straight to payment
+    })
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
     return () => sub.subscription.unsubscribe()
   }, [])
@@ -61,39 +77,40 @@ export default function Checkout() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function pay(guestEmail?: string) {
-    if (!item) return
-    const opts: { courseId?: string; pathId?: string; planId?: string; email?: string } = {}
-    if (item.kind === 'course') opts.courseId = item.id
-    else if (item.kind === 'path') opts.pathId = item.id
-    else opts.planId = item.id
-    if (guestEmail) opts.email = guestEmail
-    await startCheckout(opts) // redirects to Stripe
-  }
-
-  async function submit(e?: React.FormEvent) {
+  // Step 1 → create account or log in, then advance to the payment step (no redirect yet).
+  async function submitAccount(e?: React.FormEvent) {
     e?.preventDefault()
     setError(null); setBusy(true)
     try {
-      if (session) { await pay(); return }
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
-        if (error) { setError(error.message); setBusy(false); return }
-        await pay(); return
+        if (error) { setError(error.message); return }
+        setStep(2); return
       }
-      // Register: the student picks the email + password they'll log in with from now on.
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: email.trim(), password,
         options: { data: { full_name: name.trim(), signup_role: 'student' } },
       })
       if (error) {
         if (/registered|already|exists/i.test(error.message)) { setMode('login'); setError(t('emailExistsLogin')) }
         else setError(error.message)
-        setBusy(false); return
+        return
       }
-      // Confirm-email OFF → a session is returned and we check out as an authenticated user.
-      if (data.session) await pay()
-      else await pay(email.trim()) // fallback if email confirmation is on
+      setStep(2)
+    } finally { setBusy(false) }
+  }
+
+  // Step 2 → hand off to Stripe.
+  async function pay() {
+    if (!item) return
+    setError(null); setBusy(true)
+    try {
+      const opts: { courseId?: string; pathId?: string; planId?: string; email?: string } = {}
+      if (item.kind === 'course') opts.courseId = item.id
+      else if (item.kind === 'path') opts.pathId = item.id
+      else opts.planId = item.id
+      if (!session && email) opts.email = email.trim() // guest fallback (if email confirmation is on)
+      await startCheckout(opts) // redirects to Stripe
     } catch (err) {
       setError((err as Error).message ?? 'checkout_failed'); setBusy(false)
     }
@@ -105,20 +122,19 @@ export default function Checkout() {
 
   return (
     <div className="two-col" style={{ maxWidth: 900, margin: '0 auto', padding: 24 }}>
-      {/* Left — account gate / pay */}
+      {/* Left — the wizard */}
       <div>
-        <h1 style={{ fontFamily: 'var(--display)', color: 'var(--navy-800)', fontSize: 26, margin: '0 0 4px' }}>{t('completeEnrollment')}</h1>
+        <h1 style={{ fontFamily: 'var(--display)', color: 'var(--navy-800)', fontSize: 26, margin: '0 0 14px' }}>{t('completeEnrollment')}</h1>
 
-        {session ? (
-          <div style={{ marginTop: 16 }}>
-            <div style={{ color: '#5B6B82', fontWeight: 600, fontSize: 14, marginBottom: 14 }}>
-              {t('login')}: <strong style={{ color: 'var(--navy-800)' }}>{session.user.email}</strong>
-            </div>
-            {error && <div style={{ color: '#c0392b', fontWeight: 700, fontSize: 13, marginBottom: 10 }}>{error}</div>}
-            <button onClick={() => submit()} disabled={busy} style={payBtn}>{busy ? '…' : t('paySecurely')}</button>
-          </div>
-        ) : (
-          <form onSubmit={submit} style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Progress header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+          <StepPill n={1} label={t('stepAccount')} state={step === 1 ? 'active' : 'done'} />
+          <span style={{ flex: 1, height: 1, background: 'var(--border-soft)' }} />
+          <StepPill n={2} label={t('stepPayment')} state={step === 2 ? 'active' : 'todo'} />
+        </div>
+
+        {step === 1 ? (
+          <form onSubmit={submitAccount} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ color: '#5B6B82', fontWeight: 700, fontSize: 14 }}>{t('createAccountToContinue')}</div>
             {mode === 'register' && (
               <input style={inputCss} placeholder={t('fullName')} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required />
@@ -127,11 +143,24 @@ export default function Checkout() {
             <input style={inputCss} type="password" placeholder={t('password')} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} required minLength={6} />
             {mode === 'register' && <div style={{ color: '#8494A8', fontSize: 12.5, fontWeight: 600 }}>{t('passwordHint')}</div>}
             {error && <div style={{ color: '#c0392b', fontWeight: 700, fontSize: 13 }}>{error}</div>}
-            <button type="submit" disabled={busy} style={payBtn}>{busy ? '…' : t('paySecurely')}</button>
+            <button type="submit" disabled={busy} style={payBtn}>{busy ? '…' : t('continueLabel')}</button>
             <button type="button" onClick={() => { setError(null); setMode(mode === 'register' ? 'login' : 'register') }} style={toggleBtn}>
               {mode === 'register' ? t('alreadyHaveAccount') : t('newHere')}
             </button>
           </form>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, border: '1px solid var(--border-soft)', borderRadius: 10, padding: '11px 12px' }}>
+              <span style={{ color: '#5B6B82', fontWeight: 600, fontSize: 14 }}>
+                {session?.user.email ?? email}
+              </span>
+              {!session && (
+                <button type="button" onClick={() => setStep(1)} style={{ ...toggleBtn, padding: 0 }}>{t('editAccount')}</button>
+              )}
+            </div>
+            {error && <div style={{ color: '#c0392b', fontWeight: 700, fontSize: 13 }}>{error}</div>}
+            <button onClick={pay} disabled={busy} style={payBtn}>{busy ? '…' : t('paySecurely')}</button>
+          </div>
         )}
 
         <div style={{ color: '#8494A8', fontSize: 12.5, fontWeight: 600, marginTop: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
