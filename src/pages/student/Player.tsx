@@ -431,7 +431,7 @@ function MediaPlayer({ lesson, userId, progressPct, onCompleted }: {
 
 function QuizPanel({ quiz }: { quiz: Quiz | null }) {
   const { t } = useI18n()
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ score: number; passed: boolean; pass_score: number } | null>(null)
 
@@ -464,8 +464,17 @@ function QuizPanel({ quiz }: { quiz: Quiz | null }) {
         <div key={q.id} style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--navy-800)', lineHeight: 1.5, marginBottom: 12 }}>{i + 1}. {q.prompt}</div>
           {q.question_type === 'short_answer' ? (
-            <input value={answers[q.id] ?? ''} onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))} placeholder={t('yourAnswer')} style={{ width: '100%', height: 44, border: '1px solid var(--border)', borderRadius: 11, padding: '0 14px', fontSize: 14, outline: 'none' }} />
-          ) : q.options.map((o, oi) => {
+            <input value={(answers[q.id] as string) ?? ''} onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))} placeholder={t('yourAnswer')} style={{ width: '100%', height: 44, border: '1px solid var(--border)', borderRadius: 11, padding: '0 14px', fontSize: 14, outline: 'none' }} />
+          ) : q.question_type === 'multiple' ? q.options.map((o, oi) => {
+            const cur = (answers[q.id] as string[]) ?? []
+            const picked = cur.includes(o.id)
+            return (
+              <button key={o.id} onClick={() => setAnswers((a) => { const c = (a[q.id] as string[]) ?? []; return { ...a, [q.id]: c.includes(o.id) ? c.filter((x) => x !== o.id) : [...c, o.id] } })} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '13px 16px', borderRadius: 12, border: `1.5px solid ${picked ? '#D9A441' : '#E6EBF1'}`, background: picked ? '#FBF7EE' : '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13.5, color: '#33415A', textAlign: 'left', marginBottom: 8 }}>
+                <span style={{ width: 26, height: 26, flex: 'none', borderRadius: 7, background: picked ? '#D9A441' : '#F1F4F8', color: picked ? '#0F2C4C' : '#8494A8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={picked ? 'check-square' : 'square'} size={15} /></span>
+                <span style={{ flex: 1, textAlign: 'left' }}>{o.label}</span>
+              </button>
+            )
+          }) : q.options.map((o, oi) => {
             const picked = answers[q.id] === o.id
             return (
               <button key={o.id} onClick={() => setAnswers((a) => ({ ...a, [q.id]: o.id }))} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '13px 16px', borderRadius: 12, border: `1.5px solid ${picked ? '#D9A441' : '#E6EBF1'}`, background: picked ? '#FBF7EE' : '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13.5, color: '#33415A', textAlign: 'left', marginBottom: 8 }}>

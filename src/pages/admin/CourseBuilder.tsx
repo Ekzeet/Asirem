@@ -459,9 +459,10 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
   const [title, setTitle] = useState('')
   const [sectionTitle, setSectionTitle] = useState('')
   const [prompt, setPrompt] = useState('')
-  const [qtype, setQtype] = useState<'single' | 'true_false' | 'short_answer'>('single')
+  const [qtype, setQtype] = useState<'single' | 'multiple' | 'true_false' | 'short_answer'>('single')
   const [options, setOptions] = useState<string[]>(['', '', '', ''])
   const [correct, setCorrect] = useState(0)
+  const [multi, setMulti] = useState<boolean[]>([false, false, false, false])
   const [answerText, setAnswerText] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -483,11 +484,12 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
     if (!data?.id) { if (title.trim()) await ensureQuiz(); reload(); return }
     await supabase.from('quizzes').update({ title: title.trim() || 'Quiz' }).eq('id', data.id); reload()
   }
-  function resetForm() { setEditingId(null); setSectionTitle(''); setPrompt(''); setQtype('single'); setOptions(['', '', '', '']); setCorrect(0); setAnswerText('') }
+  function resetForm() { setEditingId(null); setSectionTitle(''); setPrompt(''); setQtype('single'); setOptions(['', '', '', '']); setCorrect(0); setMulti([false, false, false, false]); setAnswerText('') }
   function editQuestion(q: any) {
     setEditingId(q.id); setSectionTitle(q.section_title ?? ''); setPrompt(q.prompt); setQtype(q.question_type); setAnswerText(q.answer_text ?? '')
     const opts = (q.options ?? []).slice().sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
     if (q.question_type === 'single') { setOptions([...opts.map((o: any) => o.label), '', '', '', ''].slice(0, 4)); setCorrect(Math.max(0, opts.findIndex((o: any) => o.is_correct))) }
+    else if (q.question_type === 'multiple') { const labels = [...opts.map((o: any) => o.label), '', '', '', ''].slice(0, 4); setOptions(labels); setMulti(labels.map((_l, i) => !!opts[i]?.is_correct)) }
     else if (q.question_type === 'true_false') { setCorrect(opts.findIndex((o: any) => o.is_correct) === 0 ? 0 : 1); setOptions(['', '', '', '']) }
     else setOptions(['', '', '', ''])
   }
@@ -497,6 +499,7 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
     if (!prompt.trim()) return
     if (qtype === 'short_answer' && !answerText.trim()) return
     if (qtype === 'single' && options.filter((o) => o.trim()).length < 2) return
+    if (qtype === 'multiple' && (options.filter((o) => o.trim()).length < 2 || !multi.some((m, i) => m && options[i].trim()))) return
     setBusy(true)
     const quizId = await ensureQuiz()
     const sect = sectionTitle.trim() || null
@@ -510,6 +513,7 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
     }
     if (qtype === 'true_false') await supabase.from('quiz_options').insert([{ question_id: qid, label: 'Vrai', is_correct: correct === 0, position: 0 }, { question_id: qid, label: 'Faux', is_correct: correct === 1, position: 1 }])
     else if (qtype === 'single') await supabase.from('quiz_options').insert(options.filter((o) => o.trim()).map((label, i) => ({ question_id: qid, label: label.trim(), is_correct: i === correct, position: i })))
+    else if (qtype === 'multiple') await supabase.from('quiz_options').insert(options.map((label, i) => ({ question_id: qid, label: label.trim(), is_correct: !!multi[i], position: i })).filter((o) => o.label))
     resetForm(); setBusy(false); reload()
   }
 
@@ -549,6 +553,7 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
         <Field label={t('questionType')}>
           <select value={qtype} onChange={(e) => setQtype(e.target.value as any)} style={inputCss}>
             <option value="single">{t('typeSingle')}</option>
+            <option value="multiple">{t('typeMultiple')}</option>
             <option value="true_false">{t('typeTrueFalse')}</option>
             <option value="short_answer">{t('typeShort')}</option>
           </select>
@@ -560,6 +565,13 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
             <input value={o} onChange={(e) => setOptions((os) => os.map((x, j) => j === i ? e.target.value : x))} placeholder={`${t('option')} ${String.fromCharCode(65 + i)}`} style={{ ...inputCss, height: 38 }} />
           </div>
         ))}
+        {qtype === 'multiple' && options.map((o, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
+            <button onClick={() => setMulti((m) => m.map((x, j) => j === i ? !x : x))} title="Mark correct" style={{ width: 30, height: 30, flex: 'none', borderRadius: 8, border: 'none', cursor: 'pointer', background: multi[i] ? '#EAF6EF' : '#F1F4F8', color: multi[i] ? '#1F8A5B' : '#B0BCCB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={multi[i] ? 'check-square' : 'square'} size={16} /></button>
+            <input value={o} onChange={(e) => setOptions((os) => os.map((x, j) => j === i ? e.target.value : x))} placeholder={`${t('option')} ${String.fromCharCode(65 + i)}`} style={{ ...inputCss, height: 38 }} />
+          </div>
+        ))}
+        {qtype === 'multiple' && <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600, marginBottom: 8 }}>Tick every correct answer — the student must select them all.</div>}
         {qtype === 'true_false' && ['Vrai', 'Faux'].map((label, i) => (
           <button key={i} onClick={() => setCorrect(i)} style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', marginBottom: 8, padding: '9px 12px', borderRadius: 9, border: `1.5px solid ${correct === i ? '#1F8A5B' : 'var(--border)'}`, background: correct === i ? '#EAF6EF' : '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13, color: 'var(--ink-soft)' }}>
             <Icon name={correct === i ? 'check-circle' : 'circle'} size={16} color={correct === i ? '#1F8A5B' : '#B0BCCB'} />{label}
