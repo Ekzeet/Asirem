@@ -34,6 +34,7 @@ const InstructorProfile = lazy(() => import('./pages/public/InstructorProfile'))
 const Legal = lazy(() => import('./pages/public/Legal'))
 const CheckoutReturn = lazy(() => import('./pages/public/CheckoutReturn'))
 const Checkout = lazy(() => import('./pages/public/Checkout'))
+const AcceptInvite = lazy(() => import('./pages/public/AcceptInvite'))
 const Unsubscribe = lazy(() => import('./pages/public/Unsubscribe'))
 const Paths = lazy(() => import('./pages/public/Paths'))
 const PathSales = lazy(() => import('./pages/public/PathSales'))
@@ -110,6 +111,7 @@ export default function App() {
           <Route path="/login" element={<MarketingLayoutC><LoginPage /></MarketingLayoutC>} />
           <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
           <Route path="/checkout" element={<PublicLayoutC><Checkout /></PublicLayoutC>} />
+          <Route path="/accept-invite" element={<PublicLayoutC><AcceptInvite /></PublicLayoutC>} />
           <Route path="/courses" element={<MarketingLayoutC><MarketingCourses /></MarketingLayoutC>} />
           <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
           <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
