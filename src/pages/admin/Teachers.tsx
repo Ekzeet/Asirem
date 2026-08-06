@@ -44,6 +44,19 @@ export default function AdminTeachers() {
     reload()
   }
 
+  async function manage(action: string, tc: Teacher, extra?: Record<string, string>) {
+    const { data: sess } = await supabase.auth.getSession()
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-manage-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session?.access_token}`, apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string },
+      body: JSON.stringify({ action, user_id: tc.userId, institution_id: inst, role: 'teacher', ...extra }),
+    })
+    const j = await res.json()
+    if (!res.ok) { alert(j.error ?? 'Failed'); return }
+    reload()
+  }
+  const actBtn: React.CSSProperties = { flex: 1, height: 32, borderRadius: 8, border: '1px solid var(--border-soft)', background: '#fff', color: '#5B6B82', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }
+
   if (loading || !data) return <Loader />
   const pending = data.filter((tc) => tc.status !== 'active').length
 
@@ -87,6 +100,11 @@ export default function AdminTeachers() {
                   <div style={{ fontSize: 10.5, color: '#93A1B4', fontWeight: 700, textTransform: 'uppercase', letterSpacing: .4 }}>{s.l}</div>
                 </div>
               ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+              <button style={actBtn} onClick={() => { const n = window.prompt('New name', tc.name); if (n && n.trim()) manage('rename', tc, { full_name: n.trim() }) }}><Icon name="pencil" size={14} /> Edit</button>
+              <button style={actBtn} onClick={() => manage('set_status', tc, { status: tc.status === 'active' ? 'inactive' : 'active' })}><Icon name={tc.status === 'active' ? 'pause' : 'play'} size={14} /> {tc.status === 'active' ? 'Suspend' : 'Activate'}</button>
+              <button style={{ ...actBtn, flex: 'none', width: 38, color: '#C0392B', borderColor: '#F2C6C0' }} title="Remove" onClick={() => { if (window.confirm(`Remove ${tc.name} from the academy?`)) manage('remove', tc) }}><Icon name="trash-2" size={14} /></button>
             </div>
           </Card>
         ))}
