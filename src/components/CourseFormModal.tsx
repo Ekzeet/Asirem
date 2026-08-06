@@ -148,7 +148,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
           </div>
         ) : (
           <div style={{ marginBottom: 10 }}>
-            <FileUpload bucket="blog-media" pathPrefix="course-covers" accept="image/*" label="Upload thumbnail image"
+            <FileUpload bucket="blog-media" pathPrefix={me!.institutionId} accept="image/*" label="Upload thumbnail image"
               onUploaded={(path) => set('cover_url', supabase.storage.from('blog-media').getPublicUrl(path).data.publicUrl)} />
           </div>
         )}
