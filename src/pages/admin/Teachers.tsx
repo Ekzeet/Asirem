@@ -53,6 +53,7 @@ export default function AdminTeachers() {
     })
     const j = await res.json()
     if (!res.ok) { alert(j.error ?? 'Failed'); return }
+    if (action === 'resend') { alert('Invitation re-sent by email.'); return }
     reload()
   }
   const actBtn: React.CSSProperties = { flex: 1, height: 32, borderRadius: 8, border: '1px solid var(--border-soft)', background: '#fff', color: '#5B6B82', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }
@@ -106,6 +107,7 @@ export default function AdminTeachers() {
               <button style={actBtn} onClick={() => manage('set_status', tc, { status: tc.status === 'active' ? 'inactive' : 'active' })}><Icon name={tc.status === 'active' ? 'pause' : 'play'} size={14} /> {tc.status === 'active' ? 'Suspend' : 'Activate'}</button>
               <button style={{ ...actBtn, flex: 'none', width: 38, color: '#C0392B', borderColor: '#F2C6C0' }} title="Remove" onClick={() => { if (window.confirm(`Remove ${tc.name} from the academy?`)) manage('remove', tc) }}><Icon name="trash-2" size={14} /></button>
             </div>
+            <button style={{ ...actBtn, marginTop: 8, width: '100%' }} onClick={() => manage('resend', tc, { redirect_to: `${window.location.origin}/accept-invite` })}><Icon name="mail" size={14} /> Resend invitation</button>
           </Card>
         ))}
       </div>

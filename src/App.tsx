@@ -102,6 +102,10 @@ export default function App() {
 
   if (!supabaseConfigured) return <ConfigNotice />
   if (loading) return <Loading />
+  // Invited users must set a password before reaching any dashboard.
+  if (session && (session.user?.user_metadata as { needs_password?: boolean } | undefined)?.needs_password === true) {
+    return <Suspense fallback={<Loading />}><AcceptInvite /></Suspense>
+  }
   if (session && !me) return <PendingNotice />
   if (!session || !me) {
     return (

@@ -35,7 +35,7 @@ export default function AcceptInvite() {
     if (password.length < 8) { setError(lang === 'es' ? 'Mínimo 8 caracteres' : 'Minimum 8 characters'); return }
     if (password !== confirm) { setError(lang === 'es' ? 'Las contraseñas no coinciden' : 'Passwords do not match'); return }
     setBusy(true)
-    const { error } = await supabase.auth.updateUser({ password, data: { full_name: name.trim() } })
+    const { error } = await supabase.auth.updateUser({ password, data: { full_name: name.trim(), needs_password: false } })
     setBusy(false)
     if (error) { setError(error.message); return }
     window.location.href = '/' // reload → AuthContext routes to the right dashboard
