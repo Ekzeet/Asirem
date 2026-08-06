@@ -221,7 +221,7 @@ type ResTarget = { lessonId?: string; sectionId?: string; title: string }
 function ResourcesModal({ courseId, target, onClose }: { courseId: string; target: ResTarget; onClose: () => void }) {
   const { t } = useI18n()
   const { data, loading, reload } = useAsync(async () => {
-    const base = supabase.from('lesson_resources').select('id,name,size_label,kind,file_url,position')
+    const base: any = supabase.from('lesson_resources').select('id,name,size_label,kind,file_url,position')
     const { data } = await (target.lessonId ? base.eq('lesson_id', target.lessonId) : base.eq('section_id', target.sectionId!)).order('position')
     return (data ?? []) as { id: string; name: string; size_label: string | null; kind: string | null; file_url: string | null; position: number }[]
   }, [target.lessonId, target.sectionId])
@@ -231,7 +231,7 @@ function ResourcesModal({ courseId, target, onClose }: { courseId: string; targe
     const ext = (file.name.split('.').pop() ?? '').toLowerCase()
     const kind = ['pdf', 'xlsx', 'docx', 'zip', 'png', 'jpg', 'jpeg'].includes(ext) ? (ext === 'png' || ext === 'jpg' || ext === 'jpeg' ? 'image' : ext) : 'file'
     const owner = target.lessonId ? { lesson_id: target.lessonId } : { section_id: target.sectionId }
-    await supabase.from('lesson_resources').insert({ ...owner, name: file.name, file_url: path, kind, icon: kindIcon[kind] ?? 'file', size_label: `${Math.max(1, Math.round(file.size / 1024))} KB`, position: (data?.length ?? 0) })
+    await supabase.from('lesson_resources').insert({ ...owner, name: file.name, file_url: path, kind, icon: kindIcon[kind] ?? 'file', size_label: `${Math.max(1, Math.round(file.size / 1024))} KB`, position: (data?.length ?? 0) } as any)
     reload()
   }
   async function del(id: string) { await supabase.from('lesson_resources').delete().eq('id', id); reload() }
@@ -501,10 +501,10 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
     const sect = sectionTitle.trim() || null
     let qid = editingId
     if (qid) {
-      await supabase.from('quiz_questions').update({ prompt: prompt.trim(), question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null }).eq('id', qid)
+      await supabase.from('quiz_questions').update({ prompt: prompt.trim(), question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null } as any).eq('id', qid)
       await supabase.from('quiz_options').delete().eq('question_id', qid)
     } else {
-      const { data: qq } = await supabase.from('quiz_questions').insert({ quiz_id: quizId, prompt: prompt.trim(), position: questions.length, points: 20, question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null }).select('id').single()
+      const { data: qq } = await supabase.from('quiz_questions').insert({ quiz_id: quizId, prompt: prompt.trim(), position: questions.length, points: 20, question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null } as any).select('id').single()
       qid = qq!.id
     }
     if (qtype === 'true_false') await supabase.from('quiz_options').insert([{ question_id: qid, label: 'Vrai', is_correct: correct === 0, position: 0 }, { question_id: qid, label: 'Faux', is_correct: correct === 1, position: 1 }])
