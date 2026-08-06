@@ -501,20 +501,24 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
     if (qtype === 'single' && options.filter((o) => o.trim()).length < 2) return
     if (qtype === 'multiple' && (options.filter((o) => o.trim()).length < 2 || !multi.some((m, i) => m && options[i].trim()))) return
     setBusy(true)
-    const quizId = await ensureQuiz()
-    const sect = sectionTitle.trim() || null
-    let qid = editingId
-    if (qid) {
-      await supabase.from('quiz_questions').update({ prompt: prompt.trim(), question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null } as any).eq('id', qid)
-      await supabase.from('quiz_options').delete().eq('question_id', qid)
-    } else {
-      const { data: qq } = await supabase.from('quiz_questions').insert({ quiz_id: quizId, prompt: prompt.trim(), position: questions.length, points: 20, question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null } as any).select('id').single()
-      qid = qq!.id
-    }
-    if (qtype === 'true_false') await supabase.from('quiz_options').insert([{ question_id: qid, label: 'Vrai', is_correct: correct === 0, position: 0 }, { question_id: qid, label: 'Faux', is_correct: correct === 1, position: 1 }])
-    else if (qtype === 'single') await supabase.from('quiz_options').insert(options.filter((o) => o.trim()).map((label, i) => ({ question_id: qid, label: label.trim(), is_correct: i === correct, position: i })))
-    else if (qtype === 'multiple') await supabase.from('quiz_options').insert(options.map((label, i) => ({ question_id: qid, label: label.trim(), is_correct: !!multi[i], position: i })).filter((o) => o.label))
-    resetForm(); setBusy(false); reload()
+    try {
+      const quizId = await ensureQuiz()
+      const sect = sectionTitle.trim() || null
+      let qid = editingId
+      if (qid) {
+        const { error } = await supabase.from('quiz_questions').update({ prompt: prompt.trim(), question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null } as any).eq('id', qid)
+        if (error) throw error
+        await supabase.from('quiz_options').delete().eq('question_id', qid)
+      } else {
+        const { data: qq, error } = await supabase.from('quiz_questions').insert({ quiz_id: quizId, prompt: prompt.trim(), position: questions.length, points: 20, question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null } as any).select('id').single()
+        if (error || !qq) throw (error ?? new Error('insert failed'))
+        qid = qq.id
+      }
+      if (qtype === 'true_false') await supabase.from('quiz_options').insert([{ question_id: qid, label: 'Vrai', is_correct: correct === 0, position: 0 }, { question_id: qid, label: 'Faux', is_correct: correct === 1, position: 1 }])
+      else if (qtype === 'single') await supabase.from('quiz_options').insert(options.filter((o) => o.trim()).map((label, i) => ({ question_id: qid, label: label.trim(), is_correct: i === correct, position: i })))
+      else if (qtype === 'multiple') await supabase.from('quiz_options').insert(options.map((label, i) => ({ question_id: qid, label: label.trim(), is_correct: !!multi[i], position: i })).filter((o) => o.label))
+      resetForm(); reload()
+    } catch (e) { alert((e as Error).message ?? 'Failed to save question') } finally { setBusy(false) }
   }
 
   let lastSection: string | null | undefined = undefined
