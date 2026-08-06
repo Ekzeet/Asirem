@@ -171,6 +171,8 @@ export default function Player() {
             </>
           )}
 
+          <LiveButton courseId={courseId!} />
+
           {tab === 'quiz' && <QuizPanel quiz={detail.data?.quiz ?? null} />}
 
           {tab === 'assignments' && <AssignmentsPanel courseId={courseId!} />}
@@ -214,6 +216,42 @@ export default function Player() {
         ))}
       </aside>
     </div>
+  )
+}
+
+/** Live course: shows the student's own personal Zoom link (valid for every session),
+ *  provisioning it automatically on first click via the zoom-register edge function. */
+function LiveButton({ courseId }: { courseId: string }) {
+  const { me } = useAuth()
+  const [live, setLive] = useState(false)
+  const [url, setUrl] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    let on = true
+    ;(async () => {
+      const [{ data: c }, { data: e }] = await Promise.all([
+        supabase.from('courses').select('is_live').eq('id', courseId).single(),
+        supabase.from('enrollments').select('zoom_join_url').eq('course_id', courseId).eq('user_id', me!.userId).maybeSingle(),
+      ])
+      if (!on) return
+      setLive(!!(c as any)?.is_live)
+      setUrl((e as any)?.zoom_join_url ?? null)
+    })()
+    return () => { on = false }
+  }, [courseId, me])
+  if (!live) return null
+  async function join() {
+    if (url) { window.open(url, '_blank'); return }
+    setBusy(true)
+    const { data, error } = await supabase.functions.invoke('zoom-register', { body: { course_id: courseId } })
+    setBusy(false)
+    if (error || !(data as any)?.join_url) { alert((data as any)?.error ?? 'zoom_error'); return }
+    setUrl((data as any).join_url); window.open((data as any).join_url, '_blank')
+  }
+  return (
+    <button onClick={join} disabled={busy} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', justifyContent: 'center', marginBottom: 16, background: 'linear-gradient(135deg,#2D8CFF,#1B5FB0)', color: '#fff', border: 0, padding: '13px', borderRadius: 12, fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>
+      <Icon name="video" size={18} /> {busy ? '…' : (url ? 'Join live session' : 'Get my live link')}
+    </button>
   )
 }
 
