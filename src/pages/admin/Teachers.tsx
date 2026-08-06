@@ -108,6 +108,7 @@ export default function AdminTeachers() {
               <button style={{ ...actBtn, flex: 'none', width: 38, color: '#C0392B', borderColor: '#F2C6C0' }} title="Remove" onClick={() => { if (window.confirm(`Remove ${tc.name} from the academy?`)) manage('remove', tc) }}><Icon name="trash-2" size={14} /></button>
             </div>
             <button style={{ ...actBtn, marginTop: 8, width: '100%' }} onClick={() => manage('resend', tc, { redirect_to: `${window.location.origin}/accept-invite` })}><Icon name="mail" size={14} /> Resend invitation</button>
+            <button style={{ ...actBtn, marginTop: 8, width: '100%', background: '#0F2C4C', color: '#fff', border: 'none' }} onClick={() => { if (window.confirm(`Grant ${tc.name} full admin access to the platform?`)) manage('promote_admin', tc) }}><Icon name="shield" size={14} /> Make admin</button>
           </Card>
         ))}
       </div>
