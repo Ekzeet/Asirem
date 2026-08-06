@@ -103,11 +103,12 @@ function InviteModal({ institutionId, onClose, onSaved }: { institutionId: strin
   const [role, setRole] = useState<'teacher' | 'student'>('teacher')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
   const [ok, setOk] = useState(false)
 
   async function invite() {
     if (!name.trim() || !email.trim()) return
-    setBusy(true); setError(null)
+    setBusy(true); setError(null); setInfo(null)
     const { data: sess } = await supabase.auth.getSession()
     const token = sess.session?.access_token
     try {
@@ -118,15 +119,19 @@ function InviteModal({ institutionId, onClose, onSaved }: { institutionId: strin
       })
       const j = await res.json()
       if (!res.ok) { setError(j.error ?? 'Failed'); setBusy(false); return }
-      setOk(true); setBusy(false)
-      setTimeout(onSaved, 700)
+      setBusy(false); setOk(true)
+      if (j.emailed) setInfo(`Invitation email sent to ${j.email}.`)
+      else setError(`Account created, but the email could not be sent (${j.email_error ?? 'unknown'}). Check RESEND settings.`)
     } catch (e: any) { setError(e.message); setBusy(false) }
   }
 
   return (
     <Modal title={t('inviteTeacher')} subtitle={t('inviteSub')} onClose={onClose}
-      footer={<><BtnGhost onClick={onClose}>{t('cancel')}</BtnGhost><BtnPrimary onClick={invite} disabled={busy || ok}><Icon name="user-plus" size={16} />{ok ? '✓' : t('sendInvite')}</BtnPrimary></>}>
+      footer={ok
+        ? <BtnPrimary onClick={onSaved}>{t('done')}</BtnPrimary>
+        : <><BtnGhost onClick={onClose}>{t('cancel')}</BtnGhost><BtnPrimary onClick={invite} disabled={busy}><Icon name="user-plus" size={16} />{t('sendInvite')}</BtnPrimary></>}>
       {error && <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, background: '#FBEBEB', padding: '9px 12px', borderRadius: 10, marginBottom: 14 }}>{error}</div>}
+      {info && <div style={{ fontSize: 12.5, color: '#1F8A5B', fontWeight: 700, background: '#EAF6EF', padding: '9px 12px', borderRadius: 10, marginBottom: 14 }}>{info}</div>}
       <Field label={t('fullName')}><input value={name} onChange={(e) => setName(e.target.value)} style={inputCss} /></Field>
       <Field label={t('email')}><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputCss} /></Field>
       <Field label={t('role')}>
