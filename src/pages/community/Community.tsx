@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { useI18n } from '../../i18n/I18nContext'
 import { supabase } from '../../lib/supabase'
@@ -22,6 +22,7 @@ export default function Community() {
   const [activeGroup, setActiveGroup] = useState<string>('all')
   const [composer, setComposer] = useState('')
   const [posting, setPosting] = useState(false)
+  const [openComments, setOpenComments] = useState<string | null>(null)
 
   const { data, loading, reload } = useAsync(async () => {
     const [{ data: groups }, { data: posts }, { data: likes }, { data: comments }, { data: events }, { data: leaders }] = await Promise.all([
@@ -115,9 +116,10 @@ export default function Community() {
                 <button onClick={() => toggleLike(p)} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', background: 'none', border: 'none', color: p.liked ? '#D14343' : '#8494A8' }}>
                   <Icon name="heart" size={15} fill={p.liked ? '#D14343' : 'none'} />{p.likes}
                 </button>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#8494A8', fontWeight: 700 }}><Icon name="message-circle" size={15} />{p.comments}</span>
+                <button onClick={() => setOpenComments(openComments === p.id ? null : p.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: openComments === p.id ? 'var(--navy-800)' : '#8494A8', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}><Icon name="message-circle" size={15} />{p.comments}</button>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#8494A8', fontWeight: 700 }}><Icon name="share-2" size={15} />{t('share')}</span>
               </div>
+              {openComments === p.id && <CommentThread postId={p.id} meId={me!.userId} onPosted={reload} />}
             </Card>
           ))}
         </div>
@@ -157,6 +159,52 @@ export default function Community() {
             ))}
           </Card>
         </div>
+      </div>
+    </div>
+  )
+}
+
+type Comment = { id: string; body: string; created_at: string; author: string }
+
+/** Reply thread under a post — any institution member can read and reply. */
+function CommentThread({ postId, meId, onPosted }: { postId: string; meId: string; onPosted: () => void }) {
+  const { t, lang } = useI18n()
+  const [comments, setComments] = useState<Comment[] | null>(null)
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function load() {
+    const { data } = await supabase
+      .from('post_comments')
+      .select('id, body, created_at, author:profiles!post_comments_author_profile_fkey(full_name)')
+      .eq('post_id', postId).order('created_at')
+    setComments((data ?? []).map((c: any) => ({ id: c.id, body: c.body, created_at: c.created_at, author: c.author?.full_name ?? '—' })))
+  }
+  useEffect(() => { load() }, [postId])
+
+  async function send() {
+    const body = text.trim()
+    if (!body) return
+    setBusy(true)
+    await supabase.from('post_comments').insert({ post_id: postId, author_id: meId, body })
+    setText(''); setBusy(false)
+    await load(); onPosted()
+  }
+
+  return (
+    <div style={{ marginTop: 13, paddingTop: 13, borderTop: '1px solid var(--border-soft)', display: 'flex', flexDirection: 'column', gap: 11 }}>
+      {(comments ?? []).map((c) => (
+        <div key={c.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <Avatar name={c.author} size={30} radius={9} />
+          <div style={{ background: '#F5F7FA', borderRadius: 11, padding: '8px 12px', flex: 1 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--navy-800)' }}>{c.author} <span style={{ color: '#9AA7B8', fontWeight: 600, fontSize: 11 }}>· {relTime(c.created_at, lang)}</span></div>
+            <div style={{ fontSize: 13, color: '#33415A', lineHeight: 1.5, marginTop: 2 }}>{c.body}</div>
+          </div>
+        </div>
+      ))}
+      <div style={{ display: 'flex', gap: 9 }}>
+        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') send() }} placeholder={t('yourReply')} style={{ flex: 1, height: 38, border: '1px solid var(--border)', borderRadius: 10, background: '#fff', padding: '0 12px', fontSize: 13, outline: 'none' }} />
+        <button onClick={send} disabled={busy || !text.trim()} style={{ height: 38, padding: '0 16px', borderRadius: 10, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 12.5, cursor: 'pointer', opacity: text.trim() ? 1 : .6 }}>{t('send')}</button>
       </div>
     </div>
   )

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useI18n } from '../i18n/I18nContext'
@@ -42,6 +43,12 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
   const { t } = useI18n()
   const nav = useNavigate()
   const loc = useLocation()
+  const [commCount, setCommCount] = useState(0)
+  useEffect(() => {
+    if (!me) return
+    supabase.from('posts').select('id', { count: 'exact', head: true }).eq('institution_id', me.institutionId)
+      .then(({ count }) => setCommCount(count ?? 0))
+  }, [me])
   if (!me) return null
   let items = NAV[me.role] ?? NAV.student
   // A student who hasn't bought a course yet only gets to browse the catalog —
@@ -71,6 +78,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
       <nav style={{ flex: 1, overflowY: 'auto', padding: '2px 12px 12px', display: 'flex', flexDirection: 'column', gap: 3 }}>
         {items.map((it) => {
           const active = isActive(it.to)
+          const badge = it.to === '/community' ? (commCount > 0 ? String(commCount) : undefined) : it.badge
           return (
             <button key={it.to} onClick={() => { nav(it.to); onClose?.() }} style={{
               display: 'flex', alignItems: 'center', gap: 12, height: 42, borderRadius: 11, border: 'none', cursor: 'pointer',
@@ -80,8 +88,8 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
             }}>
               <Icon name={it.icon} size={18} />
               <span style={{ flex: 1, textAlign: 'left' }}>{t(it.key)}</span>
-              {it.badge && (
-                <span style={{ fontSize: 10.5, fontWeight: 800, background: '#D9A441', color: '#0F2C4C', minWidth: 20, height: 18, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{it.badge}</span>
+              {badge && (
+                <span style={{ fontSize: 10.5, fontWeight: 800, background: '#D9A441', color: '#0F2C4C', minWidth: 20, height: 18, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{badge}</span>
               )}
             </button>
           )
