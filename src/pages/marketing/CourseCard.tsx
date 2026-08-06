@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 
 export type PublicCourse = {
   id: string; slug: string; title: string; subtitle: string | null; category: string | null
-  level: string | null; price_cents: number; currency: string; credit_hours: number | null
+  level: string | null; price_cents: number; currency: string; credit_hours: number | null; cover_url?: string | null
 }
 
 function money(cents: number, currency: string) {
@@ -20,9 +20,9 @@ export default function CourseCard({ c }: { c: PublicCourse }) {
   return (
     <article className="blueprint" style={{ display: 'flex', flexDirection: 'column', background: 'transparent' }}>
       <Corners />
-      <div onClick={() => nav(`/courses/${c.slug}`)} style={{ aspectRatio: '16/10', background: 'var(--color-accent-100)', borderBottom: '1px solid var(--color-divider)', display: 'grid', placeItems: 'center', position: 'relative', cursor: 'pointer' }}>
+      <div onClick={() => nav(`/courses/${c.slug}`)} style={{ aspectRatio: '16/10', background: c.cover_url ? `center/cover no-repeat url(${c.cover_url})` : 'var(--color-accent-100)', borderBottom: '1px solid var(--color-divider)', display: 'grid', placeItems: 'center', position: 'relative', cursor: 'pointer' }}>
         {c.category && <span className="tag tag-accent" style={{ position: 'absolute', top: 12, left: 12 }}>{c.category}</span>}
-        <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4 2 9l10 5 10-5-10-5Z" /><path d="M6 11.5V16c0 1.1 2.7 2.5 6 2.5s6-1.4 6-2.5v-4.5" /></svg>
+        {!c.cover_url && <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4 2 9l10 5 10-5-10-5Z" /><path d="M6 11.5V16c0 1.1 2.7 2.5 6 2.5s6-1.4 6-2.5v-4.5" /></svg>}
       </div>
       <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
         <h3 style={{ fontSize: 20, textTransform: 'uppercase', lineHeight: 1.1, cursor: 'pointer' }} onClick={() => nav(`/courses/${c.slug}`)}>{c.title}</h3>

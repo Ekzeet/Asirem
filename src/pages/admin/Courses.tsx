@@ -29,7 +29,7 @@ export default function AdminCourses() {
     const [{ data: courses }, { data: enr }, { data: coInstr }] = await Promise.all([
       supabase
         .from('courses')
-        .select('id,title,subtitle,category,price_cents,rating,accent,icon,status,instructor_id,instructor:profiles!courses_instructor_id_fkey(full_name)')
+        .select('id,title,subtitle,category,price_cents,rating,accent,icon,cover_url,status,instructor_id,instructor:profiles!courses_instructor_id_fkey(full_name)')
         .eq('institution_id', inst)
         .order('created_at', { ascending: false }),
       supabase.from('enrollments').select('course_id').eq('institution_id', inst),
@@ -82,7 +82,7 @@ export default function AdminCourses() {
           return (
             <div key={c.id} className="card" style={{ overflow: 'hidden' }}>
               <div onClick={() => nav(`/admin/courses/${c.id}/edit`)} style={{ cursor: 'pointer' }}>
-              <CourseCover accent={c.accent} icon={c.icon}>
+              <CourseCover accent={c.accent} icon={c.icon} cover={(c as any).cover_url}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: st ? 'rgba(31,138,91,.9)' : 'rgba(0,0,0,.32)', padding: '3px 10px', borderRadius: 20 }}>
                   {st ? t('published') : t('drafts').replace(/s$/, '')}
                 </span>
