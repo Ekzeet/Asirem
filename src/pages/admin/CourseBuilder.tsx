@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { useI18n } from '../../i18n/I18nContext'
@@ -23,7 +23,7 @@ export default function CourseBuilder() {
   const [tab, setTab] = useState<'curriculum' | 'assignments' | 'grades'>('curriculum')
   const [editDetails, setEditDetails] = useState(false)
   const [quizLesson, setQuizLesson] = useState<Lesson | null>(null)
-  const [resLesson, setResLesson] = useState<Lesson | null>(null)
+  const [resTarget, setResTarget] = useState<ResTarget | null>(null)
   const [lessonForm, setLessonForm] = useState<{ sectionId: string; lesson?: Lesson } | null>(null)
   const [newSection, setNewSection] = useState('')
   const [newAssign, setNewAssign] = useState(false)
@@ -99,6 +99,7 @@ export default function CourseBuilder() {
                 <Icon name="folder" size={16} color="#D9A441" />
                 <span style={{ flex: 1, fontFamily: 'var(--display)', fontWeight: 700, fontSize: 14, color: 'var(--navy-800)' }}>{s.title}</span>
                 <button onClick={() => setLessonForm({ sectionId: s.id })} style={linkBtn}><Icon name="plus" size={14} /> {t('addLesson')}</button>
+                <button onClick={() => setResTarget({ sectionId: s.id, title: s.title })} style={linkBtn}><Icon name="paperclip" size={14} /> {t('resources')}</button>
                 <button onClick={() => delSection(s.id)} style={{ ...linkBtn, color: '#D14343' }}><Icon name="trash-2" size={14} /></button>
               </div>
               {s.lessons.length === 0 && <div style={{ padding: '12px 18px', fontSize: 12.5, color: 'var(--muted)' }}>{t('noLessons')}</div>}
@@ -109,7 +110,7 @@ export default function CourseBuilder() {
                   {l.is_preview && <span style={{ fontSize: 10.5, fontWeight: 700, color: '#1F8A5B', background: '#EAF6EF', padding: '2px 8px', borderRadius: 20 }}>{t('preview')}</span>}
                   {l.hasQuiz && <span style={{ fontSize: 10.5, fontWeight: 700, color: '#7C5CD6', background: '#F3EDFB', padding: '2px 8px', borderRadius: 20 }}>Quiz</span>}
                   <span style={{ fontSize: 11.5, color: '#9AA7B8', fontWeight: 600 }}>{l.duration}</span>
-                  <button onClick={() => setResLesson(l)} style={linkBtn}><Icon name="paperclip" size={14} /> {t('resources')}</button>
+                  <button onClick={() => setResTarget({ lessonId: l.id, title: l.title })} style={linkBtn}><Icon name="paperclip" size={14} /> {t('resources')}</button>
                   <button onClick={() => setQuizLesson(l)} style={linkBtn}><Icon name="clipboard-check" size={14} /> Quiz</button>
                   <button onClick={() => setLessonForm({ sectionId: s.id, lesson: l })} style={linkBtn}><Icon name="pencil" size={14} /></button>
                   <button onClick={() => delLesson(l.id)} style={{ ...linkBtn, color: '#D14343' }}><Icon name="trash-2" size={14} /></button>
@@ -151,7 +152,7 @@ export default function CourseBuilder() {
       {editDetails && <CourseFormModal existing={course} onClose={() => setEditDetails(false)} onSaved={() => { setEditDetails(false); reload() }} />}
       {lessonForm && <LessonModal courseId={course.id} sectionId={lessonForm.sectionId} lesson={lessonForm.lesson} count={sections.find((s) => s.id === lessonForm.sectionId)?.lessons.length ?? 0} onClose={() => setLessonForm(null)} onSaved={() => { setLessonForm(null); reload() }} />}
       {quizLesson && <QuizModal lesson={quizLesson} onClose={() => setQuizLesson(null)} onSaved={() => { setQuizLesson(null); reload() }} />}
-      {resLesson && <ResourcesModal courseId={course.id} lesson={resLesson} onClose={() => setResLesson(null)} />}
+      {resTarget && <ResourcesModal courseId={course.id} target={resTarget} onClose={() => setResTarget(null)} />}
       {newAssign && <AssignmentModal courseId={course.id} institutionId={me!.institutionId} onClose={() => setNewAssign(false)} onSaved={() => { setNewAssign(false); reload() }} />}
       {editAssign && <AssignmentModal courseId={course.id} institutionId={me!.institutionId} existing={editAssign} onClose={() => setEditAssign(null)} onSaved={() => { setEditAssign(null); reload() }} />}
     </div>
@@ -216,24 +217,27 @@ function Gradebook({ courseId }: { courseId: string }) {
   )
 }
 
-function ResourcesModal({ courseId, lesson, onClose }: { courseId: string; lesson: Lesson; onClose: () => void }) {
+type ResTarget = { lessonId?: string; sectionId?: string; title: string }
+function ResourcesModal({ courseId, target, onClose }: { courseId: string; target: ResTarget; onClose: () => void }) {
   const { t } = useI18n()
   const { data, loading, reload } = useAsync(async () => {
-    const { data } = await supabase.from('lesson_resources').select('id,name,size_label,kind,file_url,position').eq('lesson_id', lesson.id).order('position')
+    const base = supabase.from('lesson_resources').select('id,name,size_label,kind,file_url,position')
+    const { data } = await (target.lessonId ? base.eq('lesson_id', target.lessonId) : base.eq('section_id', target.sectionId!)).order('position')
     return (data ?? []) as { id: string; name: string; size_label: string | null; kind: string | null; file_url: string | null; position: number }[]
-  }, [lesson.id])
+  }, [target.lessonId, target.sectionId])
 
   const kindIcon: Record<string, string> = { pdf: 'file-text', xlsx: 'table', docx: 'file', image: 'image', zip: 'archive' }
   async function add(path: string, file: File) {
     const ext = (file.name.split('.').pop() ?? '').toLowerCase()
     const kind = ['pdf', 'xlsx', 'docx', 'zip', 'png', 'jpg', 'jpeg'].includes(ext) ? (ext === 'png' || ext === 'jpg' || ext === 'jpeg' ? 'image' : ext) : 'file'
-    await supabase.from('lesson_resources').insert({ lesson_id: lesson.id, name: file.name, file_url: path, kind, icon: kindIcon[kind] ?? 'file', size_label: `${Math.max(1, Math.round(file.size / 1024))} KB`, position: (data?.length ?? 0) })
+    const owner = target.lessonId ? { lesson_id: target.lessonId } : { section_id: target.sectionId }
+    await supabase.from('lesson_resources').insert({ ...owner, name: file.name, file_url: path, kind, icon: kindIcon[kind] ?? 'file', size_label: `${Math.max(1, Math.round(file.size / 1024))} KB`, position: (data?.length ?? 0) })
     reload()
   }
   async function del(id: string) { await supabase.from('lesson_resources').delete().eq('id', id); reload() }
 
   return (
-    <Modal title={t('resources')} subtitle={lesson.title} onClose={onClose} width={520} footer={<BtnGhost onClick={onClose}>{t('done')}</BtnGhost>}>
+    <Modal title={t('resources')} subtitle={target.title} onClose={onClose} width={520} footer={<BtnGhost onClick={onClose}>{t('done')}</BtnGhost>}>
       {!loading && (data ?? []).length === 0 && <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>{t('noData')}</div>}
       {(data ?? []).map((r) => (
         <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 11, marginBottom: 8 }}>
@@ -451,54 +455,96 @@ function AssignmentModal({ courseId, institutionId, existing, onClose, onSaved }
 
 function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () => void; onSaved: () => void }) {
   const { t } = useI18n()
+  const [title, setTitle] = useState('')
+  const [sectionTitle, setSectionTitle] = useState('')
   const [prompt, setPrompt] = useState('')
   const [qtype, setQtype] = useState<'single' | 'true_false' | 'short_answer'>('single')
   const [options, setOptions] = useState<string[]>(['', '', '', ''])
   const [correct, setCorrect] = useState(0)
   const [answerText, setAnswerText] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const { data, loading, reload } = useAsync(async () => {
-    const { data: quiz } = await supabase.from('quizzes').select('id,title,questions:quiz_questions(id,prompt,points,question_type,answer_text,options:quiz_options(id,label,is_correct))').eq('lesson_id', lesson.id).maybeSingle()
+    const { data: quiz } = await supabase.from('quizzes').select('id,title,questions:quiz_questions(id,prompt,points,question_type,answer_text,section_title,position,options:quiz_options(id,label,is_correct,position))').eq('lesson_id', lesson.id).maybeSingle()
     return quiz as any
   }, [lesson.id])
+  useEffect(() => { if (data?.title != null) setTitle(data.title) }, [data?.title])
 
-  async function addQuestion() {
+  const questions = ((data?.questions ?? []) as any[]).slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+
+  async function ensureQuiz(): Promise<string> {
+    if (data?.id) return data.id
+    const { data: q } = await supabase.from('quizzes').insert({ lesson_id: lesson.id, title: title.trim() || 'Quiz' }).select('id').single()
+    return q!.id
+  }
+  async function saveTitle() {
+    if (!data?.id) { if (title.trim()) await ensureQuiz(); reload(); return }
+    await supabase.from('quizzes').update({ title: title.trim() || 'Quiz' }).eq('id', data.id); reload()
+  }
+  function resetForm() { setEditingId(null); setSectionTitle(''); setPrompt(''); setQtype('single'); setOptions(['', '', '', '']); setCorrect(0); setAnswerText('') }
+  function editQuestion(q: any) {
+    setEditingId(q.id); setSectionTitle(q.section_title ?? ''); setPrompt(q.prompt); setQtype(q.question_type); setAnswerText(q.answer_text ?? '')
+    const opts = (q.options ?? []).slice().sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+    if (q.question_type === 'single') { setOptions([...opts.map((o: any) => o.label), '', '', '', ''].slice(0, 4)); setCorrect(Math.max(0, opts.findIndex((o: any) => o.is_correct))) }
+    else if (q.question_type === 'true_false') { setCorrect(opts.findIndex((o: any) => o.is_correct) === 0 ? 0 : 1); setOptions(['', '', '', '']) }
+    else setOptions(['', '', '', ''])
+  }
+  async function delQuestion(id: string) { await supabase.from('quiz_questions').delete().eq('id', id); if (editingId === id) resetForm(); reload() }
+
+  async function saveQuestion() {
     if (!prompt.trim()) return
     if (qtype === 'short_answer' && !answerText.trim()) return
     if (qtype === 'single' && options.filter((o) => o.trim()).length < 2) return
     setBusy(true)
-    let quizId = data?.id
-    if (!quizId) {
-      const { data: q } = await supabase.from('quizzes').insert({ lesson_id: lesson.id, title: 'Quiz' }).select('id').single()
-      quizId = q!.id
+    const quizId = await ensureQuiz()
+    const sect = sectionTitle.trim() || null
+    let qid = editingId
+    if (qid) {
+      await supabase.from('quiz_questions').update({ prompt: prompt.trim(), question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null }).eq('id', qid)
+      await supabase.from('quiz_options').delete().eq('question_id', qid)
+    } else {
+      const { data: qq } = await supabase.from('quiz_questions').insert({ quiz_id: quizId, prompt: prompt.trim(), position: questions.length, points: 20, question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null }).select('id').single()
+      qid = qq!.id
     }
-    const pos = (data?.questions?.length ?? 0)
-    const { data: qq } = await supabase.from('quiz_questions').insert({ quiz_id: quizId, prompt: prompt.trim(), position: pos, points: 20, question_type: qtype, answer_text: qtype === 'short_answer' ? answerText.trim() : null }).select('id').single()
-    if (qtype === 'true_false') {
-      await supabase.from('quiz_options').insert([{ question_id: qq!.id, label: 'Vrai', is_correct: correct === 0, position: 0 }, { question_id: qq!.id, label: 'Faux', is_correct: correct === 1, position: 1 }])
-    } else if (qtype === 'single') {
-      await supabase.from('quiz_options').insert(options.filter((o) => o.trim()).map((label, i) => ({ question_id: qq!.id, label: label.trim(), is_correct: i === correct, position: i })))
-    }
-    setPrompt(''); setOptions(['', '', '', '']); setCorrect(0); setAnswerText(''); setQtype('single'); setBusy(false)
-    reload()
+    if (qtype === 'true_false') await supabase.from('quiz_options').insert([{ question_id: qid, label: 'Vrai', is_correct: correct === 0, position: 0 }, { question_id: qid, label: 'Faux', is_correct: correct === 1, position: 1 }])
+    else if (qtype === 'single') await supabase.from('quiz_options').insert(options.filter((o) => o.trim()).map((label, i) => ({ question_id: qid, label: label.trim(), is_correct: i === correct, position: i })))
+    resetForm(); setBusy(false); reload()
   }
 
+  let lastSection: string | null | undefined = undefined
   return (
     <Modal title={t('quizEditor')} subtitle={lesson.title} onClose={onClose} width={560}
       footer={<BtnGhost onClick={() => { onSaved() }}>{t('done')}</BtnGhost>}>
-      {!loading && (data?.questions ?? []).map((q: any, i: number) => (
-        <div key={q.id} style={{ padding: '11px 13px', border: '1px solid var(--border)', borderRadius: 11, marginBottom: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy-800)', marginBottom: 6 }}>{i + 1}. {q.prompt}</div>
-          {(q.options ?? []).map((o: any) => (
-            <div key={o.id} style={{ fontSize: 12.5, color: o.is_correct ? '#1F8A5B' : '#5B6B82', fontWeight: o.is_correct ? 700 : 500, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Icon name={o.is_correct ? 'check-circle' : 'circle'} size={13} /> {o.label}
+      <Field label="Quiz title"><input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={saveTitle} placeholder="Quiz title" style={inputCss} /></Field>
+
+      {!loading && questions.map((q: any, i: number) => {
+        const sec = q.section_title ?? null
+        const showHeading = sec && sec !== lastSection
+        lastSection = sec
+        return (
+          <div key={q.id}>
+            {showHeading && <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: .5, textTransform: 'uppercase', color: '#7C5CD6', margin: '10px 0 6px' }}>{sec}</div>}
+            <div style={{ padding: '11px 13px', border: `1px solid ${editingId === q.id ? '#7C5CD6' : 'var(--border)'}`, borderRadius: 11, marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <div style={{ flex: 1, fontSize: 13, fontWeight: 700, color: 'var(--navy-800)', marginBottom: 6 }}>{i + 1}. {q.prompt}</div>
+                <button onClick={() => editQuestion(q)} title="Edit" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#5B6B82' }}><Icon name="pencil" size={14} /></button>
+                <button onClick={() => delQuestion(q.id)} title="Delete" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#D14343' }}><Icon name="trash-2" size={14} /></button>
+              </div>
+              {(q.options ?? []).map((o: any) => (
+                <div key={o.id} style={{ fontSize: 12.5, color: o.is_correct ? '#1F8A5B' : '#5B6B82', fontWeight: o.is_correct ? 700 : 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name={o.is_correct ? 'check-circle' : 'circle'} size={13} /> {o.label}
+                </div>
+              ))}
+              {q.question_type === 'short_answer' && <div style={{ fontSize: 12.5, color: '#1F8A5B', fontWeight: 700 }}>✎ {q.answer_text}</div>}
             </div>
-          ))}
-          {q.question_type === 'short_answer' && <div style={{ fontSize: 12.5, color: '#1F8A5B', fontWeight: 700 }}>✎ {q.answer_text}</div>}
-        </div>
-      ))}
+          </div>
+        )
+      })}
+
       <div style={{ borderTop: '1px solid var(--border)', marginTop: 6, paddingTop: 14 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: editingId ? '#7C5CD6' : '#8494A8', marginBottom: 8 }}>{editingId ? 'Editing question' : 'New question'}</div>
+        <Field label="Section (optional)"><input value={sectionTitle} onChange={(e) => setSectionTitle(e.target.value)} placeholder="e.g. Part 1 — Basics" style={inputCss} /></Field>
         <Field label={t('questionType')}>
           <select value={qtype} onChange={(e) => setQtype(e.target.value as any)} style={inputCss}>
             <option value="single">{t('typeSingle')}</option>
@@ -521,7 +567,10 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
         {qtype === 'short_answer' && (
           <Field label={t('acceptedAnswer')}><input value={answerText} onChange={(e) => setAnswerText(e.target.value)} style={inputCss} /></Field>
         )}
-        <BtnPrimary onClick={addQuestion} disabled={busy}><Icon name="plus" size={15} />{t('addQuestion')}</BtnPrimary>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <BtnPrimary onClick={saveQuestion} disabled={busy}><Icon name={editingId ? 'check' : 'plus'} size={15} />{editingId ? t('save') : t('addQuestion')}</BtnPrimary>
+          {editingId && <BtnGhost onClick={resetForm}>{t('cancel')}</BtnGhost>}
+        </div>
       </div>
     </Modal>
   )
