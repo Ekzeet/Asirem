@@ -23,6 +23,9 @@ export default function Community() {
   const [composer, setComposer] = useState('')
   const [posting, setPosting] = useState(false)
   const [openComments, setOpenComments] = useState<string | null>(null)
+  const [showEvent, setShowEvent] = useState(false)
+  const [evTitle, setEvTitle] = useState('')
+  const [evWhen, setEvWhen] = useState('')
 
   const { data, loading, reload } = useAsync(async () => {
     const [{ data: groups }, { data: posts }, { data: likes }, { data: comments }, { data: events }, { data: leaders }] = await Promise.all([
@@ -68,6 +71,14 @@ export default function Community() {
     setComposer('')
     setPosting(false)
     reload()
+  }
+
+  const isStaff = me!.role === 'institution_admin' || me!.role === 'super_admin' || me!.role === 'teacher'
+  async function addEvent() {
+    const title = evTitle.trim()
+    if (!title || !evWhen) return
+    await supabase.from('events').insert({ institution_id: inst, title, starts_at: new Date(evWhen).toISOString(), host_id: me!.userId })
+    setEvTitle(''); setEvWhen(''); setShowEvent(false); reload()
   }
 
   if (loading || !data) return <Loader />
@@ -127,7 +138,18 @@ export default function Community() {
         {/* Right rail */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 0 }}>
           <Card style={{ padding: '16px 17px', borderRadius: 14 }}>
-            <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 14, color: 'var(--navy-800)', marginBottom: 13, display: 'flex', alignItems: 'center', gap: 7 }}><Icon name="calendar" size={16} color="#D9A441" />{t('upcomingEvents')}</div>
+            <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 14, color: 'var(--navy-800)', marginBottom: 13, display: 'flex', alignItems: 'center', gap: 7 }}>
+              <Icon name="calendar" size={16} color="#D9A441" /><span style={{ flex: 1 }}>{t('upcomingEvents')}</span>
+              {isStaff && <button onClick={() => setShowEvent((v) => !v)} title="Add event" style={{ width: 26, height: 26, borderRadius: 8, border: '1px solid var(--border)', background: '#fff', color: 'var(--navy-800)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={showEvent ? 'x' : 'plus'} size={15} /></button>}
+            </div>
+            {showEvent && isStaff && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0 12px', borderBottom: '1px solid #F3F6FA', marginBottom: 6 }}>
+                <input value={evTitle} onChange={(e) => setEvTitle(e.target.value)} placeholder="Event title" style={{ height: 36, border: '1px solid var(--border)', borderRadius: 9, padding: '0 10px', fontSize: 13, outline: 'none' }} />
+                <input type="datetime-local" value={evWhen} onChange={(e) => setEvWhen(e.target.value)} style={{ height: 36, border: '1px solid var(--border)', borderRadius: 9, padding: '0 10px', fontSize: 13, outline: 'none' }} />
+                <button onClick={addEvent} disabled={!evTitle.trim() || !evWhen} style={{ height: 36, borderRadius: 9, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 12.5, cursor: 'pointer', opacity: (evTitle.trim() && evWhen) ? 1 : .6 }}>Add event</button>
+              </div>
+            )}
+            {events.length === 0 && !showEvent && <div style={{ fontSize: 12, color: '#9AA7B8', fontWeight: 600, padding: '4px 0' }}>{t('noData')}</div>}
             {events.map((e) => {
               const d = new Date(e.starts_at)
               const mon = d.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR', { month: 'short' }).toUpperCase().replace('.', '')
