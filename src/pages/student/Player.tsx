@@ -8,6 +8,7 @@ import { Icon } from '../../components/Icon'
 import { Avatar, Loader } from '../../components/ui'
 import { FileUpload } from '../../components/FileUpload'
 import { ReviewForm } from '../../components/ReviewForm'
+import { RichText } from '../../components/RichText'
 import { relTime } from '../../lib/format'
 
 type Lesson = { id: string; title: string; duration: string | null; body: string | null; done: boolean; content_type: string; file_url: string | null; external_url: string | null; duration_seconds: number | null }
@@ -550,7 +551,7 @@ function AssignmentsPanel({ courseId }: { courseId: string }) {
               <StatusPill graded={graded} sub={sub} closed={!!closed} notYet={!!notYet} />
               <span style={{ fontSize: 12, color: '#8494A8', fontWeight: 700 }}>{a.points} {t('points')}</span>
             </div>
-            {a.instructions && <div style={{ fontSize: 13, color: '#5B6B82', lineHeight: 1.55, marginBottom: 10, whiteSpace: 'pre-wrap' }}>{a.instructions}</div>}
+            {a.instructions && <RichText html={a.instructions} style={{ fontSize: 13, color: '#5B6B82', lineHeight: 1.55, marginBottom: 10 }} />}
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 11.5, color: '#9AA7B8', fontWeight: 600, marginBottom: 12 }}>
               {a.due_at && <span style={{ color: duePassed && !graded ? '#D14343' : '#9AA7B8' }}><Icon name="clock" size={12} /> {t('due')}: {fmt(a.due_at)}</span>}
               {a.max_attempts !== 0 && <span><Icon name="repeat" size={12} /> {t('attempts')}: {used}/{a.max_attempts}</span>}

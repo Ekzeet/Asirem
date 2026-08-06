@@ -6,6 +6,7 @@ import { useAsync } from '../../hooks/useAsync'
 import { Card, Loader, PageWrap } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import { BtnGhost, BtnPrimary, Field, Modal, inputCss, textareaCss } from '../../components/Modal'
+import { RichTextEditor } from '../../components/RichText'
 import { FileUpload } from '../../components/FileUpload'
 import type { Database } from '../../lib/database.types'
 
@@ -98,7 +99,7 @@ function PostModal({ draft, inst, authorId, onClose, onSaved }: { draft: Draft; 
         <Field label={t('slug')}><input value={form.slug ?? ''} onChange={(e) => set('slug', e.target.value)} style={inputCss} placeholder="auto" /></Field>
       </div>
       <Field label={t('excerpt')}><textarea value={form.excerpt ?? ''} onChange={(e) => set('excerpt', e.target.value)} style={{ ...textareaCss, minHeight: 60 }} /></Field>
-      <Field label={t('body')}><textarea value={form.body ?? ''} onChange={(e) => set('body', e.target.value)} style={{ ...textareaCss, minHeight: 160 }} /></Field>
+      <Field label={t('body')}><RichTextEditor value={form.body ?? ''} onChange={(v) => set('body', v)} minHeight={180} placeholder="Write your post…" /></Field>
       <Field label={t('coverImage')}>
         <FileUpload bucket="blog-media" pathPrefix={inst} accept="image/*" label={t('uploadFile')} currentPath={undefined}
           onUploaded={(path) => set('cover_url', supabase.storage.from('blog-media').getPublicUrl(path).data.publicUrl)} />

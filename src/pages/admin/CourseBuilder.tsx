@@ -6,9 +6,10 @@ import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
 import { Icon } from '../../components/Icon'
 import { Card, Loader, StatusChip } from '../../components/ui'
-import { BtnGhost, BtnPrimary, Field, Modal, inputCss, textareaCss } from '../../components/Modal'
+import { BtnGhost, BtnPrimary, Field, Modal, inputCss } from '../../components/Modal'
 import { CourseFormModal } from '../../components/CourseFormModal'
 import { FileUpload } from '../../components/FileUpload'
+import { RichTextEditor } from '../../components/RichText'
 
 type Lesson = { id: string; title: string; content_type: string; duration: string | null; duration_seconds: number | null; file_url: string | null; external_url: string | null; is_preview: boolean; position: number; hasQuiz: boolean }
 type Section = { id: string; title: string; position: number; lessons: Lesson[] }
@@ -409,7 +410,7 @@ function AssignmentModal({ courseId, institutionId, existing, onClose, onSaved }
     <Modal title={existing ? t('editAssignment') : t('newAssignment')} onClose={onClose} width={600}
       footer={<><BtnGhost onClick={onClose}>{t('cancel')}</BtnGhost><BtnPrimary onClick={save} disabled={busy}>{existing ? t('save') : t('create')}</BtnPrimary></>}>
       <Field label={t('assignmentTitle')}><input value={title} onChange={(e) => setTitle(e.target.value)} style={inputCss} /></Field>
-      <Field label={t('instructions')}><textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} style={{ ...textareaCss, minHeight: 110 }} /></Field>
+      <Field label={t('instructions')}><RichTextEditor value={instructions} onChange={setInstructions} minHeight={110} placeholder="Assignment instructions…" /></Field>
 
       <Field label={t('submissionTypes')}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

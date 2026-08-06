@@ -3,8 +3,9 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth/AuthContext'
 import { useI18n } from '../i18n/I18nContext'
 import { Icon } from './Icon'
-import { BtnGhost, BtnPrimary, Field, Modal, inputCss, textareaCss } from './Modal'
+import { BtnGhost, BtnPrimary, Field, Modal, inputCss } from './Modal'
 import { FileUpload } from './FileUpload'
+import { RichTextEditor } from './RichText'
 
 export type EditableCourse = {
   id?: string; title: string; subtitle: string | null; description?: string | null; category: string | null
@@ -89,7 +90,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
       {error && <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, background: '#FBEBEB', padding: '9px 12px', borderRadius: 10, marginBottom: 14 }}>{error}</div>}
       <Field label={t('courseTitle')}><input value={form.title} onChange={(e) => set('title', e.target.value)} style={inputCss} /></Field>
       <Field label={t('subtitle')}><input value={form.subtitle ?? ''} onChange={(e) => set('subtitle', e.target.value)} style={inputCss} /></Field>
-      <Field label={t('description')}><textarea value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} style={textareaCss} /></Field>
+      <Field label={t('description')}><RichTextEditor value={form.description ?? ''} onChange={(v) => set('description', v)} minHeight={110} placeholder="Describe the course…" /></Field>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <Field label={t('category')}>

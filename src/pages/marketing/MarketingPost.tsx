@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
 import { useDocumentHead } from '../../lib/seo'
 import { Loader } from '../../components/ui'
+import { RichText } from '../../components/RichText'
 import { Corners } from './CourseCard'
 
 const wrap = { maxWidth: 760, margin: '0 auto' } as const
@@ -40,7 +41,7 @@ export default function MarketingPost() {
           </figure>
         )}
         {p.excerpt && <p style={{ fontSize: 18, lineHeight: 1.6, color: 'var(--color-neutral-800)', fontWeight: 500, margin: '0 0 20px' }}>{p.excerpt}</p>}
-        <div style={{ fontSize: 16, lineHeight: 1.75, color: 'var(--color-neutral-800)', whiteSpace: 'pre-wrap' }}>{p.body}</div>
+        <RichText html={p.body} style={{ fontSize: 16, lineHeight: 1.75, color: 'var(--color-neutral-800)' }} />
       </article>
     </div>
   )
