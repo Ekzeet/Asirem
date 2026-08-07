@@ -515,7 +515,7 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
         if (error || !qq) throw (error ?? new Error('insert failed'))
         qid = qq.id
       }
-      if (qtype === 'true_false') await supabase.from('quiz_options').insert([{ question_id: qid, label: 'Vrai', is_correct: correct === 0, position: 0 }, { question_id: qid, label: 'Faux', is_correct: correct === 1, position: 1 }])
+      if (qtype === 'true_false') await supabase.from('quiz_options').insert([{ question_id: qid, label: 'True', is_correct: correct === 0, position: 0 }, { question_id: qid, label: 'False', is_correct: correct === 1, position: 1 }])
       else if (qtype === 'single') await supabase.from('quiz_options').insert(options.filter((o) => o.trim()).map((label, i) => ({ question_id: qid, label: label.trim(), is_correct: i === correct, position: i })))
       else if (qtype === 'multiple') await supabase.from('quiz_options').insert(options.map((label, i) => ({ question_id: qid, label: label.trim(), is_correct: !!multi[i], position: i })).filter((o) => o.label))
       resetForm(); reload()
@@ -577,7 +577,7 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
           </div>
         ))}
         {qtype === 'multiple' && <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600, marginBottom: 8 }}>Tick every correct answer — the student must select them all.</div>}
-        {qtype === 'true_false' && ['Vrai', 'Faux'].map((label, i) => (
+        {qtype === 'true_false' && ['True', 'False'].map((label, i) => (
           <button key={i} onClick={() => setCorrect(i)} style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', marginBottom: 8, padding: '9px 12px', borderRadius: 9, border: `1.5px solid ${correct === i ? '#1F8A5B' : 'var(--border)'}`, background: correct === i ? '#EAF6EF' : '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13, color: 'var(--ink-soft)' }}>
             <Icon name={correct === i ? 'check-circle' : 'circle'} size={16} color={correct === i ? '#1F8A5B' : '#B0BCCB'} />{label}
           </button>
