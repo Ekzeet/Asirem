@@ -3,13 +3,15 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth/AuthContext'
 import { useI18n } from '../i18n/I18nContext'
 import { Icon } from './Icon'
-import { BtnGhost, BtnPrimary, Field, Modal, inputCss, textareaCss } from './Modal'
+import { BtnGhost, BtnPrimary, Field, Modal, inputCss } from './Modal'
+import { FileUpload } from './FileUpload'
+import { RichTextEditor } from './RichText'
 
 export type EditableCourse = {
   id?: string; title: string; subtitle: string | null; description?: string | null; category: string | null
   level: string | null; price_cents: number; instructor_id: string | null; accent: string | null; icon: string | null; status: string
   is_live?: boolean; zoom_url?: string | null; module_lock?: boolean
-  credit_hours?: number | null; slug?: string
+  credit_hours?: number | null; slug?: string; cover_url?: string | null
 }
 
 const ACCENTS = [
@@ -35,7 +37,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
   const [form, setForm] = useState<EditableCourse>(existing ?? {
     title: '', subtitle: '', description: '', category: 'Fiscalité', level: 'Débutant',
     price_cents: 9900, instructor_id: me!.role === 'teacher' ? me!.userId : null, accent: ACCENTS[0], icon: ICONS[0], status: 'draft',
-    is_live: false, zoom_url: '', module_lock: false, credit_hours: null, slug: '',
+    is_live: false, zoom_url: '', module_lock: false, credit_hours: null, slug: '', cover_url: null,
   })
   const [teachers, setTeachers] = useState<{ id: string; name: string }[]>([])
   const [busy, setBusy] = useState(false)
@@ -65,6 +67,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
       is_live: form.is_live ?? false, zoom_url: form.zoom_url || null, module_lock: form.module_lock ?? false,
       credit_hours: form.credit_hours ?? null, slug,
       published_at: form.status === 'published' ? new Date().toISOString() : null,
+      ...(form.cover_url !== undefined ? { cover_url: form.cover_url } : {}),
     }
     let id = existing?.id
     if (id) {
@@ -87,7 +90,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
       {error && <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, background: '#FBEBEB', padding: '9px 12px', borderRadius: 10, marginBottom: 14 }}>{error}</div>}
       <Field label={t('courseTitle')}><input value={form.title} onChange={(e) => set('title', e.target.value)} style={inputCss} /></Field>
       <Field label={t('subtitle')}><input value={form.subtitle ?? ''} onChange={(e) => set('subtitle', e.target.value)} style={inputCss} /></Field>
-      <Field label={t('description')}><textarea value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} style={textareaCss} /></Field>
+      <Field label={t('description')}><RichTextEditor value={form.description ?? ''} onChange={(v) => set('description', v)} minHeight={110} placeholder="Describe the course…" /></Field>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <Field label={t('category')}>
@@ -138,7 +141,19 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
         </label>
       </div>
 
-      <Field label={t('cover')}>
+      <Field label={t('cover') + ' — thumbnail'}>
+        {form.cover_url ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+            <img src={form.cover_url} alt="cover" style={{ width: 120, height: 76, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--border)' }} />
+            <button onClick={() => set('cover_url', null)} style={{ border: '1px solid var(--border)', background: '#fff', color: '#D14343', fontWeight: 700, fontSize: 12.5, padding: '7px 12px', borderRadius: 9, cursor: 'pointer' }}>Remove image</button>
+          </div>
+        ) : (
+          <div style={{ marginBottom: 10 }}>
+            <FileUpload bucket="blog-media" pathPrefix={me!.institutionId} accept="image/*" label="Upload thumbnail image"
+              onUploaded={(path) => set('cover_url', supabase.storage.from('blog-media').getPublicUrl(path).data.publicUrl)} />
+          </div>
+        )}
+        <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600, marginBottom: 6 }}>Or pick a color (used when no image):</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {ACCENTS.map((a) => (
             <button key={a} onClick={() => set('accent', a)} style={{ width: 54, height: 34, borderRadius: 9, background: a, border: form.accent === a ? '2.5px solid #0F2C4C' : '2.5px solid transparent', cursor: 'pointer' }} />

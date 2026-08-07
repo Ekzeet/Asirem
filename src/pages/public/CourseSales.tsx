@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
 import { useI18n } from '../../i18n/I18nContext'
 import { Loader } from '../../components/ui'
-import { startCheckout } from '../../lib/checkout'
 import { StarRating } from '../../components/StarRating'
+import { RichText } from '../../components/RichText'
 import { useDocumentHead } from '../../lib/seo'
 
 type Review = { id: string; rating: number; title: string | null; body: string | null; created_at: string; author_name: string | null }
@@ -16,6 +16,7 @@ function money(cents: number, currency: string) {
 
 export default function CourseSales() {
   const { slug } = useParams()
+  const nav = useNavigate()
   const { t, lang } = useI18n()
   const [preview, setPreview] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -51,18 +52,12 @@ export default function CourseSales() {
     const { data, error } = await supabase.functions.invoke('get-preview-url', { body: { lesson_id: lessonId } })
     if (!error && data?.url) setPreview(data.url as string)
   }
-  async function buy() {
+  function buy() {
     // Free courses don't go through Stripe — send the visitor to sign in and self-enroll.
     if (!c.price_cents) { window.location.href = '/login'; return }
-    // Guest buyers (no session) supply an email so the webhook can provision their account.
-    const { data: sess } = await supabase.auth.getSession()
-    let email: string | undefined
-    if (!sess?.session) {
-      email = window.prompt(t('enterEmail')) ?? undefined
-      if (!email) return
-    }
+    // Paid: go to the checkout page, which gates on account creation/login before Stripe.
     setBusy(true)
-    try { await startCheckout({ courseId: c.id, email }) } finally { setBusy(false) }
+    nav(`/checkout?course=${slug}`, { state: { item: { kind: 'course', id: c.id, title: c.title, priceCents: c.price_cents, currency: c.currency } } })
   }
 
   return (
@@ -74,6 +69,7 @@ export default function CourseSales() {
           <span style={{ color: '#8494A8', fontSize: 13, fontWeight: 600 }}>({c.review_count ?? 0})</span>
         </div>
         <p style={{ color: '#5B6B82', fontSize: 16, fontWeight: 600 }}>{c.subtitle}</p>
+        {c.description && <RichText html={c.description} style={{ marginTop: 10, color: '#33415A', fontSize: 15, lineHeight: 1.6 }} />}
         {preview && <video src={preview} controls style={{ width: '100%', borderRadius: 12, margin: '14px 0', background: '#000' }} />}
         <h2 style={{ fontFamily: 'var(--display)', color: 'var(--navy-800)', fontSize: 18, margin: '18px 0 10px' }}>{t('curriculum')}</h2>
         {(c.sections ?? []).map((s: any) => (

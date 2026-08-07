@@ -29,7 +29,7 @@ export default function AdminCourses() {
     const [{ data: courses }, { data: enr }, { data: coInstr }] = await Promise.all([
       supabase
         .from('courses')
-        .select('id,title,subtitle,category,price_cents,rating,accent,icon,status,instructor_id,instructor:profiles!courses_instructor_id_fkey(full_name)')
+        .select('id,title,subtitle,category,price_cents,rating,accent,icon,cover_url,status,instructor_id,instructor:profiles!courses_instructor_id_fkey(full_name)')
         .eq('institution_id', inst)
         .order('created_at', { ascending: false }),
       supabase.from('enrollments').select('course_id').eq('institution_id', inst),
@@ -82,7 +82,7 @@ export default function AdminCourses() {
           return (
             <div key={c.id} className="card" style={{ overflow: 'hidden' }}>
               <div onClick={() => nav(`/admin/courses/${c.id}/edit`)} style={{ cursor: 'pointer' }}>
-              <CourseCover accent={c.accent} icon={c.icon}>
+              <CourseCover accent={c.accent} icon={c.icon} cover={(c as any).cover_url}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: st ? 'rgba(31,138,91,.9)' : 'rgba(0,0,0,.32)', padding: '3px 10px', borderRadius: 20 }}>
                   {st ? t('published') : t('drafts').replace(/s$/, '')}
                 </span>
@@ -98,7 +98,7 @@ export default function AdminCourses() {
                   {c.rating != null && <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#C99A2E' }}>★ {c.rating}</span>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid var(--border-soft)' }}>
-                  <span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 17, color: 'var(--navy-800)' }}>{c.price_cents === 0 ? (lang === 'fr' ? 'Gratuit' : lang === 'es' ? 'Gratis' : 'Free') : moneyFull(c.price_cents)}</span>
+                  <span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 17, color: 'var(--navy-800)' }}>{c.price_cents === 0 ? (lang === 'es' ? 'Gratis' : 'Free') : moneyFull(c.price_cents)}</span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: '#1F8A5B' }}>{money((counts[c.id] ?? 0) * c.price_cents)} {t('earned')}</span>
                 </div>
               </div>

@@ -14,7 +14,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
           <select value={lang} onChange={(e) => setLang(e.target.value as any)} aria-label="Language"
             style={{ border: '1px solid var(--border-soft)', borderRadius: 8, padding: '6px 8px', fontWeight: 700, color: '#5B6B82' }}>
-            <option value="fr">FR</option><option value="en">EN</option><option value="es">ES</option>
+            <option value="en">EN</option><option value="es">ES</option>
           </select>
           <Link to="/login" style={{ background: 'var(--navy-800)', color: '#fff', padding: '8px 16px', borderRadius: 9, fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>{t('login')}</Link>
         </div>

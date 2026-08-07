@@ -33,11 +33,21 @@ const CourseSales = lazy(() => import('./pages/public/CourseSales'))
 const InstructorProfile = lazy(() => import('./pages/public/InstructorProfile'))
 const Legal = lazy(() => import('./pages/public/Legal'))
 const CheckoutReturn = lazy(() => import('./pages/public/CheckoutReturn'))
+const Checkout = lazy(() => import('./pages/public/Checkout'))
+const AcceptInvite = lazy(() => import('./pages/public/AcceptInvite'))
 const Unsubscribe = lazy(() => import('./pages/public/Unsubscribe'))
 const Paths = lazy(() => import('./pages/public/Paths'))
 const PathSales = lazy(() => import('./pages/public/PathSales'))
 const Pricing = lazy(() => import('./pages/public/Pricing'))
 const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'))
+const AdminBlog = lazy(() => import('./pages/admin/Blog'))
+const MarketingPost = lazy(() => import('./pages/marketing/MarketingPost'))
+const MarketingLayoutC = lazy(() => import('./pages/marketing/MarketingLayout'))
+const MarketingHome = lazy(() => import('./pages/marketing/MarketingHome'))
+const MarketingCourses = lazy(() => import('./pages/marketing/MarketingCourses'))
+const MarketingBlog = lazy(() => import('./pages/marketing/MarketingBlog'))
+const MarketingAbout = lazy(() => import('./pages/marketing/MarketingAbout'))
+const MarketingContact = lazy(() => import('./pages/marketing/MarketingContact'))
 
 function Loading() {
   const { t } = useI18n()
@@ -72,19 +82,41 @@ VITE_SUPABASE_ANON_KEY</pre>
   )
 }
 
+function PendingNotice() {
+  const { t } = useI18n()
+  const { signOut } = useAuth()
+  return (
+    <div className="center-fill" style={{ background: 'var(--bg)', padding: 24 }}>
+      <div style={{ maxWidth: 440, background: '#fff', border: '1px solid var(--border)', borderRadius: 16, padding: '30px 32px', textAlign: 'center' }}>
+        <div style={{ fontSize: 34, marginBottom: 8 }}>⏳</div>
+        <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 20, color: 'var(--navy-800)', marginBottom: 10 }}>{t('pendingTitle')}</div>
+        <div style={{ fontSize: 14, color: 'var(--ink-soft)', lineHeight: 1.6, marginBottom: 18 }}>{t('pendingBody')}</div>
+        <button onClick={() => signOut()} style={{ height: 40, padding: '0 20px', borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: '#5B6B82', fontWeight: 700, cursor: 'pointer' }}>{t('signOut')}</button>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const { session, me, loading } = useAuth()
 
   if (!supabaseConfigured) return <ConfigNotice />
   if (loading) return <Loading />
+  // Invited users must set a password before reaching any dashboard.
+  if (session && (session.user?.user_metadata as { needs_password?: boolean } | undefined)?.needs_password === true) {
+    return <Suspense fallback={<Loading />}><AcceptInvite /></Suspense>
+  }
+  if (session && !me) return <PendingNotice />
   if (!session || !me) {
     return (
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/verify/:serial" element={<Verify />} />
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<MarketingLayoutC><LoginPage /></MarketingLayoutC>} />
           <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
-          <Route path="/courses" element={<PublicLayoutC><PublicCatalog seo /></PublicLayoutC>} />
+          <Route path="/checkout" element={<PublicLayoutC><Checkout /></PublicLayoutC>} />
+          <Route path="/accept-invite" element={<PublicLayoutC><AcceptInvite /></PublicLayoutC>} />
+          <Route path="/courses" element={<MarketingLayoutC><MarketingCourses /></MarketingLayoutC>} />
           <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
           <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
           <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
@@ -92,8 +124,13 @@ export default function App() {
           <Route path="/paths" element={<PublicLayoutC><Paths /></PublicLayoutC>} />
           <Route path="/paths/:slug" element={<PublicLayoutC><PathSales /></PublicLayoutC>} />
           <Route path="/pricing" element={<PublicLayoutC><Pricing /></PublicLayoutC>} />
-          <Route path="/" element={<PublicLayoutC><Home /></PublicLayoutC>} />
-          <Route path="*" element={<PublicLayoutC><Home /></PublicLayoutC>} />
+          <Route path="/blog" element={<MarketingLayoutC><MarketingBlog /></MarketingLayoutC>} />
+          <Route path="/blog/:slug" element={<MarketingLayoutC><MarketingPost /></MarketingLayoutC>} />
+          <Route path="/about" element={<MarketingLayoutC><MarketingAbout /></MarketingLayoutC>} />
+          <Route path="/contact" element={<MarketingLayoutC><MarketingContact /></MarketingLayoutC>} />
+          <Route path="/catalog" element={<PublicLayoutC><PublicCatalog seo /></PublicLayoutC>} />
+          <Route path="/" element={<MarketingLayoutC><MarketingHome /></MarketingLayoutC>} />
+          <Route path="*" element={<MarketingLayoutC><MarketingHome /></MarketingLayoutC>} />
         </Routes>
       </Suspense>
     )
@@ -101,21 +138,30 @@ export default function App() {
 
   const isStaff = me.role === 'institution_admin' || me.role === 'super_admin'
   const isTeacher = me.role === 'teacher'
+  // A student with no purchased course is limited to browsing/buying — course content,
+  // community and exams are gated behind buying at least one course.
+  const studentLocked = me.role === 'student' && !me.hasCourses
+  const lockTo = <Navigate to="/student/catalog" replace />
 
   return (
     <Suspense fallback={<Loading />}>
     <Routes>
       <Route path="/verify/:serial" element={<Verify />} />
       <Route path="/login" element={<Navigate to={roleHome(me.role)} replace />} />
-      <Route path="/courses" element={<PublicLayoutC><PublicCatalog seo /></PublicLayoutC>} />
+      <Route path="/courses" element={<MarketingLayoutC><MarketingCourses /></MarketingLayoutC>} />
       <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
       <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
       <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
       <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
+      <Route path="/checkout" element={<PublicLayoutC><Checkout /></PublicLayoutC>} />
       <Route path="/unsubscribe/:token" element={<PublicLayoutC><Unsubscribe /></PublicLayoutC>} />
       <Route path="/paths" element={<PublicLayoutC><Paths /></PublicLayoutC>} />
       <Route path="/paths/:slug" element={<PublicLayoutC><PathSales /></PublicLayoutC>} />
       <Route path="/pricing" element={<PublicLayoutC><Pricing /></PublicLayoutC>} />
+      <Route path="/blog" element={<MarketingLayoutC><MarketingBlog /></MarketingLayoutC>} />
+      <Route path="/blog/:slug" element={<MarketingLayoutC><MarketingPost /></MarketingLayoutC>} />
+      <Route path="/about" element={<MarketingLayoutC><MarketingAbout /></MarketingLayoutC>} />
+      <Route path="/contact" element={<MarketingLayoutC><MarketingContact /></MarketingLayoutC>} />
       <Route element={<Layout />}>
         {/* Admin */}
         {isStaff && <Route path="/admin" element={<AdminDashboard />} />}
@@ -126,6 +172,7 @@ export default function App() {
         {isStaff && <Route path="/admin/sales" element={<AdminSales />} />}
         {isStaff && <Route path="/admin/audit" element={<AdminAudit />} />}
         {isStaff && <Route path="/admin/analytics" element={<AdminAnalytics />} />}
+        {isStaff && <Route path="/admin/blog" element={<AdminBlog />} />}
         {/* Teacher */}
         {isTeacher && <Route path="/teacher" element={<TeacherDashboard />} />}
         {/* Staff assignment review */}
@@ -133,14 +180,14 @@ export default function App() {
         {/* Student */}
         <Route path="/student" element={<MyCourses />} />
         <Route path="/student/catalog" element={<Catalog />} />
-        <Route path="/student/course/:courseId" element={<Player />} />
-        <Route path="/student/certificates" element={<Certificates />} />
+        <Route path="/student/course/:courseId" element={studentLocked ? lockTo : <Player />} />
+        <Route path="/student/certificates" element={studentLocked ? lockTo : <Certificates />} />
         {/* Shared */}
-        <Route path="/community" element={<Community />} />
+        <Route path="/community" element={studentLocked ? lockTo : <Community />} />
         <Route path="/search" element={<Search />} />
-        <Route path="/exams" element={<Exams />} />
+        <Route path="/exams" element={studentLocked ? lockTo : <Exams />} />
         {(isStaff || isTeacher) && <Route path="/exams/:examId/build" element={<ExamBuilder />} />}
-        <Route path="/exams/:examId/take" element={<ExamPlayer />} />
+        <Route path="/exams/:examId/take" element={studentLocked ? lockTo : <ExamPlayer />} />
       </Route>
       <Route path="*" element={<Navigate to={roleHome(me.role)} replace />} />
     </Routes>
