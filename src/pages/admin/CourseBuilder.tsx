@@ -464,6 +464,7 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
   const [correct, setCorrect] = useState(0)
   const [multi, setMulti] = useState<boolean[]>([false, false, false, false])
   const [answerText, setAnswerText] = useState('')
+  const [answerAlts, setAnswerAlts] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -484,9 +485,9 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
     if (!data?.id) { if (title.trim()) await ensureQuiz(); reload(); return }
     await supabase.from('quizzes').update({ title: title.trim() || 'Quiz' }).eq('id', data.id); reload()
   }
-  function resetForm() { setEditingId(null); setSectionTitle(''); setPrompt(''); setQtype('single'); setOptions(['', '', '', '']); setCorrect(0); setMulti([false, false, false, false]); setAnswerText('') }
+  function resetForm() { setEditingId(null); setSectionTitle(''); setPrompt(''); setQtype('single'); setOptions(['', '', '', '']); setCorrect(0); setMulti([false, false, false, false]); setAnswerText(''); setAnswerAlts('') }
   function editQuestion(q: any) {
-    setEditingId(q.id); setSectionTitle(q.section_title ?? ''); setPrompt(q.prompt); setQtype(q.question_type); setAnswerText(q.answer_text ?? '')
+    setEditingId(q.id); setSectionTitle(q.section_title ?? ''); setPrompt(q.prompt); setQtype(q.question_type); setAnswerText(q.answer_text ?? ''); setAnswerAlts((q.answer_alts ?? []).join(', '))
     const opts = (q.options ?? []).slice().sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
     if (q.question_type === 'single') { setOptions([...opts.map((o: any) => o.label), '', '', '', ''].slice(0, 4)); setCorrect(Math.max(0, opts.findIndex((o: any) => o.is_correct))) }
     else if (q.question_type === 'multiple') { const labels = [...opts.map((o: any) => o.label), '', '', '', ''].slice(0, 4); setOptions(labels); setMulti(labels.map((_l, i) => !!opts[i]?.is_correct)) }
@@ -506,11 +507,11 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
       const sect = sectionTitle.trim() || null
       let qid = editingId
       if (qid) {
-        const { error } = await supabase.from('quiz_questions').update({ prompt: prompt.trim(), question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null } as any).eq('id', qid)
+        const { error } = await supabase.from('quiz_questions').update({ prompt: prompt.trim(), question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null, answer_alts: qtype === 'short_answer' ? answerAlts.split(',').map((s) => s.trim()).filter(Boolean) : null } as any).eq('id', qid)
         if (error) throw error
         await supabase.from('quiz_options').delete().eq('question_id', qid)
       } else {
-        const { data: qq, error } = await supabase.from('quiz_questions').insert({ quiz_id: quizId, prompt: prompt.trim(), position: questions.length, points: 20, question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null } as any).select('id').single()
+        const { data: qq, error } = await supabase.from('quiz_questions').insert({ quiz_id: quizId, prompt: prompt.trim(), position: questions.length, points: 20, question_type: qtype, section_title: sect, answer_text: qtype === 'short_answer' ? answerText.trim() : null, answer_alts: qtype === 'short_answer' ? answerAlts.split(',').map((s) => s.trim()).filter(Boolean) : null } as any).select('id').single()
         if (error || !qq) throw (error ?? new Error('insert failed'))
         qid = qq.id
       }
@@ -582,7 +583,10 @@ function QuizModal({ lesson, onClose, onSaved }: { lesson: Lesson; onClose: () =
           </button>
         ))}
         {qtype === 'short_answer' && (
-          <Field label={t('acceptedAnswer')}><input value={answerText} onChange={(e) => setAnswerText(e.target.value)} style={inputCss} /></Field>
+          <>
+            <Field label={t('acceptedAnswer')}><input value={answerText} onChange={(e) => setAnswerText(e.target.value)} style={inputCss} /></Field>
+            <Field label={t('alsoAcceptable')}><input value={answerAlts} onChange={(e) => setAnswerAlts(e.target.value)} placeholder="Other accepted answers, separated by commas" style={inputCss} /></Field>
+          </>
         )}
         <div style={{ display: 'flex', gap: 8 }}>
           <BtnPrimary onClick={saveQuestion} disabled={busy}><Icon name={editingId ? 'check' : 'plus'} size={15} />{editingId ? t('save') : t('addQuestion')}</BtnPrimary>
