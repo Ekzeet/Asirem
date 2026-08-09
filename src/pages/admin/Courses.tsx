@@ -45,6 +45,15 @@ export default function AdminCourses() {
     return { courses: list as unknown as Course[], counts }
   }, [inst])
 
+  const [dupBusy, setDupBusy] = useState<string | null>(null)
+  async function duplicate(id: string) {
+    setDupBusy(id)
+    const { data, error } = await (supabase.rpc as any)('duplicate_course', { p_course: id })
+    setDupBusy(null)
+    if (error) { alert(error.message); return }
+    if (data) nav(`/admin/courses/${data}/edit`)
+  }
+
   const filtered = useMemo(() => {
     const list = data?.courses ?? []
     if (filter === 'all') return list
@@ -88,6 +97,7 @@ export default function AdminCourses() {
                 </span>
                 {c.category && <span style={{ position: 'absolute', top: 14, left: 14, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.9)', background: 'rgba(0,0,0,.18)', padding: '3px 9px', borderRadius: 20 }}>{c.category}</span>}
                 <button onClick={(e) => { e.stopPropagation(); nav(`/admin/courses/${c.id}/edit`) }} title={t('editCourse')} style={{ position: 'absolute', top: 12, right: 12, width: 30, height: 30, borderRadius: 9, border: 'none', background: 'rgba(255,255,255,.9)', color: '#0F2C4C', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="pencil" size={15} /></button>
+                <button onClick={(e) => { e.stopPropagation(); duplicate(c.id) }} title="Duplicate course" disabled={dupBusy === c.id} style={{ position: 'absolute', top: 12, right: 48, width: 30, height: 30, borderRadius: 9, border: 'none', background: 'rgba(255,255,255,.9)', color: '#0F2C4C', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name={dupBusy === c.id ? 'loader' : 'copy'} size={15} /></button>
               </CourseCover>
               </div>
               <div style={{ padding: '15px 16px 16px' }}>
