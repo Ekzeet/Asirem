@@ -80,6 +80,7 @@ export default function CourseBuilder() {
         <button onClick={async () => { if (confirm(t('confirmDeleteCourse'))) { await supabase.from('courses').delete().eq('id', course.id); nav('/admin/courses') } }} title={t('delete')} style={{ height: 42, width: 42, borderRadius: 11, border: '1px solid #F1D5D5', background: '#fff', color: '#D14343', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="trash-2" size={16} />
         </button>
+        <BtnGhost onClick={async () => { const { data, error } = await (supabase.rpc as any)('duplicate_course', { p_course: course.id }); if (error) { alert(error.message); return } if (data) nav(`/admin/courses/${data}/edit`) }}><Icon name="copy" size={15} />Duplicate</BtnGhost>
         <BtnGhost onClick={() => setEditDetails(true)}>{t('editDetails')}</BtnGhost>
         <BtnPrimary onClick={togglePublish}><Icon name={course.status === 'published' ? 'eye-off' : 'send'} size={15} />{course.status === 'published' ? t('unpublish') : t('publish')}</BtnPrimary>
       </Card>

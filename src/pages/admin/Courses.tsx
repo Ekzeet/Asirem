@@ -54,6 +54,13 @@ export default function AdminCourses() {
     if (data) nav(`/admin/courses/${data}/edit`)
   }
 
+  async function del(id: string, title: string) {
+    if (!window.confirm(`Delete "${title}"? This permanently removes the course and all its content. This cannot be undone.`)) return
+    const { error } = await supabase.from('courses').delete().eq('id', id)
+    if (error) { alert(error.message); return }
+    reload()
+  }
+
   const filtered = useMemo(() => {
     const list = data?.courses ?? []
     if (filter === 'all') return list
@@ -98,6 +105,7 @@ export default function AdminCourses() {
                 {c.category && <span style={{ position: 'absolute', top: 14, left: 14, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.9)', background: 'rgba(0,0,0,.18)', padding: '3px 9px', borderRadius: 20 }}>{c.category}</span>}
                 <button onClick={(e) => { e.stopPropagation(); nav(`/admin/courses/${c.id}/edit`) }} title={t('editCourse')} style={{ position: 'absolute', top: 12, right: 12, width: 30, height: 30, borderRadius: 9, border: 'none', background: 'rgba(255,255,255,.9)', color: '#0F2C4C', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="pencil" size={15} /></button>
                 <button onClick={(e) => { e.stopPropagation(); duplicate(c.id) }} title="Duplicate course" disabled={dupBusy === c.id} style={{ position: 'absolute', top: 12, right: 48, width: 30, height: 30, borderRadius: 9, border: 'none', background: 'rgba(255,255,255,.9)', color: '#0F2C4C', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name={dupBusy === c.id ? 'loader' : 'copy'} size={15} /></button>
+                <button onClick={(e) => { e.stopPropagation(); del(c.id, c.title) }} title="Delete course" style={{ position: 'absolute', top: 12, right: 84, width: 30, height: 30, borderRadius: 9, border: 'none', background: 'rgba(255,255,255,.9)', color: '#D14343', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="trash-2" size={15} /></button>
               </CourseCover>
               </div>
               <div style={{ padding: '15px 16px 16px' }}>
