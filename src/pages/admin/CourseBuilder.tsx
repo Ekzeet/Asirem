@@ -58,7 +58,8 @@ export default function CourseBuilder() {
     await supabase.from('sections').insert({ course_id: course.id, title: newSection.trim(), position: sections.length })
     setNewSection(''); reload()
   }
-  async function delSection(id: string) { await supabase.from('sections').delete().eq('id', id); reload() }
+  async function delSection(id: string) { if (window.confirm('Delete this module and all its lessons?')) { await supabase.from('sections').delete().eq('id', id); reload() } }
+  async function renameSection(id: string, current: string) { const n = window.prompt('Rename module', current); if (n && n.trim() && n.trim() !== current) { await supabase.from('sections').update({ title: n.trim() }).eq('id', id); reload() } }
   async function delLesson(id: string) { await supabase.from('lessons').delete().eq('id', id); reload() }
   async function delAssignment(id: string) { await supabase.from('assignments').delete().eq('id', id); reload() }
 
@@ -102,6 +103,7 @@ export default function CourseBuilder() {
                 <span style={{ flex: 1, fontFamily: 'var(--display)', fontWeight: 700, fontSize: 14, color: 'var(--navy-800)' }}>{s.title}</span>
                 <button onClick={() => setLessonForm({ sectionId: s.id })} style={linkBtn}><Icon name="plus" size={14} /> {t('addLesson')}</button>
                 <button onClick={() => setResTarget({ sectionId: s.id, title: s.title })} style={linkBtn}><Icon name="paperclip" size={14} /> {t('resources')}</button>
+                <button onClick={() => renameSection(s.id, s.title)} title="Rename module" style={linkBtn}><Icon name="pencil" size={14} /></button>
                 <button onClick={() => delSection(s.id)} style={{ ...linkBtn, color: '#D14343' }}><Icon name="trash-2" size={14} /></button>
               </div>
               {s.lessons.length === 0 && <div style={{ padding: '12px 18px', fontSize: 12.5, color: 'var(--muted)' }}>{t('noLessons')}</div>}
