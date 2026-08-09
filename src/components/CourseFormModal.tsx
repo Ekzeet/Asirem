@@ -23,7 +23,7 @@ const ACCENTS = [
   'linear-gradient(135deg,#556575,#6E8093)',
 ]
 const ICONS = ['file-text', 'landmark', 'shield', 'heart-pulse', 'monitor', 'stethoscope', 'book-open', 'briefcase', 'calculator', 'trending-up']
-const CATEGORIES = ['Fiscalité', 'Assurance', 'Health', 'Logiciel', 'Medicare', 'Finance']
+const CATEGORIES = ['Tax', 'Insurance', 'Health', 'Software', 'Medicare', 'Finance']
 
 export function CourseFormModal({ existing, onClose, onSaved }: {
   existing?: EditableCourse | null
@@ -35,7 +35,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
   const isStaff = me!.role === 'institution_admin' || me!.role === 'super_admin'
 
   const [form, setForm] = useState<EditableCourse>(existing ?? {
-    title: '', subtitle: '', description: '', category: 'Fiscalité', level: 'Débutant',
+    title: '', subtitle: '', description: '', category: 'Tax', level: 'Beginner',
     price_cents: 9900, instructor_id: me!.role === 'teacher' ? me!.userId : null, accent: ACCENTS[0], icon: ICONS[0], status: 'draft',
     is_live: false, zoom_url: '', module_lock: false, credit_hours: null, slug: '', cover_url: null,
   })
