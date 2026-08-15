@@ -35,7 +35,8 @@ export default function TeacherDashboard() {
 
   async function deleteCoupon(c: Coupon) {
     if (!window.confirm(t('deleteCouponConfirm').replace('{code}', c.code))) return
-    await supabase.from('coupons').delete().eq('id', c.id)
+    const { data, error } = await supabase.functions.invoke('manage-coupon', { body: { action: 'delete', id: c.id } })
+    if (error || (data as any)?.error) { alert((data as any)?.error ?? error?.message ?? 'delete_failed'); return }
     reload()
   }
 
@@ -145,14 +146,13 @@ function CouponModal({ institutionId, existing, onClose, onSaved }: { institutio
     const value = type === 'amount' ? Math.round(amount * 100) : amount
     // End date is inclusive: treat it as end-of-day so the coupon works through that whole day.
     const payload = {
-      institution_id: institutionId, code: code.trim().toUpperCase(), discount_type: type, amount: value, active: true,
+      action: existing ? 'update' : 'create', id: existing?.id, institution_id: institutionId,
+      code: code.trim().toUpperCase(), discount_type: type, amount: value,
       starts_at: startsAt ? new Date(startsAt + 'T00:00:00').toISOString() : null,
       ends_at: endsAt ? new Date(endsAt + 'T23:59:59').toISOString() : null,
     }
-    const { error } = existing
-      ? await supabase.from('coupons').update(payload).eq('id', existing.id)
-      : await supabase.from('coupons').insert(payload)
-    if (error) { setError(error.message); setBusy(false); return }
+    const { data, error } = await supabase.functions.invoke('manage-coupon', { body: payload })
+    if (error || (data as any)?.error) { setError((data as any)?.error ?? error!.message); setBusy(false); return }
     setBusy(false); onSaved()
   }
 
