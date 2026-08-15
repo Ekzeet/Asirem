@@ -11,9 +11,8 @@ import { BtnGhost, BtnPrimary, Field, Modal, inputCss } from '../../components/M
 type Stats = { revenue_cents: number; sales: number; subscriptions: number; avg_order_cents: number }
 type Mrr = { mrr_cents: number; delta: number | null }
 type Tx = { id: string; name: string; course: string; plan: string; amount: number; date: string; status: string; refundable: boolean }
-type Coupon = { id: string; code: string; discount_type: string; amount: number; uses_count: number; starts_at: string | null; ends_at: string | null; category: string | null }
-
-const COUPON_CATEGORIES = ['Tax', 'Insurance', 'Health', 'Software', 'Medicare', 'Finance']
+type Coupon = { id: string; code: string; discount_type: string; amount: number; uses_count: number; starts_at: string | null; ends_at: string | null; course_id: string | null; course?: { title: string } | null }
+type CourseOpt = { id: string; title: string }
 
 export default function AdminSales() {
   const { me } = useAuth()
@@ -24,7 +23,7 @@ export default function AdminSales() {
   const [refunding, setRefunding] = useState<string | null>(null)
 
   const { data, loading, reload } = useAsync(async () => {
-    const [stats, mrr, orders, coupons] = await Promise.all([
+    const [stats, mrr, orders, coupons, courseList] = await Promise.all([
       supabase.rpc('sales_stats', { p_institution_id: inst }),
       supabase.rpc('mrr', { p_institution_id: inst }),
       supabase
@@ -33,7 +32,8 @@ export default function AdminSales() {
         .eq('institution_id', inst)
         .order('created_at', { ascending: false })
         .limit(8),
-      supabase.from('coupons').select('id, code, discount_type, amount, uses_count, starts_at, ends_at, category').eq('institution_id', inst).eq('active', true).order('created_at', { ascending: false }),
+      supabase.from('coupons').select('id, code, discount_type, amount, uses_count, starts_at, ends_at, course_id, course:courses(title)').eq('institution_id', inst).eq('active', true).order('created_at', { ascending: false }),
+      supabase.from('courses').select('id, title').eq('institution_id', inst).order('title'),
     ])
     const tx: Tx[] = (orders.data ?? []).map((o: any) => ({
       id: o.id,
@@ -45,11 +45,11 @@ export default function AdminSales() {
       status: o.status,
       refundable: o.status === 'paid' && o.provider === 'stripe' && !!o.stripe_session_id,
     }))
-    return { stats: stats.data as unknown as Stats, mrr: mrr.data as unknown as Mrr, tx, coupons: (coupons.data ?? []) as Coupon[] }
+    return { stats: stats.data as unknown as Stats, mrr: mrr.data as unknown as Mrr, tx, coupons: (coupons.data ?? []) as unknown as Coupon[], courseOpts: (courseList.data ?? []) as CourseOpt[] }
   }, [inst])
 
   if (loading || !data) return <Loader />
-  const { stats, mrr, tx, coupons } = data
+  const { stats, mrr, tx, coupons, courseOpts } = data
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR', { day: '2-digit', month: 'short' })
 
   async function doRefund(id: string) {
@@ -139,7 +139,7 @@ export default function AdminSales() {
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                     <span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 13, color: 'var(--navy-800)', letterSpacing: .5 }}>{c.code}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: c.category ? '#1B5FB0' : '#8494A8', background: c.category ? '#EAF1FB' : '#F1F4F8', padding: '2px 7px', borderRadius: 20 }}>{c.category ?? t('allCategories')}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: c.course_id ? '#1B5FB0' : '#8494A8', background: c.course_id ? '#EAF1FB' : '#F1F4F8', padding: '2px 7px', borderRadius: 20, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.course?.title ?? t('allCourses')}</span>
                   </div>
                   <div style={{ fontSize: 11, color: '#93A1B4', fontWeight: 600 }}>{c.uses_count} {t('uses')}{couponWindow(c, lang) ? ` · ${couponWindow(c, lang)}` : ''}</div>
                 </div>
@@ -154,7 +154,7 @@ export default function AdminSales() {
           </Card>
         </div>
       </div>
-      {couponForm && <CouponModal institutionId={inst} existing={couponForm === 'new' ? null : couponForm} onClose={() => setCouponForm(null)} onSaved={() => { setCouponForm(null); reload() }} />}
+      {couponForm && <CouponModal institutionId={inst} courseOpts={courseOpts} existing={couponForm === 'new' ? null : couponForm} onClose={() => setCouponForm(null)} onSaved={() => { setCouponForm(null); reload() }} />}
     </PageWrap>
   )
 }
@@ -171,12 +171,12 @@ function couponWindow(c: Coupon, lang: string): string {
 /** yyyy-mm-dd for a date input; '' when null. */
 const toDateInput = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : '')
 
-function CouponModal({ institutionId, existing, onClose, onSaved }: { institutionId: string; existing: Coupon | null; onClose: () => void; onSaved: () => void }) {
+function CouponModal({ institutionId, courseOpts, existing, onClose, onSaved }: { institutionId: string; courseOpts: CourseOpt[]; existing: Coupon | null; onClose: () => void; onSaved: () => void }) {
   const { t } = useI18n()
   const [code, setCode] = useState(existing?.code ?? '')
   const [type, setType] = useState<'percent' | 'amount'>((existing?.discount_type as 'percent' | 'amount') ?? 'percent')
   const [amount, setAmount] = useState(existing ? (existing.discount_type === 'amount' ? existing.amount / 100 : existing.amount) : 20)
-  const [category, setCategory] = useState(existing?.category ?? '')
+  const [courseId, setCourseId] = useState(existing?.course_id ?? '')
   const [startsAt, setStartsAt] = useState(toDateInput(existing?.starts_at ?? null))
   const [endsAt, setEndsAt] = useState(toDateInput(existing?.ends_at ?? null))
   const [busy, setBusy] = useState(false)
@@ -190,7 +190,7 @@ function CouponModal({ institutionId, existing, onClose, onSaved }: { institutio
     // End date is inclusive: treat it as end-of-day so the coupon works through that whole day.
     const payload = {
       action: existing ? 'update' : 'create', id: existing?.id, institution_id: institutionId,
-      code: code.trim().toUpperCase(), discount_type: type, amount: value, category: category || null,
+      code: code.trim().toUpperCase(), discount_type: type, amount: value, course_id: courseId || null,
       starts_at: startsAt ? new Date(startsAt + 'T00:00:00').toISOString() : null,
       ends_at: endsAt ? new Date(endsAt + 'T23:59:59').toISOString() : null,
     }
@@ -214,9 +214,9 @@ function CouponModal({ institutionId, existing, onClose, onSaved }: { institutio
         <Field label={type === 'percent' ? '%' : '$'}><input type="number" min={0} value={amount} onChange={(e) => setAmount(Number(e.target.value))} style={inputCss} /></Field>
       </div>
       <Field label={t('couponCategory')}>
-        <select value={category} onChange={(e) => setCategory(e.target.value)} style={inputCss}>
-          <option value="">{t('allCategories')}</option>
-          {COUPON_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        <select value={courseId} onChange={(e) => setCourseId(e.target.value)} style={inputCss}>
+          <option value="">{t('allCourses')}</option>
+          {courseOpts.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
         </select>
       </Field>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
