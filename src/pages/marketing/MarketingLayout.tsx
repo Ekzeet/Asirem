@@ -51,10 +51,8 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
           <div>
             <div style={{ fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-neutral-600)', marginBottom: 14 }}>Programs</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9, fontSize: 14 }}>
-              <Link to="/courses">Tax preparation</Link>
-              <Link to="/courses">Professional software</Link>
-              <Link to="/courses">Insurance & Medicare</Link>
-              <Link to="/courses">Certification</Link>
+              <Link to="/courses">Tax preparation course</Link>
+              <Link to="/courses">Professional tax software solutions</Link>
             </div>
           </div>
           <div>

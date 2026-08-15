@@ -76,6 +76,7 @@ export default function Checkout() {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [coupon, setCoupon] = useState('')
 
   // Step 1 → create account or log in, then advance to the payment step (no redirect yet).
   async function submitAccount(e?: React.FormEvent) {
@@ -105,11 +106,12 @@ export default function Checkout() {
     if (!item) return
     setError(null); setBusy(true)
     try {
-      const opts: { courseId?: string; pathId?: string; planId?: string; email?: string } = {}
+      const opts: { courseId?: string; pathId?: string; planId?: string; email?: string; coupon?: string } = {}
       if (item.kind === 'course') opts.courseId = item.id
       else if (item.kind === 'path') opts.pathId = item.id
       else opts.planId = item.id
       if (!session && email) opts.email = email.trim() // guest fallback (if email confirmation is on)
+      if (coupon.trim() && item.kind !== 'plan') opts.coupon = coupon.trim().toUpperCase()
       await startCheckout(opts) // redirects to Stripe
     } catch (err) {
       setError((err as Error).message ?? 'checkout_failed'); setBusy(false)
@@ -158,6 +160,10 @@ export default function Checkout() {
                 <button type="button" onClick={() => setStep(1)} style={{ ...toggleBtn, padding: 0 }}>{t('editAccount')}</button>
               )}
             </div>
+            {item.kind !== 'plan' && (
+              <input style={inputCss} placeholder={t('couponPlaceholder')} value={coupon}
+                onChange={(e) => setCoupon(e.target.value.toUpperCase())} autoComplete="off" />
+            )}
             {error && <div style={{ color: '#c0392b', fontWeight: 700, fontSize: 13 }}>{error}</div>}
             <button onClick={pay} disabled={busy} style={payBtn}>{busy ? '…' : t('paySecurely')}</button>
           </div>
