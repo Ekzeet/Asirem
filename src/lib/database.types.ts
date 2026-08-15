@@ -34,9 +34,9 @@ export type Database = {
         Relationships: []
       }
       coupons: {
-        Row: { active: boolean; amount: number; code: string; created_at: string; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; uses_count: number }
-        Insert: { active?: boolean; amount?: number; code: string; created_at?: string; discount_type?: string; ends_at?: string | null; id?: string; institution_id: string; starts_at?: string | null; uses_count?: number }
-        Update: Partial<{ active: boolean; amount: number; code: string; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; uses_count: number }>
+        Row: { active: boolean; amount: number; category: string | null; code: string; created_at: string; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; stripe_coupon_id: string | null; stripe_promo_id: string | null; uses_count: number }
+        Insert: { active?: boolean; amount?: number; category?: string | null; code: string; created_at?: string; discount_type?: string; ends_at?: string | null; id?: string; institution_id: string; starts_at?: string | null; stripe_coupon_id?: string | null; stripe_promo_id?: string | null; uses_count?: number }
+        Update: Partial<{ active: boolean; amount: number; category: string | null; code: string; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; stripe_coupon_id: string | null; stripe_promo_id: string | null; uses_count: number }>
         Relationships: []
       }
       courses: {

@@ -12,7 +12,9 @@ import { BtnGhost, BtnPrimary, Field, Modal, inputCss } from '../../components/M
 type Stats = { students: number; earnings_cents: number; courses: number; rating: number | null }
 type Course = { id: string; title: string; category: string | null; accent: string | null; icon: string | null; status: string; rating: number | null }
 type Question = { id: string; text: string; author: string; at: string }
-type Coupon = { id: string; code: string; discount_type: string; amount: number; uses_count: number; starts_at: string | null; ends_at: string | null }
+type Coupon = { id: string; code: string; discount_type: string; amount: number; uses_count: number; starts_at: string | null; ends_at: string | null; category: string | null }
+
+const COUPON_CATEGORIES = ['Tax', 'Insurance', 'Health', 'Software', 'Medicare', 'Finance']
 
 export default function TeacherDashboard() {
   const { me } = useAuth()
@@ -27,7 +29,7 @@ export default function TeacherDashboard() {
       supabase.rpc('teacher_dashboard_stats', { p_institution_id: inst }),
       supabase.from('courses').select('id,title,category,accent,icon,status,rating').eq('institution_id', inst).eq('instructor_id', me!.userId).order('created_at', { ascending: false }),
       supabase.from('posts').select('id, body, created_at, author:profiles!posts_author_profile_fkey(full_name)').eq('institution_id', inst).order('created_at', { ascending: false }).limit(4),
-      supabase.from('coupons').select('id, code, discount_type, amount, uses_count, starts_at, ends_at').eq('institution_id', inst).eq('active', true).order('created_at', { ascending: false }),
+      supabase.from('coupons').select('id, code, discount_type, amount, uses_count, starts_at, ends_at, category').eq('institution_id', inst).eq('active', true).order('created_at', { ascending: false }),
     ])
     const questions: Question[] = (posts.data ?? []).map((p: any) => ({ id: p.id, text: p.body, author: p.author?.full_name ?? '—', at: p.created_at }))
     return { stats: stats.data as unknown as Stats, courses: (courses.data ?? []) as Course[], questions, coupons: (coupons.data ?? []) as Coupon[] }
@@ -92,7 +94,10 @@ export default function TeacherDashboard() {
             {coupons.map((c) => (
               <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 12px', border: '1px dashed #D6DEE9', borderRadius: 10, marginBottom: 9, background: '#FAFBFD' }}>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 13, color: 'var(--navy-800)', letterSpacing: .5 }}>{c.code}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 13, color: 'var(--navy-800)', letterSpacing: .5 }}>{c.code}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: c.category ? '#1B5FB0' : '#8494A8', background: c.category ? '#EAF1FB' : '#F1F4F8', padding: '2px 7px', borderRadius: 20 }}>{c.category ?? t('allCategories')}</span>
+                  </div>
                   <div style={{ fontSize: 11, color: '#93A1B4', fontWeight: 600 }}>{c.uses_count} {t('uses')}{couponWindow(c, lang) ? ` · ${couponWindow(c, lang)}` : ''}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
@@ -134,6 +139,7 @@ function CouponModal({ institutionId, existing, onClose, onSaved }: { institutio
   const [code, setCode] = useState(existing?.code ?? '')
   const [type, setType] = useState<'percent' | 'amount'>((existing?.discount_type as 'percent' | 'amount') ?? 'percent')
   const [amount, setAmount] = useState(existing ? (existing.discount_type === 'amount' ? existing.amount / 100 : existing.amount) : 20)
+  const [category, setCategory] = useState(existing?.category ?? '')
   const [startsAt, setStartsAt] = useState(toDateInput(existing?.starts_at ?? null))
   const [endsAt, setEndsAt] = useState(toDateInput(existing?.ends_at ?? null))
   const [busy, setBusy] = useState(false)
@@ -147,7 +153,7 @@ function CouponModal({ institutionId, existing, onClose, onSaved }: { institutio
     // End date is inclusive: treat it as end-of-day so the coupon works through that whole day.
     const payload = {
       action: existing ? 'update' : 'create', id: existing?.id, institution_id: institutionId,
-      code: code.trim().toUpperCase(), discount_type: type, amount: value,
+      code: code.trim().toUpperCase(), discount_type: type, amount: value, category: category || null,
       starts_at: startsAt ? new Date(startsAt + 'T00:00:00').toISOString() : null,
       ends_at: endsAt ? new Date(endsAt + 'T23:59:59').toISOString() : null,
     }
@@ -170,6 +176,12 @@ function CouponModal({ institutionId, existing, onClose, onSaved }: { institutio
         </Field>
         <Field label={type === 'percent' ? '%' : '$'}><input type="number" min={0} value={amount} onChange={(e) => setAmount(Number(e.target.value))} style={inputCss} /></Field>
       </div>
+      <Field label={t('couponCategory')}>
+        <select value={category} onChange={(e) => setCategory(e.target.value)} style={inputCss}>
+          <option value="">{t('allCategories')}</option>
+          {COUPON_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </Field>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <Field label={t('couponStart')}><input type="date" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} style={inputCss} /></Field>
         <Field label={t('couponEnd')}><input type="date" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} style={inputCss} /></Field>
