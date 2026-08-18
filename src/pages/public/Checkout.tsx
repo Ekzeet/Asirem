@@ -77,6 +77,20 @@ export default function Checkout() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [coupon, setCoupon] = useState('')
+  const [applied, setApplied] = useState<{ discount_type: string; amount: number } | null>(null)
+  const [couponMsg, setCouponMsg] = useState<string | null>(null)
+
+  async function applyCoupon() {
+    const code = coupon.trim().toUpperCase()
+    if (!code || !item) return
+    const args: Record<string, string> = { p_code: code }
+    if (item.kind === 'course') args.p_course_id = item.id
+    else if (item.kind === 'path') args.p_path_id = item.id
+    const { data } = await (supabase.rpc as any)('preview_coupon', args)
+    const row = (Array.isArray(data) ? data[0] : data) as { discount_type: string; amount: number } | undefined
+    if (row) { setApplied(row); setCouponMsg(null) }
+    else { setApplied(null); setCouponMsg(t('couponInvalid')) }
+  }
 
   // Step 1 → create account or log in, then advance to the payment step (no redirect yet).
   async function submitAccount(e?: React.FormEvent) {
@@ -122,6 +136,9 @@ export default function Checkout() {
   if (!item) return <div style={{ padding: 24, textAlign: 'center' }}>{t('noData')}</div>
   if (!item.priceCents) { nav('/login', { replace: true }); return null }
 
+  const discountCents = applied ? (applied.discount_type === 'percent' ? Math.round(item.priceCents * applied.amount / 100) : applied.amount) : 0
+  const finalCents = Math.max(0, item.priceCents - discountCents)
+
   return (
     <div className="two-col" style={{ maxWidth: 900, margin: '0 auto', padding: 24 }}>
       {/* Left — the wizard */}
@@ -161,8 +178,15 @@ export default function Checkout() {
               )}
             </div>
             {item.kind !== 'plan' && (
-              <input style={inputCss} placeholder={t('couponPlaceholder')} value={coupon}
-                onChange={(e) => setCoupon(e.target.value.toUpperCase())} autoComplete="off" />
+              <div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input style={{ ...inputCss, flex: 1 }} placeholder={t('couponPlaceholder')} value={coupon}
+                    onChange={(e) => { setCoupon(e.target.value.toUpperCase()); setApplied(null); setCouponMsg(null) }} autoComplete="off" />
+                  <button type="button" onClick={applyCoupon} disabled={!coupon.trim()} style={{ border: '1px solid var(--border-soft)', background: '#fff', color: 'var(--navy-800)', fontWeight: 800, fontSize: 14, borderRadius: 10, padding: '0 18px', cursor: 'pointer' }}>{t('couponApply')}</button>
+                </div>
+                {applied && <div style={{ color: '#1F8A5B', fontWeight: 700, fontSize: 12.5, marginTop: 6 }}>✓ {t('couponApplied')}</div>}
+                {couponMsg && <div style={{ color: '#c0392b', fontWeight: 700, fontSize: 12.5, marginTop: 6 }}>{couponMsg}</div>}
+              </div>
             )}
             {error && <div style={{ color: '#c0392b', fontWeight: 700, fontSize: 13 }}>{error}</div>}
             <button onClick={pay} disabled={busy} style={payBtn}>{busy ? '…' : t('paySecurely')}</button>
@@ -185,12 +209,16 @@ export default function Checkout() {
           {item.kind === 'plan' && item.interval && (
             <div style={{ color: '#8494A8', fontSize: 12.5, fontWeight: 600, marginTop: 2 }}>/ {item.interval}</div>
           )}
+          {applied && discountCents > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#1F8A5B', fontWeight: 700, fontSize: 13.5, marginTop: 8 }}>
+              <span>{t('discountLabel')} ({coupon.trim()})</span><span>−{money(discountCents, item.currency)}</span>
+            </div>
+          )}
           <hr style={{ border: 0, borderTop: '1px solid var(--border-soft)', margin: '14px 0' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--navy-800)', fontWeight: 900 }}>
-            <span>Total</span><span>{money(item.priceCents, item.currency)}</span>
+            <span>Total</span><span>{money(finalCents, item.currency)}</span>
           </div>
-          <div style={{ color: '#8494A8', fontSize: 12, fontWeight: 600, marginTop: 12, textAlign: 'center' }}>{t('moneyBack')}</div>
-          <div style={{ textAlign: 'center', marginTop: 10 }}>
+          <div style={{ textAlign: 'center', marginTop: 14 }}>
             <Link to="/courses" style={{ color: '#8494A8', fontSize: 12.5, fontWeight: 700, textDecoration: 'none' }}>← {t('courses')}</Link>
           </div>
         </div>
