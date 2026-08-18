@@ -28,6 +28,11 @@ const CourseBuilder = lazyWithReload(() => import('./pages/admin/CourseBuilder')
 const AdminStudents = lazyWithReload(() => import('./pages/admin/Students'))
 const AdminTeachers = lazyWithReload(() => import('./pages/admin/Teachers'))
 const AdminSales = lazyWithReload(() => import('./pages/admin/Sales'))
+const AdminEbooks = lazyWithReload(() => import('./pages/admin/Ebooks'))
+const Ebooks = lazyWithReload(() => import('./pages/public/Ebooks'))
+const EbookSales = lazyWithReload(() => import('./pages/public/EbookSales'))
+const EbookDownload = lazyWithReload(() => import('./pages/public/EbookDownload'))
+const Library = lazyWithReload(() => import('./pages/student/Library'))
 const AdminAudit = lazyWithReload(() => import('./pages/admin/Audit'))
 const Review = lazyWithReload(() => import('./pages/shared/Review'))
 const Community = lazyWithReload(() => import('./pages/community/Community'))
@@ -133,6 +138,9 @@ export default function App() {
           <Route path="/accept-invite" element={<PublicLayoutC><AcceptInvite /></PublicLayoutC>} />
           <Route path="/courses" element={<MarketingLayoutC><MarketingCourses /></MarketingLayoutC>} />
           <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
+          <Route path="/books" element={<MarketingLayoutC><Ebooks /></MarketingLayoutC>} />
+          <Route path="/books/:slug" element={<PublicLayoutC><EbookSales /></PublicLayoutC>} />
+          <Route path="/ebook-download" element={<PublicLayoutC><EbookDownload /></PublicLayoutC>} />
           <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
           <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
           <Route path="/unsubscribe/:token" element={<PublicLayoutC><Unsubscribe /></PublicLayoutC>} />
@@ -165,6 +173,9 @@ export default function App() {
       <Route path="/login" element={<Navigate to={roleHome(me.role)} replace />} />
       <Route path="/courses" element={<MarketingLayoutC><MarketingCourses /></MarketingLayoutC>} />
       <Route path="/courses/:slug" element={<PublicLayoutC><CourseSales /></PublicLayoutC>} />
+      <Route path="/books" element={<MarketingLayoutC><Ebooks /></MarketingLayoutC>} />
+      <Route path="/books/:slug" element={<PublicLayoutC><EbookSales /></PublicLayoutC>} />
+      <Route path="/ebook-download" element={<PublicLayoutC><EbookDownload /></PublicLayoutC>} />
       <Route path="/instructors/:id" element={<PublicLayoutC><InstructorProfile /></PublicLayoutC>} />
       <Route path="/legal/:doc" element={<PublicLayoutC><Legal /></PublicLayoutC>} />
       <Route path="/checkout/return" element={<PublicLayoutC><CheckoutReturn /></PublicLayoutC>} />
@@ -185,6 +196,7 @@ export default function App() {
         {(isStaff || isTeacher) && <Route path="/admin/students" element={<AdminStudents />} />}
         {isStaff && <Route path="/admin/teachers" element={<AdminTeachers />} />}
         {isStaff && <Route path="/admin/sales" element={<AdminSales />} />}
+        {isStaff && <Route path="/admin/ebooks" element={<AdminEbooks />} />}
         {isStaff && <Route path="/admin/audit" element={<AdminAudit />} />}
         {isStaff && <Route path="/admin/analytics" element={<AdminAnalytics />} />}
         {isStaff && <Route path="/admin/blog" element={<AdminBlog />} />}
@@ -194,6 +206,7 @@ export default function App() {
         {(isStaff || isTeacher) && <Route path="/review" element={<Review />} />}
         {/* Student */}
         <Route path="/student" element={<MyCourses />} />
+        <Route path="/library" element={<Library />} />
         <Route path="/student/catalog" element={<Catalog />} />
         <Route path="/student/course/:courseId" element={studentLocked ? lockTo : <Player />} />
         <Route path="/student/certificates" element={studentLocked ? lockTo : <Certificates />} />

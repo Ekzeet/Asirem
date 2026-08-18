@@ -34,9 +34,21 @@ export type Database = {
         Relationships: []
       }
       coupons: {
-        Row: { active: boolean; amount: number; category: string | null; code: string; course_id: string | null; created_at: string; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; stripe_coupon_id: string | null; stripe_promo_id: string | null; uses_count: number }
-        Insert: { active?: boolean; amount?: number; category?: string | null; code: string; course_id?: string | null; created_at?: string; discount_type?: string; ends_at?: string | null; id?: string; institution_id: string; starts_at?: string | null; stripe_coupon_id?: string | null; stripe_promo_id?: string | null; uses_count?: number }
-        Update: Partial<{ active: boolean; amount: number; category: string | null; code: string; course_id: string | null; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; stripe_coupon_id: string | null; stripe_promo_id: string | null; uses_count: number }>
+        Row: { active: boolean; amount: number; category: string | null; code: string; course_id: string | null; ebook_id: string | null; created_at: string; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; stripe_coupon_id: string | null; stripe_promo_id: string | null; uses_count: number }
+        Insert: { active?: boolean; amount?: number; category?: string | null; code: string; course_id?: string | null; ebook_id?: string | null; created_at?: string; discount_type?: string; ends_at?: string | null; id?: string; institution_id: string; starts_at?: string | null; stripe_coupon_id?: string | null; stripe_promo_id?: string | null; uses_count?: number }
+        Update: Partial<{ active: boolean; amount: number; category: string | null; code: string; course_id: string | null; ebook_id: string | null; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; stripe_coupon_id: string | null; stripe_promo_id: string | null; uses_count: number }>
+        Relationships: []
+      }
+      ebooks: {
+        Row: { id: string; institution_id: string; title: string; subtitle: string | null; description: string | null; author: string | null; cover_url: string | null; file_path: string | null; file_name: string | null; price_cents: number; status: string; slug: string; position: number | null; created_by: string | null; created_at: string }
+        Insert: { id?: string; institution_id: string; title: string; subtitle?: string | null; description?: string | null; author?: string | null; cover_url?: string | null; file_path?: string | null; file_name?: string | null; price_cents?: number; status?: string; slug: string; position?: number | null; created_by?: string | null; created_at?: string }
+        Update: Partial<Database['public']['Tables']['ebooks']['Insert']>
+        Relationships: []
+      }
+      ebook_access: {
+        Row: { id: string; ebook_id: string; user_id: string | null; email: string | null; token: string; order_id: string | null; created_at: string }
+        Insert: { id?: string; ebook_id: string; user_id?: string | null; email?: string | null; token?: string; order_id?: string | null; created_at?: string }
+        Update: Partial<Database['public']['Tables']['ebook_access']['Insert']>
         Relationships: []
       }
       courses: {
@@ -190,8 +202,8 @@ export type Database = {
         Relationships: []
       }
       orders: {
-        Row: { amount_cents: number; coupon_id: string | null; course_id: string | null; created_at: string; id: string; institution_id: string; plan_id: string | null; status: string; user_id: string; provider: string; stripe_session_id: string | null; tax_cents: number }
-        Insert: { amount_cents?: number; coupon_id?: string | null; course_id?: string | null; created_at?: string; id?: string; institution_id: string; plan_id?: string | null; status?: string; user_id: string; provider?: string; stripe_session_id?: string | null; tax_cents?: number }
+        Row: { amount_cents: number; coupon_id: string | null; course_id: string | null; ebook_id: string | null; created_at: string; id: string; institution_id: string; plan_id: string | null; status: string; user_id: string; provider: string; stripe_session_id: string | null; tax_cents: number }
+        Insert: { amount_cents?: number; coupon_id?: string | null; course_id?: string | null; ebook_id?: string | null; created_at?: string; id?: string; institution_id: string; plan_id?: string | null; status?: string; user_id: string; provider?: string; stripe_session_id?: string | null; tax_cents?: number }
         Update: Partial<Database['public']['Tables']['orders']['Insert']>
         Relationships: []
       }

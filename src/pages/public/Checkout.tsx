@@ -8,7 +8,7 @@ import { Loader } from '../../components/ui'
 import { startCheckout } from '../../lib/checkout'
 import { useDocumentHead } from '../../lib/seo'
 
-type Kind = 'course' | 'path' | 'plan'
+type Kind = 'course' | 'path' | 'plan' | 'ebook'
 type Item = { kind: Kind; id: string; title: string; priceCents: number; currency: string; interval?: string | null }
 
 function money(cents: number, currency: string) {
@@ -53,7 +53,12 @@ export default function Checkout() {
   const { data: item, loading } = useAsync(async (): Promise<Item | null> => {
     const st = (loc.state as { item?: Item } | null)?.item
     if (st) return st
-    const courseSlug = sp.get('course'), pathSlug = sp.get('path'), planId = sp.get('plan')
+    const courseSlug = sp.get('course'), pathSlug = sp.get('path'), planId = sp.get('plan'), ebookSlug = sp.get('ebook')
+    if (ebookSlug) {
+      const { data } = await (supabase.rpc as any)('get_public_ebook', { p_slug: ebookSlug })
+      const d = Array.isArray(data) ? data[0] : data
+      return d ? { kind: 'ebook', id: d.id, title: d.title, priceCents: d.price_cents, currency: d.currency } : null
+    }
     if (courseSlug) {
       const { data } = await supabase.rpc('get_public_course', { p_slug: courseSlug })
       return data ? { kind: 'course', id: (data as any).id, title: (data as any).title, priceCents: (data as any).price_cents, currency: (data as any).currency } : null
@@ -86,6 +91,7 @@ export default function Checkout() {
     const args: Record<string, string> = { p_code: code }
     if (item.kind === 'course') args.p_course_id = item.id
     else if (item.kind === 'path') args.p_path_id = item.id
+    else if (item.kind === 'ebook') args.p_ebook_id = item.id
     const { data } = await (supabase.rpc as any)('preview_coupon', args)
     const row = (Array.isArray(data) ? data[0] : data) as { discount_type: string; amount: number } | undefined
     if (row) { setApplied(row); setCouponMsg(null) }
@@ -120,9 +126,10 @@ export default function Checkout() {
     if (!item) return
     setError(null); setBusy(true)
     try {
-      const opts: { courseId?: string; pathId?: string; planId?: string; email?: string; coupon?: string } = {}
+      const opts: { courseId?: string; pathId?: string; planId?: string; ebookId?: string; email?: string; coupon?: string } = {}
       if (item.kind === 'course') opts.courseId = item.id
       else if (item.kind === 'path') opts.pathId = item.id
+      else if (item.kind === 'ebook') opts.ebookId = item.id
       else opts.planId = item.id
       if (!session && email) opts.email = email.trim() // guest fallback (if email confirmation is on)
       if (coupon.trim() && item.kind !== 'plan') opts.coupon = coupon.trim().toUpperCase()

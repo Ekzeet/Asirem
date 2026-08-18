@@ -15,6 +15,7 @@ const NAV: Record<string, NavItem[]> = {
     { to: '/admin/students', key: 'students', icon: 'graduation-cap' },
     { to: '/admin/teachers', key: 'teachers', icon: 'users' },
     { to: '/review', key: 'review', icon: 'clipboard-check' },
+    { to: '/admin/ebooks', key: 'ebooks', icon: 'book-marked' },
     { to: '/admin/sales', key: 'sales', icon: 'credit-card' },
     { to: '/admin/audit', key: 'audit', icon: 'shield' },
     { to: '/admin/analytics', key: 'analytics', icon: 'trending-up' },
@@ -31,6 +32,7 @@ const NAV: Record<string, NavItem[]> = {
   ],
   student: [
     { to: '/student', key: 'myCourses', icon: 'book-open' },
+    { to: '/library', key: 'library', icon: 'library' },
     { to: '/student/catalog', key: 'catalog', icon: 'compass' },
     { to: '/exams', key: 'exams', icon: 'file-check' },
     { to: '/community', key: 'community', icon: 'messages-square', badge: '3' },
@@ -54,7 +56,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
   // A student who hasn't bought a course yet only gets to browse the catalog —
   // no community, exams, certificates or course content until they enroll.
   if (me.role === 'student' && !me.hasCourses) {
-    items = items.filter((it) => it.to === '/student' || it.to === '/student/catalog')
+    items = items.filter((it) => it.to === '/student' || it.to === '/student/catalog' || it.to === '/library')
   }
   const isAdmin = me.role === 'institution_admin' || me.role === 'super_admin'
 
