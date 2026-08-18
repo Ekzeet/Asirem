@@ -1,42 +1,162 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
 import { useDocumentHead } from '../../lib/seo'
+import { Icon } from '../../components/Icon'
 import { Loader } from '../../components/ui'
 import { RichText } from '../../components/RichText'
 
 type EbookDetail = { id: string; slug: string; title: string; subtitle: string | null; description: string | null; author: string | null; cover_url: string | null; price_cents: number; currency: string }
+type PublicEbook = { id: string; slug: string; title: string; author: string | null; cover_url: string | null; price_cents: number; currency: string }
 const money = (c: number, cur: string) => new Intl.NumberFormat(undefined, { style: 'currency', currency: (cur || 'usd').toUpperCase() }).format((c || 0) / 100)
+
+const navy = 'var(--navy-800)'
+const gold = 'var(--gold-500,#E7B450)'
+const muted = '#8494A8'
+const border = '1px solid var(--border-soft)'
 
 export default function EbookSales() {
   const { slug } = useParams()
   const nav = useNavigate()
-  const { data: e, loading } = useAsync(async () => {
-    const { data } = await (supabase.rpc as any)('get_public_ebook', { p_slug: slug })
-    const d = Array.isArray(data) ? data[0] : data
-    return (d ?? null) as EbookDetail | null
+  const [fav, setFav] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const { data, loading } = useAsync(async () => {
+    const [{ data: d }, { data: rel }] = await Promise.all([
+      (supabase.rpc as any)('get_public_ebook', { p_slug: slug }),
+      (supabase.rpc as any)('list_public_ebooks'),
+    ])
+    const detail = (Array.isArray(d) ? d[0] : d) as EbookDetail | null
+    const related = ((rel ?? []) as PublicEbook[]).filter((e) => e.slug !== slug).slice(0, 4)
+    return { detail, related }
   }, [slug])
-  useDocumentHead({ title: e ? `${e.title} · Asirem Academy` : 'Ebook', description: e?.subtitle ?? undefined })
+
+  useDocumentHead({ title: data?.detail ? `${data.detail.title} · Asirem Academy` : 'Ebook', description: data?.detail?.subtitle ?? undefined })
 
   if (loading) return <Loader />
+  const e = data?.detail
   if (!e) return <div style={{ padding: 40, textAlign: 'center' }}>Not found.</div>
 
   function buy() {
     if (!e) return
     nav(`/checkout?ebook=${e.slug}`, { state: { item: { kind: 'ebook', id: e.id, title: e.title, priceCents: e.price_cents, currency: e.currency } } })
   }
+  function share() {
+    const url = window.location.href
+    if (navigator.share) { navigator.share({ title: e!.title, url }).catch(() => {}); return }
+    navigator.clipboard?.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600) }).catch(() => {})
+  }
+
+  const iconBtn: React.CSSProperties = { width: 40, height: 40, borderRadius: 10, border, background: '#fff', color: navy, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }
+  const tags = [
+    e.author ? { icon: 'user', label: e.author } : null,
+    { icon: 'file-text', label: 'PDF / EPUB' },
+    { icon: 'zap', label: 'Instant download' },
+    { icon: 'infinity', label: 'Lifetime access' },
+  ].filter(Boolean) as { icon: string; label: string }[]
 
   return (
-    <div style={{ maxWidth: 980, margin: '0 auto', padding: 24, display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 32 }} className="two-col">
-      <div style={{ aspectRatio: '3 / 4', borderRadius: 14, background: e.cover_url ? `center/cover no-repeat url(${e.cover_url})` : 'linear-gradient(135deg,#0F2C4C,#1B4B7F)', boxShadow: '0 10px 30px rgba(15,44,76,.18)' }} />
-      <div>
-        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: '#8494A8' }}>Ebook</div>
-        <h1 style={{ fontFamily: 'var(--display)', color: 'var(--navy-800)', fontSize: 30, margin: '8px 0 6px' }}>{e.title}</h1>
-        {e.subtitle && <div style={{ fontSize: 16, color: '#5B6B82', fontWeight: 600 }}>{e.subtitle}</div>}
-        {e.author && <div style={{ fontSize: 14, color: '#8494A8', fontWeight: 600, marginTop: 6 }}>by {e.author}</div>}
-        <div style={{ fontFamily: 'var(--display)', fontWeight: 900, fontSize: 28, color: 'var(--navy-800)', margin: '18px 0' }}>{e.price_cents === 0 ? 'Free' : money(e.price_cents, e.currency)}</div>
-        <button onClick={buy} style={{ background: 'var(--gold-500,#E7B450)', color: '#0F2C4C', border: 0, padding: '13px 28px', borderRadius: 10, fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>Buy &amp; download</button>
-        {e.description && <div style={{ marginTop: 26, color: '#33415A', lineHeight: 1.7 }}><RichText html={e.description} /></div>}
+    <div style={{ background: '#F4F6F9' }}>
+      <div style={{ maxWidth: 1120, margin: '0 auto', padding: 'clamp(16px,3vw,32px)' }}>
+        <div style={{ background: '#fff', borderRadius: 20, border, boxShadow: '0 10px 34px rgba(15,44,76,.07)', overflow: 'hidden' }}>
+          <div style={{ padding: 'clamp(18px,3vw,34px)' }}>
+            {/* Breadcrumbs */}
+            <nav aria-label="Breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: muted, marginBottom: 10, flexWrap: 'wrap' }}>
+              {[{ label: 'Home', href: '/' }, { label: 'Books', href: '/books' }, { label: e.title, href: `/books/${e.slug}` }].map((b, i, arr) => (
+                <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {i < arr.length - 1 ? <Link to={b.href} style={{ color: muted, textDecoration: 'none' }}>{b.label}</Link> : <span style={{ color: navy, fontWeight: 600 }}>{b.label}</span>}
+                  {i < arr.length - 1 && <Icon name="chevron-right" size={14} />}
+                </span>
+              ))}
+            </nav>
+
+            {/* Favorite / Share */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 12 }}>
+              <button onClick={() => setFav((f) => !f)} title="Favorite" style={iconBtn}><Icon name="heart" size={18} color={fav ? '#E0245E' : navy} {...(fav ? { fill: '#E0245E' } as any : {})} /></button>
+              <button onClick={share} title="Share" style={{ ...iconBtn, position: 'relative' }}>
+                <Icon name="share-2" size={18} />
+                {copied && <span style={{ position: 'absolute', top: -30, right: 0, background: navy, color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 7, whiteSpace: 'nowrap' }}>Link copied</span>}
+              </button>
+            </div>
+
+            {/* Main grid */}
+            <div className="two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1.15fr', gap: 'clamp(22px,4vw,48px)', alignItems: 'start' }}>
+              {/* Cover */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ aspectRatio: '4 / 5', width: '100%', borderRadius: 14, overflow: 'hidden', border, background: e.cover_url ? `center/cover no-repeat url(${e.cover_url})` : 'linear-gradient(135deg,#0F2C4C,#1B4B7F)' }} />
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Link to="/books" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border, borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, color: navy, textDecoration: 'none', background: '#fff' }}>
+                    <Icon name="layout-grid" size={15} /> Browse all books
+                  </Link>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.09em', textTransform: 'uppercase', color: muted }}>Ebook</div>
+                <h1 style={{ fontFamily: 'var(--display)', color: navy, fontSize: 'clamp(26px,3.4vw,38px)', lineHeight: 1.1, margin: '8px 0 4px', letterSpacing: '-.01em' }}>{e.title}</h1>
+                {e.subtitle && <div style={{ fontSize: 16, color: '#5B6B82', fontWeight: 600 }}>{e.subtitle}</div>}
+
+                <div style={{ margin: '18px 0 4px' }}>
+                  <span style={{ fontFamily: 'var(--display)', fontWeight: 900, fontSize: 34, color: navy }}>{e.price_cents === 0 ? 'Free' : money(e.price_cents, e.currency)}</span>
+                  <span style={{ fontSize: 13.5, color: muted, fontWeight: 600, marginLeft: 10 }}>+ no shipping · instant download</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, margin: '18px 0 22px', flexWrap: 'wrap' }}>
+                  <button onClick={buy} style={{ flex: 1, minWidth: 190, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: gold, color: '#0F2C4C', border: 0, padding: '14px 22px', borderRadius: 11, fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>
+                    <Icon name="shopping-cart" size={18} /> Buy &amp; download
+                  </button>
+                  <button onClick={share} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: '#fff', color: navy, border, padding: '14px 20px', borderRadius: 11, fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>
+                    <Icon name="share-2" size={18} /> Share
+                  </button>
+                </div>
+
+                {/* Tags */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
+                  {tags.map((tag, i) => (
+                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#F1F4F8', color: '#3C4A5E', fontSize: 13, fontWeight: 600, padding: '6px 12px', borderRadius: 20 }}>
+                      <Icon name={tag.icon} size={14} color={muted} /> {tag.label}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Description */}
+                {e.description && <div style={{ color: '#33415A', lineHeight: 1.7, fontSize: 15 }}><RichText html={e.description} /></div>}
+
+                {/* Publisher */}
+                <div style={{ marginTop: 26, paddingTop: 20, borderTop: border, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+                    <div style={{ width: 46, height: 46, borderRadius: 12, background: 'linear-gradient(135deg,#E7B450,#D9A441)', color: '#0F2C4C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--display)', fontWeight: 800, fontSize: 20 }}>A</div>
+                    <div>
+                      <div style={{ fontWeight: 800, color: navy, fontSize: 14.5 }}>Asirem Academy</div>
+                      <div style={{ fontSize: 12.5, color: muted, fontWeight: 600 }}>{e.author ? `Author · ${e.author}` : 'Publisher'}</div>
+                    </div>
+                  </div>
+                  <Link to="/books" style={{ color: navy, fontWeight: 700, fontSize: 13.5, textDecoration: 'none' }}>All books &rarr;</Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* You might also like */}
+          {data!.related.length > 0 && (
+            <div style={{ padding: '0 clamp(18px,3vw,34px) clamp(24px,4vw,40px)' }}>
+              <h2 style={{ fontFamily: 'var(--display)', color: navy, fontSize: 22, margin: '4px 0 18px' }}>You might also like</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }} className="grid-2">
+                {data!.related.map((r) => (
+                  <Link key={r.id} to={`/books/${r.slug}`} style={{ textDecoration: 'none', color: 'inherit', border, borderRadius: 12, overflow: 'hidden', background: '#fff' }}>
+                    <div style={{ aspectRatio: '1 / 1', background: r.cover_url ? `center/cover no-repeat url(${r.cover_url})` : 'linear-gradient(135deg,#0F2C4C,#1B4B7F)' }} />
+                    <div style={{ padding: '11px 12px 13px' }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: navy, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>{r.title}</div>
+                      <div style={{ fontWeight: 800, fontSize: 13.5, color: gold, marginTop: 6 }}>{r.price_cents === 0 ? 'Free' : money(r.price_cents, r.currency)}</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
