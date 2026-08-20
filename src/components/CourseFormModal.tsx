@@ -12,7 +12,11 @@ export type EditableCourse = {
   level: string | null; price_cents: number; instructor_id: string | null; accent: string | null; icon: string | null; status: string
   is_live?: boolean; zoom_url?: string | null; module_lock?: boolean
   credit_hours?: number | null; slug?: string; cover_url?: string | null
+  sale_price_cents?: number | null; sale_starts_at?: string | null; sale_ends_at?: string | null
 }
+
+/** yyyy-mm-dd for a date input; '' when null. */
+const toDateInput = (iso: string | null | undefined) => (iso ? new Date(iso).toISOString().slice(0, 10) : '')
 
 const ACCENTS = [
   'linear-gradient(135deg,#0F2C4C,#1B4B7F)',
@@ -38,6 +42,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
     title: '', subtitle: '', description: '', category: 'Tax', level: 'Beginner',
     price_cents: 9900, instructor_id: me!.role === 'teacher' ? me!.userId : null, accent: ACCENTS[0], icon: ICONS[0], status: 'draft',
     is_live: false, zoom_url: '', module_lock: false, credit_hours: null, slug: '', cover_url: null,
+    sale_price_cents: null, sale_starts_at: null, sale_ends_at: null,
   })
   const [teachers, setTeachers] = useState<{ id: string; name: string }[]>([])
   const [busy, setBusy] = useState(false)
@@ -66,6 +71,9 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
       accent: form.accent, icon: form.icon, status: form.status,
       is_live: form.is_live ?? false, zoom_url: form.zoom_url || null, module_lock: form.module_lock ?? false,
       credit_hours: form.credit_hours ?? null, slug,
+      sale_price_cents: form.sale_price_cents ?? null,
+      sale_starts_at: form.sale_starts_at ?? null,
+      sale_ends_at: form.sale_ends_at ?? null,
       published_at: form.status === 'published' ? new Date().toISOString() : null,
       ...(form.cover_url !== undefined ? { cover_url: form.cover_url } : {}),
     }
@@ -113,6 +121,16 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
             <option value="published">{t('published')}</option>
           </select>
         </Field>
+      </div>
+
+      <div style={{ padding: '12px 14px', background: '#FBF7EC', border: '1px solid #EBD9A8', borderRadius: 11, marginBottom: 14 }}>
+        <div style={{ fontSize: 12.5, fontWeight: 800, color: '#8A6D1F', marginBottom: 10 }}>{t('salePromo')}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+          <Field label={t('salePriceUsd')}><input type="number" min={0} value={form.sale_price_cents != null ? form.sale_price_cents / 100 : ''} onChange={(e) => set('sale_price_cents', e.target.value === '' ? null : Math.round(Number(e.target.value) * 100))} style={inputCss} /></Field>
+          <Field label={t('couponStart')}><input type="date" value={toDateInput(form.sale_starts_at)} onChange={(e) => set('sale_starts_at', e.target.value ? new Date(e.target.value + 'T00:00:00').toISOString() : null)} style={inputCss} /></Field>
+          <Field label={t('couponEnd')}><input type="date" value={toDateInput(form.sale_ends_at)} onChange={(e) => set('sale_ends_at', e.target.value ? new Date(e.target.value + 'T23:59:59').toISOString() : null)} style={inputCss} /></Field>
+        </div>
+        <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600, marginTop: 8 }}>{t('saleHint')}</div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

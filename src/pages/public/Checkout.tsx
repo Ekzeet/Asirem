@@ -6,6 +6,7 @@ import { useAsync } from '../../hooks/useAsync'
 import { useI18n } from '../../i18n/I18nContext'
 import { Loader } from '../../components/ui'
 import { startCheckout } from '../../lib/checkout'
+import { effectivePrice } from '../../lib/sale'
 import { useDocumentHead } from '../../lib/seo'
 
 type Kind = 'course' | 'path' | 'plan' | 'ebook'
@@ -61,7 +62,8 @@ export default function Checkout() {
     }
     if (courseSlug) {
       const { data } = await supabase.rpc('get_public_course', { p_slug: courseSlug })
-      return data ? { kind: 'course', id: (data as any).id, title: (data as any).title, priceCents: (data as any).price_cents, currency: (data as any).currency } : null
+      const d = data as any
+      return d ? { kind: 'course', id: d.id, title: d.title, priceCents: effectivePrice(d.price_cents, d.sale_price_cents, d.sale_starts_at, d.sale_ends_at), currency: d.currency } : null
     }
     if (pathSlug) {
       const { data } = await supabase.rpc('get_public_path', { p_slug: pathSlug })

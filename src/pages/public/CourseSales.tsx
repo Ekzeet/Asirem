@@ -7,10 +7,12 @@ import { Icon } from '../../components/Icon'
 import { Loader } from '../../components/ui'
 import { StarRating } from '../../components/StarRating'
 import { RichText } from '../../components/RichText'
+import { SaleCountdown } from '../../components/SaleCountdown'
+import { saleActive } from '../../lib/sale'
 import { useDocumentHead } from '../../lib/seo'
 
 type Review = { id: string; rating: number; title: string | null; body: string | null; created_at: string; author_name: string | null }
-type Related = { id: string; slug: string; title: string; cover_url: string | null; accent?: string | null; price_cents: number; currency: string }
+type Related = { id: string; slug: string; title: string; cover_url: string | null; accent?: string | null; price_cents: number; currency: string; sale_price_cents?: number | null; sale_starts_at?: string | null; sale_ends_at?: string | null }
 
 const navy = 'var(--navy-800)'
 const gold = 'var(--gold-500,#E7B450)'
@@ -59,10 +61,12 @@ export default function CourseSales() {
     const { data, error } = await supabase.functions.invoke('get-preview-url', { body: { lesson_id: lessonId } })
     if (!error && data?.url) setPreview(data.url as string)
   }
+  const onSale = saleActive(c.price_cents, c.sale_price_cents, c.sale_starts_at, c.sale_ends_at)
+  const effCents = onSale ? c.sale_price_cents : c.price_cents
   function buy() {
     if (!c.price_cents) { window.location.href = '/login'; return }
     setBusy(true)
-    nav(`/checkout?course=${slug}`, { state: { item: { kind: 'course', id: c.id, title: c.title, priceCents: c.price_cents, currency: c.currency } } })
+    nav(`/checkout?course=${slug}`, { state: { item: { kind: 'course', id: c.id, title: c.title, priceCents: effCents, currency: c.currency } } })
   }
   function share() {
     const url = window.location.href
@@ -123,10 +127,18 @@ export default function CourseSales() {
                 </div>
                 {c.subtitle && <div style={{ fontSize: 16, color: '#5B6B82', fontWeight: 600 }}>{c.subtitle}</div>}
 
-                <div style={{ margin: '18px 0 4px' }}>
-                  <span style={{ fontFamily: 'var(--display)', fontWeight: 900, fontSize: 34, color: navy }}>{c.price_cents ? money(c.price_cents, c.currency) : t('free')}</span>
-                  {c.enrolled_count > 0 && <span style={{ fontSize: 13.5, color: muted, fontWeight: 600, marginLeft: 10 }}>{c.enrolled_count} {t('enrolled') ?? 'enrolled'}</span>}
+                <div style={{ margin: '18px 0 4px', display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--display)', fontWeight: 900, fontSize: 34, color: navy }}>{c.price_cents ? money(effCents, c.currency) : t('free')}</span>
+                  {onSale && <span style={{ fontSize: 18, color: muted, fontWeight: 700, textDecoration: 'line-through' }}>{money(c.price_cents, c.currency)}</span>}
+                  {onSale && <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.05em', textTransform: 'uppercase', color: '#B42318', background: '#FEE4E2', padding: '3px 9px', borderRadius: 6 }}>{t('onSale')}</span>}
+                  {!onSale && c.enrolled_count > 0 && <span style={{ fontSize: 13.5, color: muted, fontWeight: 600 }}>{c.enrolled_count} {t('enrolled')}</span>}
                 </div>
+                {onSale && c.sale_ends_at && (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#FEF3F2', border: '1px solid #FDA29B', borderRadius: 10, padding: '8px 12px', margin: '6px 0 2px', width: 'fit-content' }}>
+                    <Icon name="clock" size={15} color="#B42318" />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#B42318' }}>{t('saleEndsIn')} <SaleCountdown endsAt={c.sale_ends_at} /></span>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', gap: 10, margin: '18px 0 22px', flexWrap: 'wrap' }}>
                   <button onClick={buy} disabled={busy} style={{ flex: 1, minWidth: 190, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: gold, color: '#0F2C4C', border: 0, padding: '14px 22px', borderRadius: 11, fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>
@@ -207,7 +219,10 @@ export default function CourseSales() {
                     <div style={{ aspectRatio: '1 / 1', background: r.cover_url ? `center/cover no-repeat url(${r.cover_url})` : (r.accent || fallbackCover) }} />
                     <div style={{ padding: '11px 12px 13px' }}>
                       <div style={{ fontWeight: 700, fontSize: 13, color: navy, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>{r.title}</div>
-                      <div style={{ fontWeight: 800, fontSize: 13.5, color: gold, marginTop: 6 }}>{r.price_cents ? money(r.price_cents, r.currency) : t('free')}</div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
+                        <span style={{ fontWeight: 800, fontSize: 13.5, color: saleActive(r.price_cents, r.sale_price_cents, r.sale_starts_at, r.sale_ends_at) ? '#B42318' : gold }}>{r.price_cents ? money(saleActive(r.price_cents, r.sale_price_cents, r.sale_starts_at, r.sale_ends_at) ? (r.sale_price_cents as number) : r.price_cents, r.currency) : t('free')}</span>
+                        {saleActive(r.price_cents, r.sale_price_cents, r.sale_starts_at, r.sale_ends_at) && <span style={{ fontSize: 11.5, color: muted, textDecoration: 'line-through' }}>{money(r.price_cents, r.currency)}</span>}
+                      </div>
                     </div>
                   </Link>
                 ))}
