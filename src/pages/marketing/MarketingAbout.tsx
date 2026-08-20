@@ -13,9 +13,9 @@ const values = [
   { title: 'Community', body: 'Serving our community is an honor: we support every student all the way through.' },
 ]
 const team = [
-  { name: 'Jean Rollin Deshommes', role: 'Founder & CEO' },
-  { name: 'Nadège Étienne', role: 'Instructor — Tax' },
-  { name: 'Marc-Antoine Louis', role: 'Instructor — Software & Certification' },
+  { name: 'Jean Rollin Deshommes', role: 'CEO · Account Executive · Licensed Financial Professional · Tax Pro' },
+  { name: 'Pierre Bertrand', role: 'Co-Founder & Lead Instructor' },
+  { name: 'Leonel Etienne', role: 'Licensed Financial Professional · Tax Pro' },
 ]
 
 export default function MarketingAbout() {
