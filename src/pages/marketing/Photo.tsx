@@ -8,7 +8,7 @@ const coverStyle: React.CSSProperties = { width: '100%', height: '100%', objectF
  * image icon. Drop your own file at `src` (see public/images/marketing/README.md).
  * The parent `.duotone` frame applies the brand-accent tint.
  */
-export default function Photo({ src, alt, label, eager }: { src: string; alt: string; label: string; eager?: boolean }) {
+export default function Photo({ src, alt, label, eager, objectPosition }: { src: string; alt: string; label: string; eager?: boolean; objectPosition?: string }) {
   const [failed, setFailed] = useState(false)
   if (failed) {
     return (
@@ -17,5 +17,5 @@ export default function Photo({ src, alt, label, eager }: { src: string; alt: st
       </div>
     )
   }
-  return <img src={src} alt={alt} style={coverStyle} loading={eager ? 'eager' : 'lazy'} onError={() => setFailed(true)} />
+  return <img src={src} alt={alt} style={{ ...coverStyle, objectPosition }} loading={eager ? 'eager' : 'lazy'} onError={() => setFailed(true)} />
 }

@@ -13,9 +13,9 @@ const values = [
   { title: 'Community', body: 'Serving our community is an honor: we support every student all the way through.' },
 ]
 const team = [
-  { name: 'Jean Rollin Deshommes', role: 'CEO · Account Executive · Licensed Financial Professional · Tax Pro' },
-  { name: 'Pierre Bertrand', role: 'Co-Founder & Lead Instructor' },
-  { name: 'Leonel Etienne', role: 'Licensed Financial Professional · Tax Pro' },
+  { name: 'Jean Rollin Deshommes', role: 'CEO · Account Executive · Licensed Financial Professional · Tax Pro', pos: 'center 18%' },
+  { name: 'Pierre Bertrand', role: 'Co-Founder & Lead Instructor', pos: 'center 20%' },
+  { name: 'Leonel Etienne', role: 'Licensed Financial Professional · Tax Pro', pos: 'center 22%' },
 ]
 
 export default function MarketingAbout() {
@@ -64,8 +64,8 @@ export default function MarketingAbout() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'clamp(24px,4vw,48px)' }} className="grid-3">
           {team.map((m, i) => (
             <div key={m.name} style={{ textAlign: 'center' }}>
-              <figure className="blueprint duotone" style={{ margin: '0 auto 18px', width: 150, height: 150, background: 'var(--color-accent-100)' }}>
-                <Photo src={teamImg[i]} alt={m.name} label="Portrait" />
+              <figure className="blueprint" style={{ margin: '0 auto 18px', width: 168, height: 168, overflow: 'hidden', background: 'var(--color-accent-100)' }}>
+                <Photo src={teamImg[i]} alt={m.name} label="Portrait" objectPosition={m.pos} />
                 <Corners />
               </figure>
               <h3 style={{ fontSize: 20, textTransform: 'uppercase', margin: '0 0 4px' }}>{m.name}</h3>
