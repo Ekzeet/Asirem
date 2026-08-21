@@ -71,7 +71,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9, fontSize: 14, color: 'var(--color-neutral-700)' }}>
               <span>1821 S. Dixie Highway,<br />Pompano Beach, FL 33060</span>
               <span>1-833-747-0398</span>
-              <span>info@asirem.us</span>
+              <span>info@asiremacademy.com</span>
             </div>
           </div>
         </div>
