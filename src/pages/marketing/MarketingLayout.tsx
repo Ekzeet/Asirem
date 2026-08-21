@@ -63,6 +63,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
               <Link to="/about">About</Link>
               <Link to="/blog">Blog</Link>
               <Link to="/contact">Contact</Link>
+              <Link to="/legal/refund">Refund policy</Link>
             </div>
           </div>
           <div>
