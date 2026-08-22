@@ -20,7 +20,7 @@ export default function ExamPlayer() {
   const { examId } = useParams()
   const { t } = useI18n()
   const nav = useNavigate()
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ score: number; passed: boolean; pass_score: number } | null>(null)
   const [remaining, setRemaining] = useState<number | null>(null)
@@ -87,10 +87,17 @@ export default function ExamPlayer() {
           {q.question_type === 'short_answer' ? (
             <input value={answers[q.id] ?? ''} onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))} placeholder={t('yourAnswer')} style={{ width: '100%', height: 44, border: '1px solid var(--border)', borderRadius: 11, padding: '0 14px', fontSize: 14, outline: 'none' }} />
           ) : q.options.map((o) => {
-            const picked = answers[q.id] === o.id
+            const multiple = q.question_type === 'multiple'
+            const cur = answers[q.id]
+            const picked = multiple ? Array.isArray(cur) && cur.includes(o.id) : cur === o.id
+            const onPick = () => setAnswers((a) => {
+              if (!multiple) return { ...a, [q.id]: o.id }
+              const arr = Array.isArray(a[q.id]) ? (a[q.id] as string[]) : []
+              return { ...a, [q.id]: arr.includes(o.id) ? arr.filter((x) => x !== o.id) : [...arr, o.id] }
+            })
             return (
-              <button key={o.id} onClick={() => setAnswers((a) => ({ ...a, [q.id]: o.id }))} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '13px 16px', borderRadius: 11, border: `1.5px solid ${picked ? '#D9A441' : '#E6EBF1'}`, background: picked ? '#FBF7EE' : '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13.5, color: '#33415A', textAlign: 'left', marginBottom: 8 }}>
-                <Icon name={picked ? 'check-circle' : 'circle'} size={17} color={picked ? '#D9A441' : '#C9D2DF'} />{o.label}
+              <button key={o.id} onClick={onPick} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '13px 16px', borderRadius: 11, border: `1.5px solid ${picked ? '#D9A441' : '#E6EBF1'}`, background: picked ? '#FBF7EE' : '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13.5, color: '#33415A', textAlign: 'left', marginBottom: 8 }}>
+                <Icon name={multiple ? (picked ? 'check-square' : 'square') : (picked ? 'check-circle' : 'circle')} size={17} color={picked ? '#D9A441' : '#C9D2DF'} />{o.label}
               </button>
             )
           })}
