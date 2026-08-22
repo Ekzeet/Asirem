@@ -58,6 +58,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
 
   async function save() {
     if (!form.title.trim()) { setError('Title required'); return }
+    if (form.sale_price_cents != null && form.sale_price_cents >= form.price_cents) { setError(t('saleTooHigh')); return }
     setBusy(true); setError(null)
     // slug is NOT NULL + unique per institution; auto-derive from the title when the
     // admin leaves it blank so course creation never collides on an empty slug.
