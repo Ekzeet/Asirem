@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useI18n } from '../i18n/I18nContext'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabase'
@@ -19,6 +20,17 @@ export default function LoginPage() {
   const toLogin = lang === 'es' ? '¿Ya tienes cuenta? Inicia sesión' : 'Already have an account? Log in'
   const toSignup = lang === 'es' ? '¿Instructor? Crea una cuenta' : 'Instructor? Create an account'
   const studentNote = lang === 'es' ? '¿Estudiante? Tu cuenta se crea al comprar un curso.' : 'Student? Your account is created when you buy a course.'
+
+  // The login dropdown passes ?panel=student|teacher|admin to tailor this page per audience.
+  const [sp] = useSearchParams()
+  const raw = sp.get('panel')
+  const panel: 'student' | 'teacher' | 'admin' = raw === 'teacher' || raw === 'admin' ? raw : 'student'
+  const es = lang === 'es'
+  const panelCfg = {
+    student: { icon: 'graduation-cap', tag: es ? 'Portal del estudiante' : 'Student portal', title: es ? 'Acceso estudiante' : 'Student sign in', sub: studentNote, allowSignup: false },
+    teacher: { icon: 'presentation', tag: es ? 'Portal del instructor' : 'Instructor portal', title: es ? 'Acceso instructor' : 'Instructor sign in', sub: es ? 'Inicia sesión o crea tu cuenta de instructor.' : 'Log in or create your instructor account.', allowSignup: true },
+    admin: { icon: 'shield', tag: es ? 'Portal de administración' : 'Admin portal', title: es ? 'Acceso administrador' : 'Admin sign in', sub: es ? 'Acceso del personal. Las cuentas de administrador las crea tu institución.' : 'Staff access. Admin accounts are provisioned by your institution.', allowSignup: false },
+  }[panel]
 
   async function submit(e?: React.FormEvent) {
     e?.preventDefault()
@@ -52,6 +64,9 @@ export default function LoginPage() {
           </div>
         </div>
         <div style={{ position: 'relative', maxWidth: 420 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(217,164,65,.16)', color: '#E7B450', padding: '6px 13px', borderRadius: 20, fontSize: 12.5, fontWeight: 700, marginBottom: 18 }}>
+            <Icon name={panelCfg.icon} size={15} /> {panelCfg.tag}
+          </div>
           <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 34, lineHeight: 1.2, marginBottom: 14 }}>{t('welcome')}</div>
           <div style={{ fontSize: 15, color: '#9DB4D0', lineHeight: 1.6 }}>{t('tagline')}</div>
         </div>
@@ -67,8 +82,8 @@ export default function LoginPage() {
             })}
           </div>
 
-          <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 24, color: 'var(--ink)', marginBottom: 6 }}>{mode === 'login' ? t('login') : signupCopy}</div>
-          <div style={{ fontSize: 13.5, color: 'var(--muted)', fontWeight: 500, marginBottom: 24 }}>{mode === 'login' ? `${t('welcomeBack')} 👋` : studentNote}</div>
+          <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 24, color: 'var(--ink)', marginBottom: 6 }}>{mode === 'login' ? panelCfg.title : signupCopy}</div>
+          <div style={{ fontSize: 13.5, color: 'var(--muted)', fontWeight: 500, marginBottom: 24 }}>{mode === 'login' ? panelCfg.sub : studentNote}</div>
 
           <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {mode === 'signup' && (
@@ -92,16 +107,24 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(null); setInfo(null) }}
-            style={{ marginTop: 20, width: '100%', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--navy-800)' }}>
-            {mode === 'login' ? toSignup : toLogin}
-          </button>
+          {mode === 'signup' ? (
+            <button onClick={() => { setMode('login'); setError(null); setInfo(null) }} style={bottomBtn}>{toLogin}</button>
+          ) : panel === 'teacher' ? (
+            <button onClick={() => { setMode('signup'); setError(null); setInfo(null) }} style={bottomBtn}>{toSignup}</button>
+          ) : panel === 'student' ? (
+            <Link to="/courses" style={{ ...bottomBtn, display: 'block', textDecoration: 'none' }}>{es ? 'Ver cursos →' : 'Browse courses →'}</Link>
+          ) : (
+            <div style={{ marginTop: 20, textAlign: 'center', fontSize: 12.5, color: 'var(--muted)', fontWeight: 600 }}>{es ? 'Solo personal autorizado.' : 'Authorized staff only.'}</div>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
+const bottomBtn: React.CSSProperties = {
+  marginTop: 20, width: '100%', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--navy-800)', textAlign: 'center',
+}
 const inputStyle: React.CSSProperties = {
   width: '100%', height: 44, marginTop: 6, border: '1px solid var(--border)', borderRadius: 11,
   background: '#F7F9FC', padding: '0 14px', fontSize: 14, color: 'var(--ink)', outline: 'none',
