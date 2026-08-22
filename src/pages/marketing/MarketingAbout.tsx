@@ -64,7 +64,7 @@ export default function MarketingAbout() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'clamp(24px,4vw,48px)' }} className="grid-3">
           {team.map((m, i) => (
             <div key={m.name} style={{ textAlign: 'center' }}>
-              <figure className="blueprint" style={{ margin: '0 auto 18px', width: 168, height: 168, overflow: 'hidden', background: 'var(--color-accent-100)' }}>
+              <figure className="blueprint" style={{ margin: '0 auto 18px', width: 168, height: i === 0 ? 200 : 168, overflow: 'hidden', background: 'var(--color-accent-100)' }}>
                 <Photo src={teamImg[i]} alt={m.name} label="Portrait" objectPosition={m.pos} />
                 <Corners />
               </figure>
