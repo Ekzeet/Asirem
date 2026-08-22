@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useI18n } from '../i18n/I18nContext'
 import { useAuth } from './AuthContext'
@@ -15,6 +15,19 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
+
+  // A panel mismatch signs the user back out, which remounts this page — so the error is
+  // stashed in sessionStorage and read back here after mount (effect keeps it StrictMode-safe).
+  useEffect(() => {
+    const raw = sessionStorage.getItem('panelMismatch')
+    if (!raw) return
+    const sep = raw.indexOf('|')
+    const ts = Number(raw.slice(0, sep))
+    // Show only a fresh mismatch (survives the sign-out remount / any reload); cleared on focus.
+    if (Date.now() - ts < 20000) setError(raw.slice(sep + 1))
+    else sessionStorage.removeItem('panelMismatch')
+  }, [])
+  const clearMismatch = () => { if (sessionStorage.getItem('panelMismatch')) { sessionStorage.removeItem('panelMismatch'); setError(null) } }
 
   const signupCopy = lang === 'es' ? 'Espacio instructor' : 'Instructor sign-up'
   const toLogin = lang === 'es' ? '¿Ya tienes cuenta? Inicia sesión' : 'Already have an account? Log in'
@@ -37,7 +50,20 @@ export default function LoginPage() {
     setBusy(true); setError(null); setInfo(null)
     if (mode === 'login') {
       const { error } = await signIn(email.trim(), password)
-      if (error) setError(error)
+      if (error) { setError(error); setBusy(false); return }
+      // Enforce that the account's role matches the chosen panel (super_admin may enter any panel).
+      const { data: roles } = await (supabase.rpc as any)('my_roles')
+      const r: string[] = Array.isArray(roles) ? roles : []
+      const ok = r.includes('super_admin')
+        || (panel === 'admin' && r.includes('institution_admin'))
+        || (panel === 'teacher' && r.includes('teacher'))
+        || (panel === 'student' && r.includes('student'))
+      if (!ok) {
+        const label = panel === 'admin' ? (es ? 'de administrador' : 'an admin') : panel === 'teacher' ? (es ? 'de instructor' : 'an instructor') : (es ? 'de estudiante' : 'a student')
+        sessionStorage.setItem('panelMismatch', `${Date.now()}|` + (es ? `Esta cuenta no es una cuenta ${label}. Elige el panel correcto para iniciar sesión.` : `This account is not ${label} account. Choose the correct panel to log in.`))
+        await supabase.auth.signOut()
+        return
+      }
       setBusy(false)
       return
     }
@@ -94,7 +120,7 @@ export default function LoginPage() {
             )}
             <label style={{ display: 'block' }}>
               <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-soft)' }}>{t('email')}</span>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required style={inputStyle} />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} onFocus={clearMismatch} type="email" required style={inputStyle} />
             </label>
             <label style={{ display: 'block' }}>
               <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-soft)' }}>{t('password')}</span>
