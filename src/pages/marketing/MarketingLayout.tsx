@@ -21,7 +21,8 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
   const nav = useNavigate()
   const cur = (to: string) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to))
   const [menuOpen, setMenuOpen] = useState(false)
-  const close = () => setMenuOpen(false)
+  const [loginOpen, setLoginOpen] = useState(false)
+  const close = () => { setMenuOpen(false); setLoginOpen(false) }
 
   return (
     <div className="mkt" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -36,7 +37,19 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} aria-current={cur(n.to) ? 'page' : undefined} onClick={close}>{n.label}</Link>
           ))}
-          <Link to="/login" style={{ color: 'var(--color-neutral-700)' }} onClick={close}>Log in</Link>
+          <div style={{ position: 'relative' }} onMouseLeave={() => setLoginOpen(false)}>
+            <button type="button" onClick={() => setLoginOpen((o) => !o)} style={{ background: 'none', border: 0, padding: 0, font: 'inherit', color: 'var(--color-neutral-700)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              Log in
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            {loginOpen && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, background: '#fff', border: '1px solid var(--color-divider)', borderRadius: 8, padding: 6, minWidth: 160, boxShadow: '0 10px 28px rgba(11,33,67,.14)', zIndex: 60, display: 'flex', flexDirection: 'column' }}>
+                {[['Student', 'student'], ['Teacher', 'teacher'], ['Admin', 'admin']].map(([label, role]) => (
+                  <Link key={role} to={`/login?panel=${role}`} onClick={close} style={{ padding: '9px 12px', fontSize: 14, color: 'var(--color-text)', borderRadius: 6 }}>{label}</Link>
+                ))}
+              </div>
+            )}
+          </div>
           <button type="button" className="btn btn-primary" onClick={() => { nav('/contact'); close() }}>Pre-register</button>
         </div>
       </nav>
