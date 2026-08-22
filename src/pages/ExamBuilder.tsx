@@ -21,9 +21,11 @@ export default function ExamBuilder() {
   }, [examId])
 
   const [prompt, setPrompt] = useState('')
-  const [qtype, setQtype] = useState<'single' | 'true_false' | 'short_answer'>('single')
+  const [qtype, setQtype] = useState<'single' | 'multiple' | 'true_false' | 'short_answer'>('single')
   const [opts, setOpts] = useState(['', '', '', ''])
   const [correct, setCorrect] = useState(0)
+  const [multi, setMulti] = useState<number[]>([])
+  const toggleMulti = (i: number) => setMulti((m) => m.includes(i) ? m.filter((x) => x !== i) : [...m, i])
   const [answer, setAnswer] = useState('')
   const [pts, setPts] = useState(10)
 
@@ -35,11 +37,13 @@ export default function ExamBuilder() {
   async function addQuestion() {
     if (!prompt.trim()) return
     if (qtype === 'short_answer' && !answer.trim()) return
-    if (qtype === 'single' && opts.filter((o) => o.trim()).length < 2) return
+    if ((qtype === 'single' || qtype === 'multiple') && opts.filter((o) => o.trim()).length < 2) return
+    if (qtype === 'multiple' && !opts.some((o, i) => o.trim() && multi.includes(i))) return
     const { data: q } = await supabase.from('exam_questions').insert({ exam_id: examId!, prompt: prompt.trim(), question_type: qtype, points: pts, answer_text: qtype === 'short_answer' ? answer.trim() : null, position: data!.qs.length }).select('id').single()
-    if (qtype === 'true_false') await supabase.from('exam_options').insert([{ question_id: q!.id, label: 'Vrai', is_correct: correct === 0, position: 0 }, { question_id: q!.id, label: 'Faux', is_correct: correct === 1, position: 1 }])
+    if (qtype === 'true_false') await supabase.from('exam_options').insert([{ question_id: q!.id, label: 'True', is_correct: correct === 0, position: 0 }, { question_id: q!.id, label: 'False', is_correct: correct === 1, position: 1 }])
     else if (qtype === 'single') await supabase.from('exam_options').insert(opts.filter((o) => o.trim()).map((label, i) => ({ question_id: q!.id, label: label.trim(), is_correct: i === correct, position: i })))
-    setPrompt(''); setOpts(['', '', '', '']); setCorrect(0); setAnswer(''); setPts(10); reload()
+    else if (qtype === 'multiple') await supabase.from('exam_options').insert(opts.map((o, i) => ({ label: o.trim(), keep: !!o.trim(), correct: multi.includes(i) })).filter((o) => o.keep).map((o, i) => ({ question_id: q!.id, label: o.label, is_correct: o.correct, position: i })))
+    setPrompt(''); setOpts(['', '', '', '']); setCorrect(0); setMulti([]); setAnswer(''); setPts(10); reload()
   }
   async function delQ(id: string) { await supabase.from('exam_questions').delete().eq('id', id); reload() }
 
@@ -73,7 +77,7 @@ export default function ExamBuilder() {
 
       <Card style={{ padding: '16px 18px', marginTop: 8 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
-          <Field label={t('questionType')}><select value={qtype} onChange={(e) => setQtype(e.target.value as any)} style={inputCss}><option value="single">{t('typeSingle')}</option><option value="true_false">{t('typeTrueFalse')}</option><option value="short_answer">{t('typeShort')}</option></select></Field>
+          <Field label={t('questionType')}><select value={qtype} onChange={(e) => setQtype(e.target.value as any)} style={inputCss}><option value="single">{t('typeSingle')}</option><option value="multiple">{t('typeMultiple')}</option><option value="true_false">{t('typeTrueFalse')}</option><option value="short_answer">{t('typeShort')}</option></select></Field>
           <Field label={t('points')}><input type="number" min={1} value={pts} onChange={(e) => setPts(Number(e.target.value))} style={inputCss} /></Field>
         </div>
         <Field label={t('question')}><input value={prompt} onChange={(e) => setPrompt(e.target.value)} style={inputCss} /></Field>
@@ -83,7 +87,18 @@ export default function ExamBuilder() {
             <input value={o} onChange={(e) => setOpts((os) => os.map((x, j) => j === i ? e.target.value : x))} placeholder={`${t('option')} ${String.fromCharCode(65 + i)}`} style={{ ...inputCss, height: 38 }} />
           </div>
         ))}
-        {qtype === 'true_false' && ['Vrai', 'Faux'].map((label, i) => (
+        {qtype === 'multiple' && (
+          <>
+            <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600, marginBottom: 8 }}>{t('multipleHint')}</div>
+            {opts.map((o, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
+                <button onClick={() => toggleMulti(i)} style={{ width: 30, height: 30, flex: 'none', borderRadius: 8, border: 'none', cursor: 'pointer', background: multi.includes(i) ? '#EAF6EF' : '#F1F4F8', color: multi.includes(i) ? '#1F8A5B' : '#B0BCCB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={multi.includes(i) ? 'check-square' : 'square'} size={16} /></button>
+                <input value={o} onChange={(e) => setOpts((os) => os.map((x, j) => j === i ? e.target.value : x))} placeholder={`${t('option')} ${String.fromCharCode(65 + i)}`} style={{ ...inputCss, height: 38 }} />
+              </div>
+            ))}
+          </>
+        )}
+        {qtype === 'true_false' && ['True', 'False'].map((label, i) => (
           <button key={i} onClick={() => setCorrect(i)} style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', marginBottom: 8, padding: '9px 12px', borderRadius: 9, border: `1.5px solid ${correct === i ? '#1F8A5B' : 'var(--border)'}`, background: correct === i ? '#EAF6EF' : '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13, color: 'var(--ink-soft)' }}><Icon name={correct === i ? 'check-circle' : 'circle'} size={16} color={correct === i ? '#1F8A5B' : '#B0BCCB'} />{label}</button>
         ))}
         {qtype === 'short_answer' && <Field label={t('acceptedAnswer')}><input value={answer} onChange={(e) => setAnswer(e.target.value)} style={inputCss} /></Field>}

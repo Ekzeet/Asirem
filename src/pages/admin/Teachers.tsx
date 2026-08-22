@@ -38,12 +38,33 @@ export default function AdminTeachers() {
     return rows.sort((a, b) => b.students - a.students)
   }, [inst])
 
+  async function approve(userId: string) {
+    const { error } = await supabase.rpc('approve_teacher', { p_user: userId })
+    if (error) { alert(error.message); return }
+    reload()
+  }
+
+  async function manage(action: string, tc: Teacher, extra?: Record<string, string>) {
+    const { data: sess } = await supabase.auth.getSession()
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-manage-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sess.session?.access_token}`, apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string },
+      body: JSON.stringify({ action, user_id: tc.userId, institution_id: inst, role: 'teacher', ...extra }),
+    })
+    const j = await res.json()
+    if (!res.ok) { alert(j.error ?? 'Failed'); return }
+    if (action === 'resend') { alert('Invitation re-sent by email.'); return }
+    reload()
+  }
+  const actBtn: React.CSSProperties = { flex: 1, height: 32, borderRadius: 8, border: '1px solid var(--border-soft)', background: '#fff', color: '#5B6B82', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }
+
   if (loading || !data) return <Loader />
+  const pending = data.filter((tc) => tc.status !== 'active').length
 
   return (
     <PageWrap>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 18 }}>
-        <div style={{ fontSize: 13, color: '#7C8AA0', fontWeight: 600 }}>{data.length} {t('instructors')}</div>
+        <div style={{ fontSize: 13, color: '#7C8AA0', fontWeight: 600 }}>{data.length} {t('instructors')}{pending > 0 && <span style={{ color: '#C99A2E', fontWeight: 800 }}> · {pending} {t('pendingApproval')}</span>}</div>
         <div style={{ flex: 1 }} />
         <button onClick={() => setShowInvite(true)} style={{ height: 40, padding: '0 16px', borderRadius: 11, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
           <Icon name="user-plus" size={16} />{t('inviteTeacher')}
@@ -64,6 +85,11 @@ export default function AdminTeachers() {
               <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: '#EAF3FF', color: '#1B5FB0' }}>{t('instructor').replace(/s$/, '')}</span>
               <StatusChip status={tc.status} />
             </div>
+            {tc.status !== 'active' && (
+              <button onClick={() => approve(tc.userId)} style={{ width: '100%', marginBottom: 12, height: 34, borderRadius: 9, border: 'none', cursor: 'pointer', background: '#EAF6EF', color: '#1F8A5B', fontWeight: 800, fontSize: 12.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Icon name="check" size={15} /> {t('approve')}
+              </button>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, textAlign: 'center', paddingTop: 14, borderTop: '1px solid var(--border-soft)' }}>
               {[
                 { v: tc.courses, l: t('courses') },
@@ -76,6 +102,13 @@ export default function AdminTeachers() {
                 </div>
               ))}
             </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+              <button style={actBtn} onClick={() => { const n = window.prompt('New name', tc.name); if (n && n.trim()) manage('rename', tc, { full_name: n.trim() }) }}><Icon name="pencil" size={14} /> Edit</button>
+              <button style={actBtn} onClick={() => manage('set_status', tc, { status: tc.status === 'active' ? 'inactive' : 'active' })}><Icon name={tc.status === 'active' ? 'pause' : 'play'} size={14} /> {tc.status === 'active' ? 'Suspend' : 'Activate'}</button>
+              <button style={{ ...actBtn, flex: 'none', width: 38, color: '#C0392B', borderColor: '#F2C6C0' }} title="Remove" onClick={() => { if (window.confirm(`Remove ${tc.name} from the academy?`)) manage('remove', tc) }}><Icon name="trash-2" size={14} /></button>
+            </div>
+            <button style={{ ...actBtn, marginTop: 8, width: '100%' }} onClick={() => manage('resend', tc, { redirect_to: `${window.location.origin}/accept-invite` })}><Icon name="mail" size={14} /> Resend invitation</button>
+            <button style={{ ...actBtn, marginTop: 8, width: '100%', background: '#0F2C4C', color: '#fff', border: 'none' }} onClick={() => { if (window.confirm(`Grant ${tc.name} full admin access to the platform?`)) manage('promote_admin', tc) }}><Icon name="shield" size={14} /> Make admin</button>
           </Card>
         ))}
       </div>
@@ -91,30 +124,35 @@ function InviteModal({ institutionId, onClose, onSaved }: { institutionId: strin
   const [role, setRole] = useState<'teacher' | 'student'>('teacher')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
   const [ok, setOk] = useState(false)
 
   async function invite() {
     if (!name.trim() || !email.trim()) return
-    setBusy(true); setError(null)
+    setBusy(true); setError(null); setInfo(null)
     const { data: sess } = await supabase.auth.getSession()
     const token = sess.session?.access_token
     try {
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string },
-        body: JSON.stringify({ email: email.trim(), full_name: name.trim(), role, institution_id: institutionId, redirect_to: window.location.origin }),
+        body: JSON.stringify({ email: email.trim(), full_name: name.trim(), role, institution_id: institutionId, redirect_to: `${window.location.origin}/accept-invite` }),
       })
       const j = await res.json()
       if (!res.ok) { setError(j.error ?? 'Failed'); setBusy(false); return }
-      setOk(true); setBusy(false)
-      setTimeout(onSaved, 700)
+      setBusy(false); setOk(true)
+      if (j.emailed) setInfo(`Invitation email sent to ${j.email}.`)
+      else setError(`Account created, but the email could not be sent (${j.email_error ?? 'unknown'}). Check RESEND settings.`)
     } catch (e: any) { setError(e.message); setBusy(false) }
   }
 
   return (
     <Modal title={t('inviteTeacher')} subtitle={t('inviteSub')} onClose={onClose}
-      footer={<><BtnGhost onClick={onClose}>{t('cancel')}</BtnGhost><BtnPrimary onClick={invite} disabled={busy || ok}><Icon name="user-plus" size={16} />{ok ? '✓' : t('sendInvite')}</BtnPrimary></>}>
+      footer={ok
+        ? <BtnPrimary onClick={onSaved}>{t('done')}</BtnPrimary>
+        : <><BtnGhost onClick={onClose}>{t('cancel')}</BtnGhost><BtnPrimary onClick={invite} disabled={busy}><Icon name="user-plus" size={16} />{t('sendInvite')}</BtnPrimary></>}>
       {error && <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, background: '#FBEBEB', padding: '9px 12px', borderRadius: 10, marginBottom: 14 }}>{error}</div>}
+      {info && <div style={{ fontSize: 12.5, color: '#1F8A5B', fontWeight: 700, background: '#EAF6EF', padding: '9px 12px', borderRadius: 10, marginBottom: 14 }}>{info}</div>}
       <Field label={t('fullName')}><input value={name} onChange={(e) => setName(e.target.value)} style={inputCss} /></Field>
       <Field label={t('email')}><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputCss} /></Field>
       <Field label={t('role')}>

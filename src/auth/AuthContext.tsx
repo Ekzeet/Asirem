@@ -10,6 +10,9 @@ export type Me = {
   fullName: string
   institutionId: string
   role: Role
+  /** Students unlock course content + community only after buying at least one course.
+   *  Always true for staff roles. */
+  hasCourses: boolean
 }
 
 type AuthState = {
@@ -36,12 +39,23 @@ async function loadMe(userId: string, email: string): Promise<Me | null> {
     supabase.from('profiles').select('full_name').eq('id', userId).maybeSingle(),
   ])
   if (!mem || !mem.institution_id) return null
+  const role = mem.role as Role
+  let hasCourses = true
+  if (role === 'student') {
+    const { count } = await supabase
+      .from('enrollments')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'active')
+    hasCourses = (count ?? 0) > 0
+  }
   return {
     userId,
     email,
     fullName: prof?.full_name ?? email,
     institutionId: mem.institution_id,
-    role: mem.role as Role,
+    role,
+    hasCourses,
   }
 }
 

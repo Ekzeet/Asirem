@@ -47,7 +47,7 @@ export default function Topbar({ onMenu }: { onMenu?: () => void }) {
         <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`) }} placeholder={t('search')} style={{ width: 230, height: 40, border: '1px solid #E2E8F0', borderRadius: 11, background: '#F7F9FC', padding: '0 14px 0 36px', fontSize: 13.5, color: 'var(--navy-800)', outline: 'none' }} />
       </div>
       <div style={{ display: 'flex', gap: 4, background: '#F2F5F9', borderRadius: 10, padding: 3 }}>
-        {(['FR', 'EN', 'ES'] as const).map((c) => {
+        {(['EN', 'ES'] as const).map((c) => {
           const active = lang === (c.toLowerCase() as Lang)
           return (
             <button key={c} onClick={() => setLang(c.toLowerCase() as Lang)} style={{ width: 34, height: 30, border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 800, fontSize: 11.5, background: active ? 'var(--navy-800)' : 'transparent', color: active ? '#fff' : 'var(--muted)' }}>{c}</button>

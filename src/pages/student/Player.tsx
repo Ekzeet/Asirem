@@ -8,6 +8,7 @@ import { Icon } from '../../components/Icon'
 import { Avatar, Loader } from '../../components/ui'
 import { FileUpload } from '../../components/FileUpload'
 import { ReviewForm } from '../../components/ReviewForm'
+import { RichText } from '../../components/RichText'
 import { relTime } from '../../lib/format'
 
 type Lesson = { id: string; title: string; duration: string | null; body: string | null; done: boolean; content_type: string; file_url: string | null; external_url: string | null; duration_seconds: number | null }
@@ -140,7 +141,7 @@ export default function Player() {
                 {[
                   { icon: 'clock', label: t('duration'), value: current.duration ?? '—' },
                   { icon: 'bar-chart-2', label: t('level'), value: lang === 'en' ? 'Intermediate' : lang === 'es' ? 'Intermedio' : 'Intermédiaire' },
-                  { icon: 'globe', label: 'Audio', value: 'FR · EN · ES' },
+                  { icon: 'globe', label: 'Audio', value: 'EN · ES' },
                 ].map((m, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 15px', background: '#fff', border: '1px solid var(--border)', borderRadius: 12 }}>
                     <Icon name={m.icon} size={17} color="#D9A441" />
@@ -170,6 +171,8 @@ export default function Player() {
               })}
             </>
           )}
+
+          <LiveButton courseId={courseId!} />
 
           {tab === 'quiz' && <QuizPanel quiz={detail.data?.quiz ?? null} />}
 
@@ -214,6 +217,42 @@ export default function Player() {
         ))}
       </aside>
     </div>
+  )
+}
+
+/** Live course: shows the student's own personal Zoom link (valid for every session),
+ *  provisioning it automatically on first click via the zoom-register edge function. */
+function LiveButton({ courseId }: { courseId: string }) {
+  const { me } = useAuth()
+  const [live, setLive] = useState(false)
+  const [url, setUrl] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    let on = true
+    ;(async () => {
+      const [{ data: c }, { data: e }] = await Promise.all([
+        supabase.from('courses').select('is_live').eq('id', courseId).single(),
+        supabase.from('enrollments').select('zoom_join_url').eq('course_id', courseId).eq('user_id', me!.userId).maybeSingle(),
+      ])
+      if (!on) return
+      setLive(!!(c as any)?.is_live)
+      setUrl((e as any)?.zoom_join_url ?? null)
+    })()
+    return () => { on = false }
+  }, [courseId, me])
+  if (!live) return null
+  async function join() {
+    if (url) { window.open(url, '_blank'); return }
+    setBusy(true)
+    const { data, error } = await supabase.functions.invoke('zoom-register', { body: { course_id: courseId } })
+    setBusy(false)
+    if (error || !(data as any)?.join_url) { alert((data as any)?.error ?? 'zoom_error'); return }
+    setUrl((data as any).join_url); window.open((data as any).join_url, '_blank')
+  }
+  return (
+    <button onClick={join} disabled={busy} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', justifyContent: 'center', marginBottom: 16, background: 'linear-gradient(135deg,#2D8CFF,#1B5FB0)', color: '#fff', border: 0, padding: '13px', borderRadius: 12, fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>
+      <Icon name="video" size={18} /> {busy ? '…' : (url ? 'Join live session' : 'Get my live link')}
+    </button>
   )
 }
 
@@ -392,7 +431,7 @@ function MediaPlayer({ lesson, userId, progressPct, onCompleted }: {
 
 function QuizPanel({ quiz }: { quiz: Quiz | null }) {
   const { t } = useI18n()
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ score: number; passed: boolean; pass_score: number } | null>(null)
 
@@ -425,8 +464,17 @@ function QuizPanel({ quiz }: { quiz: Quiz | null }) {
         <div key={q.id} style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--navy-800)', lineHeight: 1.5, marginBottom: 12 }}>{i + 1}. {q.prompt}</div>
           {q.question_type === 'short_answer' ? (
-            <input value={answers[q.id] ?? ''} onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))} placeholder={t('yourAnswer')} style={{ width: '100%', height: 44, border: '1px solid var(--border)', borderRadius: 11, padding: '0 14px', fontSize: 14, outline: 'none' }} />
-          ) : q.options.map((o, oi) => {
+            <input value={(answers[q.id] as string) ?? ''} onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))} placeholder={t('yourAnswer')} style={{ width: '100%', height: 44, border: '1px solid var(--border)', borderRadius: 11, padding: '0 14px', fontSize: 14, outline: 'none' }} />
+          ) : q.question_type === 'multiple' ? q.options.map((o, oi) => {
+            const cur = (answers[q.id] as string[]) ?? []
+            const picked = cur.includes(o.id)
+            return (
+              <button key={o.id} onClick={() => setAnswers((a) => { const c = (a[q.id] as string[]) ?? []; return { ...a, [q.id]: c.includes(o.id) ? c.filter((x) => x !== o.id) : [...c, o.id] } })} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '13px 16px', borderRadius: 12, border: `1.5px solid ${picked ? '#D9A441' : '#E6EBF1'}`, background: picked ? '#FBF7EE' : '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13.5, color: '#33415A', textAlign: 'left', marginBottom: 8 }}>
+                <span style={{ width: 26, height: 26, flex: 'none', borderRadius: 7, background: picked ? '#D9A441' : '#F1F4F8', color: picked ? '#0F2C4C' : '#8494A8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={picked ? 'check-square' : 'square'} size={15} /></span>
+                <span style={{ flex: 1, textAlign: 'left' }}>{o.label}</span>
+              </button>
+            )
+          }) : q.options.map((o, oi) => {
             const picked = answers[q.id] === o.id
             return (
               <button key={o.id} onClick={() => setAnswers((a) => ({ ...a, [q.id]: o.id }))} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '13px 16px', borderRadius: 12, border: `1.5px solid ${picked ? '#D9A441' : '#E6EBF1'}`, background: picked ? '#FBF7EE' : '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13.5, color: '#33415A', textAlign: 'left', marginBottom: 8 }}>
@@ -512,7 +560,7 @@ function AssignmentsPanel({ courseId }: { courseId: string }) {
               <StatusPill graded={graded} sub={sub} closed={!!closed} notYet={!!notYet} />
               <span style={{ fontSize: 12, color: '#8494A8', fontWeight: 700 }}>{a.points} {t('points')}</span>
             </div>
-            {a.instructions && <div style={{ fontSize: 13, color: '#5B6B82', lineHeight: 1.55, marginBottom: 10, whiteSpace: 'pre-wrap' }}>{a.instructions}</div>}
+            {a.instructions && <RichText html={a.instructions} style={{ fontSize: 13, color: '#5B6B82', lineHeight: 1.55, marginBottom: 10 }} />}
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 11.5, color: '#9AA7B8', fontWeight: 600, marginBottom: 12 }}>
               {a.due_at && <span style={{ color: duePassed && !graded ? '#D14343' : '#9AA7B8' }}><Icon name="clock" size={12} /> {t('due')}: {fmt(a.due_at)}</span>}
               {a.max_attempts !== 0 && <span><Icon name="repeat" size={12} /> {t('attempts')}: {used}/{a.max_attempts}</span>}
