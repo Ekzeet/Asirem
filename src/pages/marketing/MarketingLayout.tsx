@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { IMG } from './images'
 
@@ -22,7 +22,15 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
   const cur = (to: string) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to))
   const [menuOpen, setMenuOpen] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
+  const loginRef = useRef<HTMLDivElement>(null)
   const close = () => { setMenuOpen(false); setLoginOpen(false) }
+  // Keep the login dropdown open until the user clicks an option or clicks outside it.
+  useEffect(() => {
+    if (!loginOpen) return
+    const onDown = (e: MouseEvent) => { if (loginRef.current && !loginRef.current.contains(e.target as Node)) setLoginOpen(false) }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [loginOpen])
 
   return (
     <div className="mkt" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -37,7 +45,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} aria-current={cur(n.to) ? 'page' : undefined} onClick={close}>{n.label}</Link>
           ))}
-          <div style={{ position: 'relative' }} onMouseLeave={() => setLoginOpen(false)}>
+          <div ref={loginRef} style={{ position: 'relative' }}>
             <button type="button" onClick={() => setLoginOpen((o) => !o)} style={{ background: 'none', border: 0, padding: 0, font: 'inherit', color: 'var(--color-neutral-700)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
               Log in
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
