@@ -16,6 +16,7 @@ const NAV: Record<string, NavItem[]> = {
     { to: '/admin/teachers', key: 'teachers', icon: 'users' },
     { to: '/review', key: 'review', icon: 'clipboard-check' },
     { to: '/admin/ebooks', key: 'ebooks', icon: 'book-marked' },
+    { to: '/admin/requests', key: 'requests', icon: 'user-plus' },
     { to: '/admin/sales', key: 'sales', icon: 'credit-card' },
     { to: '/admin/audit', key: 'audit', icon: 'shield' },
     { to: '/admin/analytics', key: 'analytics', icon: 'trending-up' },

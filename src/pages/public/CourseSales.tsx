@@ -148,6 +148,12 @@ export default function CourseSales() {
                     <Icon name="share-2" size={18} /> Share
                   </button>
                 </div>
+                {c.instructor_request_price_cents > 0 && (
+                  <button onClick={() => nav(`/checkout`, { state: { item: { kind: 'request', id: c.id, title: `Instructor request — ${c.title}`, priceCents: c.instructor_request_price_cents, currency: c.currency } } })}
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: navy, color: '#fff', border: 0, padding: '13px 20px', borderRadius: 11, fontWeight: 800, fontSize: 14.5, cursor: 'pointer', marginBottom: 22 }}>
+                    <Icon name="user-plus" size={18} /> Request an instructor — {money(c.instructor_request_price_cents, c.currency)}
+                  </button>
+                )}
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
                   {tags.map((tag, i) => (

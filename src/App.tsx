@@ -29,6 +29,7 @@ const AdminStudents = lazyWithReload(() => import('./pages/admin/Students'))
 const AdminTeachers = lazyWithReload(() => import('./pages/admin/Teachers'))
 const AdminSales = lazyWithReload(() => import('./pages/admin/Sales'))
 const AdminEbooks = lazyWithReload(() => import('./pages/admin/Ebooks'))
+const AdminRequests = lazyWithReload(() => import('./pages/admin/Requests'))
 const Ebooks = lazyWithReload(() => import('./pages/public/Ebooks'))
 const EbookSales = lazyWithReload(() => import('./pages/public/EbookSales'))
 const EbookDownload = lazyWithReload(() => import('./pages/public/EbookDownload'))
@@ -197,6 +198,7 @@ export default function App() {
         {isStaff && <Route path="/admin/teachers" element={<AdminTeachers />} />}
         {isStaff && <Route path="/admin/sales" element={<AdminSales />} />}
         {isStaff && <Route path="/admin/ebooks" element={<AdminEbooks />} />}
+        {isStaff && <Route path="/admin/requests" element={<AdminRequests />} />}
         {isStaff && <Route path="/admin/audit" element={<AdminAudit />} />}
         {isStaff && <Route path="/admin/analytics" element={<AdminAnalytics />} />}
         {isStaff && <Route path="/admin/blog" element={<AdminBlog />} />}

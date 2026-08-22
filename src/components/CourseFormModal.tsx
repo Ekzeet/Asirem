@@ -13,6 +13,7 @@ export type EditableCourse = {
   is_live?: boolean; zoom_url?: string | null; module_lock?: boolean
   credit_hours?: number | null; slug?: string; cover_url?: string | null
   sale_price_cents?: number | null; sale_starts_at?: string | null; sale_ends_at?: string | null
+  instructor_request_price_cents?: number | null
 }
 
 /** yyyy-mm-dd for a date input; '' when null. */
@@ -42,7 +43,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
     title: '', subtitle: '', description: '', category: 'Tax', level: 'Beginner',
     price_cents: 9900, instructor_id: me!.role === 'teacher' ? me!.userId : null, accent: ACCENTS[0], icon: ICONS[0], status: 'draft',
     is_live: false, zoom_url: '', module_lock: false, credit_hours: null, slug: '', cover_url: null,
-    sale_price_cents: null, sale_starts_at: null, sale_ends_at: null,
+    sale_price_cents: null, sale_starts_at: null, sale_ends_at: null, instructor_request_price_cents: null,
   })
   const [teachers, setTeachers] = useState<{ id: string; name: string }[]>([])
   const [busy, setBusy] = useState(false)
@@ -74,6 +75,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
       sale_price_cents: form.sale_price_cents ?? null,
       sale_starts_at: form.sale_starts_at ?? null,
       sale_ends_at: form.sale_ends_at ?? null,
+      instructor_request_price_cents: form.instructor_request_price_cents ?? null,
       published_at: form.status === 'published' ? new Date().toISOString() : null,
       ...(form.cover_url !== undefined ? { cover_url: form.cover_url } : {}),
     }
@@ -132,6 +134,11 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
         </div>
         <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600, marginTop: 8 }}>{t('saleHint')}</div>
       </div>
+
+      <Field label={t('requestPriceUsd')}>
+        <input type="number" min={0} value={form.instructor_request_price_cents != null ? form.instructor_request_price_cents / 100 : ''} onChange={(e) => set('instructor_request_price_cents', e.target.value === '' ? null : Math.round(Number(e.target.value) * 100))} style={inputCss} placeholder="0" />
+        <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600, marginTop: 6 }}>{t('requestPriceHint')}</div>
+      </Field>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <Field label={t('creditHours')}><input type="number" step="0.5" min="0" value={form.credit_hours ?? ''} onChange={(e) => set('credit_hours', e.target.value === '' ? null : Number(e.target.value))} style={inputCss} /></Field>

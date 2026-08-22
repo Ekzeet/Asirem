@@ -32,7 +32,7 @@ export default function CourseBuilder() {
 
   const { data, loading, reload } = useAsync(async () => {
     const [{ data: course }, { data: sections }, { data: quizzes }, { data: assignments }] = await Promise.all([
-      supabase.from('courses').select('id,title,status,category,accent,icon,cover_url,subtitle,description,level,price_cents,sale_price_cents,sale_starts_at,sale_ends_at,instructor_id,drip_enabled,credit_hours,slug').eq('id', courseId!).single(),
+      supabase.from('courses').select('id,title,status,category,accent,icon,cover_url,subtitle,description,level,price_cents,sale_price_cents,sale_starts_at,sale_ends_at,instructor_request_price_cents,instructor_id,drip_enabled,credit_hours,slug').eq('id', courseId!).single(),
       supabase.from('sections').select('id,title,position,lessons(id,title,content_type,duration,duration_seconds,file_url,external_url,is_preview,position)').eq('course_id', courseId!).order('position'),
       supabase.from('quizzes').select('lesson_id'),
       supabase.from('assignments').select('id,title,instructions,due_at,points,submission_types,status,available_from,allow_late,late_penalty,max_attempts,rubric').eq('course_id', courseId!).order('created_at'),

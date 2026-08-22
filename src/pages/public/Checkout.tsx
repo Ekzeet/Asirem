@@ -9,7 +9,7 @@ import { startCheckout } from '../../lib/checkout'
 import { effectivePrice } from '../../lib/sale'
 import { useDocumentHead } from '../../lib/seo'
 
-type Kind = 'course' | 'path' | 'plan' | 'ebook'
+type Kind = 'course' | 'path' | 'plan' | 'ebook' | 'request'
 type Item = { kind: Kind; id: string; title: string; priceCents: number; currency: string; interval?: string | null }
 
 function money(cents: number, currency: string) {
@@ -128,10 +128,11 @@ export default function Checkout() {
     if (!item) return
     setError(null); setBusy(true)
     try {
-      const opts: { courseId?: string; pathId?: string; planId?: string; ebookId?: string; email?: string; coupon?: string } = {}
+      const opts: { courseId?: string; pathId?: string; planId?: string; ebookId?: string; requestCourseId?: string; email?: string; coupon?: string } = {}
       if (item.kind === 'course') opts.courseId = item.id
       else if (item.kind === 'path') opts.pathId = item.id
       else if (item.kind === 'ebook') opts.ebookId = item.id
+      else if (item.kind === 'request') opts.requestCourseId = item.id
       else opts.planId = item.id
       if (!session && email) opts.email = email.trim() // guest fallback (if email confirmation is on)
       if (coupon.trim() && item.kind !== 'plan') opts.coupon = coupon.trim().toUpperCase()
@@ -186,7 +187,7 @@ export default function Checkout() {
                 <button type="button" onClick={() => setStep(1)} style={{ ...toggleBtn, padding: 0 }}>{t('editAccount')}</button>
               )}
             </div>
-            {item.kind !== 'plan' && (
+            {item.kind !== 'plan' && item.kind !== 'request' && (
               <div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input style={{ ...inputCss, flex: 1 }} placeholder={t('couponPlaceholder')} value={coupon}
