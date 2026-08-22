@@ -34,9 +34,9 @@ export type Database = {
         Relationships: []
       }
       coupons: {
-        Row: { active: boolean; amount: number; category: string | null; code: string; course_id: string | null; ebook_id: string | null; created_at: string; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; stripe_coupon_id: string | null; stripe_promo_id: string | null; uses_count: number }
-        Insert: { active?: boolean; amount?: number; category?: string | null; code: string; course_id?: string | null; ebook_id?: string | null; created_at?: string; discount_type?: string; ends_at?: string | null; id?: string; institution_id: string; starts_at?: string | null; stripe_coupon_id?: string | null; stripe_promo_id?: string | null; uses_count?: number }
-        Update: Partial<{ active: boolean; amount: number; category: string | null; code: string; course_id: string | null; ebook_id: string | null; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; stripe_coupon_id: string | null; stripe_promo_id: string | null; uses_count: number }>
+        Row: { active: boolean; amount: number; category: string | null; code: string; course_id: string | null; ebook_id: string | null; owner_id: string | null; max_uses: number | null; created_at: string; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; stripe_coupon_id: string | null; stripe_promo_id: string | null; uses_count: number }
+        Insert: { active?: boolean; amount?: number; category?: string | null; code: string; course_id?: string | null; ebook_id?: string | null; owner_id?: string | null; max_uses?: number | null; created_at?: string; discount_type?: string; ends_at?: string | null; id?: string; institution_id: string; starts_at?: string | null; stripe_coupon_id?: string | null; stripe_promo_id?: string | null; uses_count?: number }
+        Update: Partial<{ active: boolean; amount: number; category: string | null; code: string; course_id: string | null; ebook_id: string | null; owner_id: string | null; max_uses: number | null; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; stripe_coupon_id: string | null; stripe_promo_id: string | null; uses_count: number }>
         Relationships: []
       }
       ebooks: {
