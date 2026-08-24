@@ -68,9 +68,14 @@ export default function Security() {
         {enroll && (
           <div style={{ marginTop: 18, paddingTop: 18, borderTop: '1px solid var(--border-soft)' }}>
             <div style={{ fontSize: 13, color: '#33415A', fontWeight: 600, marginBottom: 12 }}>1. Scan this QR code with Google Authenticator, Authy, or a similar app.</div>
-            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-              <div style={{ width: 168, height: 168, background: '#fff', border: '1px solid var(--border)', borderRadius: 12, padding: 8 }} dangerouslySetInnerHTML={{ __html: enroll.qr }} />
-              <div style={{ fontSize: 12, color: '#8494A8', fontWeight: 600 }}>Or enter the key manually:<br /><code style={{ fontSize: 12.5, color: 'var(--navy-800)', fontWeight: 700, wordBreak: 'break-all' }}>{enroll.secret}</code></div>
+            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              <img src={enroll.qr} alt="2FA QR code" width={184} height={184} style={{ display: 'block', flex: 'none', border: '1px solid var(--border)', borderRadius: 12, background: '#fff', padding: 8 }} />
+              <div style={{ fontSize: 12, color: '#8494A8', fontWeight: 600, flex: 1, minWidth: 200 }}>
+                Or enter this key manually in your app:
+                <div style={{ marginTop: 8, padding: '10px 12px', background: '#F7F9FC', border: '1px solid var(--border)', borderRadius: 8 }}>
+                  <code style={{ fontSize: 12.5, color: 'var(--navy-800)', fontWeight: 700, wordBreak: 'break-all', letterSpacing: 1 }}>{enroll.secret}</code>
+                </div>
+              </div>
             </div>
             <div style={{ fontSize: 13, color: '#33415A', fontWeight: 600, margin: '18px 0 8px' }}>2. Enter the 6-digit code to confirm.</div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
