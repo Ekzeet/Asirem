@@ -89,10 +89,10 @@ export default function MarketingHome() {
         <div className="blueprint mkt-cta" style={{ background: 'var(--color-accent-900)', color: 'var(--color-bg)', padding: 'clamp(32px,5vw,56px)', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '24px 40px', alignItems: 'center' }}>
           <Corners />
           <div>
-            <h2 style={{ fontSize: 'clamp(28px,3.4vw,40px)', textTransform: 'uppercase', margin: '0 0 10px', lineHeight: 1.05 }}>Our very first course is online.</h2>
+            <h2 style={{ fontSize: 'clamp(28px,3.4vw,40px)', textTransform: 'uppercase', margin: '0 0 10px', lineHeight: 1.05 }}>Our courses are online.</h2>
             <p style={{ fontSize: 16, lineHeight: 1.6, color: 'color-mix(in srgb,var(--color-bg) 82%,transparent)' }}>Official launch — limited seats for the first cohort. Reserve yours today.</p>
           </div>
-          <button type="button" className="btn" onClick={() => nav('/contact')} style={{ background: 'var(--color-bg)', color: 'var(--color-accent-900)', borderColor: 'var(--color-bg)', padding: '14px 26px', fontSize: 16, whiteSpace: 'nowrap' }}>Sign me up <Arrow /></button>
+          <button type="button" className="btn" onClick={() => nav('/courses')} style={{ background: 'var(--color-bg)', color: 'var(--color-accent-900)', borderColor: 'var(--color-bg)', padding: '14px 26px', fontSize: 16, whiteSpace: 'nowrap' }}>Sign me up <Arrow /></button>
         </div>
       </section>
     </div>
