@@ -70,12 +70,22 @@ function PostModal({ draft, inst, authorId, onClose, onSaved }: { draft: Draft; 
   const [error, setError] = useState<string | null>(null)
   const set = (k: keyof Post, v: unknown) => setForm((f) => ({ ...f, [k]: v }))
 
+  // Selectable authors: active staff of the institution (admins + teachers).
+  const { data: authors } = useAsync(async () => {
+    const { data } = await supabase.from('memberships')
+      .select('user_id, profiles:profiles!memberships_user_profile_fkey(full_name)')
+      .eq('institution_id', inst).eq('status', 'active').in('role', ['institution_admin', 'teacher', 'super_admin'])
+    const seen = new Set<string>(); const list: { id: string; name: string }[] = []
+    for (const m of (data ?? [])) { const id = (m as any).user_id; if (!seen.has(id)) { seen.add(id); list.push({ id, name: (m as any).profiles?.full_name ?? '—' }) } }
+    return list
+  }, [inst])
+
   async function save() {
     if (!form.title?.trim()) { setError('Title required'); return }
     setBusy(true); setError(null)
     const slug = (form.slug?.trim() || slugify(form.title) + '-' + Math.random().toString(36).slice(2, 6))
     const payload = {
-      institution_id: inst, author_id: authorId, title: form.title.trim(), slug,
+      institution_id: inst, author_id: form.author_id ?? authorId, title: form.title.trim(), slug,
       excerpt: form.excerpt ?? null, body: form.body ?? null, category: form.category ?? null,
       cover_url: form.cover_url ?? null, read_minutes: form.read_minutes ?? null,
       featured: form.featured ?? false, status: form.status ?? 'draft',
@@ -98,6 +108,11 @@ function PostModal({ draft, inst, authorId, onClose, onSaved }: { draft: Draft; 
         <Field label={t('category')}><input value={form.category ?? ''} onChange={(e) => set('category', e.target.value)} style={inputCss} placeholder="Tips / Career / …" /></Field>
         <Field label={t('slug')}><input value={form.slug ?? ''} onChange={(e) => set('slug', e.target.value)} style={inputCss} placeholder="auto" /></Field>
       </div>
+      <Field label={t('author')}>
+        <select value={form.author_id ?? authorId} onChange={(e) => set('author_id', e.target.value)} style={inputCss}>
+          {(authors ?? []).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+      </Field>
       <Field label={t('excerpt')}><textarea value={form.excerpt ?? ''} onChange={(e) => set('excerpt', e.target.value)} style={{ ...textareaCss, minHeight: 60 }} /></Field>
       <Field label={t('body')}><RichTextEditor value={form.body ?? ''} onChange={(v) => set('body', v)} minHeight={180} placeholder="Write your post…" /></Field>
       <Field label={t('coverImage')}>
