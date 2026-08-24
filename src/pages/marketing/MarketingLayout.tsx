@@ -58,7 +58,6 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
               </div>
             )}
           </div>
-          <button type="button" className="btn btn-primary" onClick={() => { nav('/contact'); close() }}>Pre-register</button>
         </div>
       </nav>
 

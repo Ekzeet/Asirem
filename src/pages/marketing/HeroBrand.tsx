@@ -19,7 +19,7 @@ export default function HeroBrand() {
   const stats: { icon: React.ReactNode; value: string; label: string; onClick?: () => void }[] = [
     { icon: <Users size={18} />, value: '1,200+', label: 'Active students' },
     { icon: <GraduationCap size={18} />, value: '12', label: 'Expert instructors' },
-    { icon: <Link2 size={18} />, value: '', label: 'Resources', onClick: () => nav('/blog') },
+    { icon: <Link2 size={18} />, value: '', label: 'Resources', onClick: () => nav('/books') },
   ]
 
   return (
