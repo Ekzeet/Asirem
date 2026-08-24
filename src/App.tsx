@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 import { useI18n } from './i18n/I18nContext'
 import LoginPage from './auth/LoginPage'
+import MfaChallenge from './auth/MfaChallenge'
 import Layout from './components/Layout'
 import { supabaseConfigured } from './lib/supabase'
 
@@ -30,6 +31,7 @@ const AdminTeachers = lazyWithReload(() => import('./pages/admin/Teachers'))
 const AdminSales = lazyWithReload(() => import('./pages/admin/Sales'))
 const AdminEbooks = lazyWithReload(() => import('./pages/admin/Ebooks'))
 const AdminRequests = lazyWithReload(() => import('./pages/admin/Requests'))
+const Security = lazyWithReload(() => import('./pages/Security'))
 const Ebooks = lazyWithReload(() => import('./pages/public/Ebooks'))
 const EbookSales = lazyWithReload(() => import('./pages/public/EbookSales'))
 const EbookDownload = lazyWithReload(() => import('./pages/public/EbookDownload'))
@@ -119,7 +121,7 @@ function PendingNotice() {
 }
 
 export default function App() {
-  const { session, me, loading } = useAuth()
+  const { session, me, loading, mfaRequired } = useAuth()
 
   if (!supabaseConfigured) return <ConfigNotice />
   if (loading) return <Loading />
@@ -127,6 +129,8 @@ export default function App() {
   if (session && (session.user?.user_metadata as { needs_password?: boolean } | undefined)?.needs_password === true) {
     return <Suspense fallback={<Loading />}><AcceptInvite /></Suspense>
   }
+  // 2FA gate: enrolled users must pass the TOTP challenge before reaching the app.
+  if (session && mfaRequired) return <Suspense fallback={<Loading />}><MfaChallenge /></Suspense>
   if (session && !me) return <PendingNotice />
   if (!session || !me) {
     return (
@@ -215,6 +219,7 @@ export default function App() {
         {/* Shared */}
         <Route path="/community" element={studentLocked ? lockTo : <Community />} />
         <Route path="/search" element={<Search />} />
+        <Route path="/security" element={<Security />} />
         <Route path="/exams" element={studentLocked ? lockTo : <Exams />} />
         {(isStaff || isTeacher) && <Route path="/exams/:examId/build" element={<ExamBuilder />} />}
         <Route path="/exams/:examId/take" element={studentLocked ? lockTo : <ExamPlayer />} />

@@ -55,13 +55,13 @@ export default function Topbar({ onMenu }: { onMenu?: () => void }) {
         })}
       </div>
       <NotificationBell />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 6, borderLeft: '1px solid var(--border)' }}>
+      <button onClick={() => nav('/security')} title={t('security')} style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 6, borderLeft: '1px solid var(--border)', background: 'none', border: 'none', cursor: 'pointer' }}>
         <div style={{ width: 40, height: 40, borderRadius: 11, background: 'linear-gradient(135deg,#0F2C4C,#1B4B7F)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--display)', fontWeight: 700, fontSize: 14 }}>{initials(me.fullName)}</div>
-        <div style={{ lineHeight: 1.2 }}>
+        <div style={{ lineHeight: 1.2, textAlign: 'left' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy-800)' }}>{me.fullName}</div>
           <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600 }}>{roleName(me.role)}</div>
         </div>
-      </div>
+      </button>
     </header>
   )
 }

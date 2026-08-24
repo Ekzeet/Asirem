@@ -19,6 +19,9 @@ type AuthState = {
   session: Session | null
   me: Me | null
   loading: boolean
+  /** True when the signed-in user has 2FA enrolled but the session is still aal1 (code required). */
+  mfaRequired: boolean
+  refreshMfa: () => Promise<void>
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
@@ -63,6 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [me, setMe] = useState<Me | null>(null)
   const [loading, setLoading] = useState(true)
+  const [mfaRequired, setMfaRequired] = useState(false)
+
+  const refreshMfa = async () => {
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+    setMfaRequired(!!data && data.currentLevel === 'aal1' && data.nextLevel === 'aal2')
+  }
 
   useEffect(() => {
     let active = true
@@ -70,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!active) return
       setSession(data.session)
       if (data.session?.user) {
+        await refreshMfa()
         setMe(await loadMe(data.session.user.id, data.session.user.email ?? ''))
       }
       setLoading(false)
@@ -78,9 +88,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, s) => {
       setSession(s)
       if (s?.user) {
+        await refreshMfa()
         setMe(await loadMe(s.user.id, s.user.email ?? ''))
       } else {
-        setMe(null)
+        setMe(null); setMfaRequired(false)
       }
     })
     return () => {
@@ -99,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setMe(null)
   }
 
-  return <Ctx.Provider value={{ session, me, loading, signIn, signOut }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{ session, me, loading, mfaRequired, refreshMfa, signIn, signOut }}>{children}</Ctx.Provider>
 }
 
 export function useAuth() {
