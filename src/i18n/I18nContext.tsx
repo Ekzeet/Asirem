@@ -11,7 +11,10 @@ type I18n = {
 const Ctx = createContext<I18n | null>(null)
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => (localStorage.getItem('asirem-lang') as Lang) || 'fr')
+  const [lang, setLangState] = useState<Lang>(() => {
+    const stored = localStorage.getItem('asirem-lang')
+    return stored === 'es' ? 'es' : 'en'
+  })
 
   useEffect(() => {
     document.documentElement.lang = lang

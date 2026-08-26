@@ -47,7 +47,7 @@ export default function Topbar({ onMenu }: { onMenu?: () => void }) {
         <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`) }} placeholder={t('search')} style={{ width: 230, height: 40, border: '1px solid #E2E8F0', borderRadius: 11, background: '#F7F9FC', padding: '0 14px 0 36px', fontSize: 13.5, color: 'var(--navy-800)', outline: 'none' }} />
       </div>
       <div style={{ display: 'flex', gap: 4, background: '#F2F5F9', borderRadius: 10, padding: 3 }}>
-        {(['FR', 'EN', 'ES'] as const).map((c) => {
+        {(['EN', 'ES'] as const).map((c) => {
           const active = lang === (c.toLowerCase() as Lang)
           return (
             <button key={c} onClick={() => setLang(c.toLowerCase() as Lang)} style={{ width: 34, height: 30, border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 800, fontSize: 11.5, background: active ? 'var(--navy-800)' : 'transparent', color: active ? '#fff' : 'var(--muted)' }}>{c}</button>
@@ -55,13 +55,13 @@ export default function Topbar({ onMenu }: { onMenu?: () => void }) {
         })}
       </div>
       <NotificationBell />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 6, borderLeft: '1px solid var(--border)' }}>
+      <button onClick={() => nav('/security')} title={t('security')} style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 6, borderLeft: '1px solid var(--border)', background: 'none', border: 'none', cursor: 'pointer' }}>
         <div style={{ width: 40, height: 40, borderRadius: 11, background: 'linear-gradient(135deg,#0F2C4C,#1B4B7F)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--display)', fontWeight: 700, fontSize: 14 }}>{initials(me.fullName)}</div>
-        <div style={{ lineHeight: 1.2 }}>
+        <div style={{ lineHeight: 1.2, textAlign: 'left' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy-800)' }}>{me.fullName}</div>
           <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600 }}>{roleName(me.role)}</div>
         </div>
-      </div>
+      </button>
     </header>
   )
 }

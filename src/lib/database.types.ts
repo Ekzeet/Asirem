@@ -34,14 +34,32 @@ export type Database = {
         Relationships: []
       }
       coupons: {
-        Row: { active: boolean; amount: number; code: string; created_at: string; discount_type: string; id: string; institution_id: string; uses_count: number }
-        Insert: { active?: boolean; amount?: number; code: string; created_at?: string; discount_type?: string; id?: string; institution_id: string; uses_count?: number }
-        Update: Partial<{ active: boolean; amount: number; code: string; discount_type: string; id: string; institution_id: string; uses_count: number }>
+        Row: { active: boolean; amount: number; category: string | null; code: string; course_id: string | null; ebook_id: string | null; owner_id: string | null; max_uses: number | null; created_at: string; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; stripe_coupon_id: string | null; stripe_promo_id: string | null; uses_count: number }
+        Insert: { active?: boolean; amount?: number; category?: string | null; code: string; course_id?: string | null; ebook_id?: string | null; owner_id?: string | null; max_uses?: number | null; created_at?: string; discount_type?: string; ends_at?: string | null; id?: string; institution_id: string; starts_at?: string | null; stripe_coupon_id?: string | null; stripe_promo_id?: string | null; uses_count?: number }
+        Update: Partial<{ active: boolean; amount: number; category: string | null; code: string; course_id: string | null; ebook_id: string | null; owner_id: string | null; max_uses: number | null; discount_type: string; ends_at: string | null; id: string; institution_id: string; starts_at: string | null; stripe_coupon_id: string | null; stripe_promo_id: string | null; uses_count: number }>
+        Relationships: []
+      }
+      ebooks: {
+        Row: { id: string; institution_id: string; title: string; subtitle: string | null; description: string | null; author: string | null; cover_url: string | null; file_path: string | null; file_name: string | null; price_cents: number; status: string; slug: string; position: number | null; created_by: string | null; created_at: string }
+        Insert: { id?: string; institution_id: string; title: string; subtitle?: string | null; description?: string | null; author?: string | null; cover_url?: string | null; file_path?: string | null; file_name?: string | null; price_cents?: number; status?: string; slug: string; position?: number | null; created_by?: string | null; created_at?: string }
+        Update: Partial<Database['public']['Tables']['ebooks']['Insert']>
+        Relationships: []
+      }
+      ebook_access: {
+        Row: { id: string; ebook_id: string; user_id: string | null; email: string | null; token: string; order_id: string | null; created_at: string }
+        Insert: { id?: string; ebook_id: string; user_id?: string | null; email?: string | null; token?: string; order_id?: string | null; created_at?: string }
+        Update: Partial<Database['public']['Tables']['ebook_access']['Insert']>
+        Relationships: []
+      }
+      instructor_requests: {
+        Row: { id: string; institution_id: string; course_id: string | null; user_id: string; amount_cents: number; status: string; assigned_instructor_id: string | null; stripe_session_id: string | null; note: string | null; created_at: string }
+        Insert: { id?: string; institution_id: string; course_id?: string | null; user_id: string; amount_cents?: number; status?: string; assigned_instructor_id?: string | null; stripe_session_id?: string | null; note?: string | null; created_at?: string }
+        Update: Partial<Database['public']['Tables']['instructor_requests']['Insert']>
         Relationships: []
       }
       courses: {
-        Row: { accent: string | null; category: string | null; cover_url: string | null; created_at: string; created_by: string | null; credit_hours: number | null; description: string | null; drip_enabled: boolean; icon: string | null; id: string; institution_id: string; instructor_id: string | null; is_live: boolean; level: string | null; module_lock: boolean; price_cents: number; published_at: string | null; rating: number | null; slug: string; status: string; subtitle: string | null; title: string; zoom_meeting_id: string | null; zoom_url: string | null }
-        Insert: { accent?: string | null; category?: string | null; cover_url?: string | null; created_at?: string; created_by?: string | null; credit_hours?: number | null; description?: string | null; drip_enabled?: boolean; icon?: string | null; id?: string; institution_id: string; instructor_id?: string | null; is_live?: boolean; level?: string | null; module_lock?: boolean; price_cents?: number; published_at?: string | null; rating?: number | null; slug?: string; status?: string; subtitle?: string | null; title: string; zoom_meeting_id?: string | null; zoom_url?: string | null }
+        Row: { accent: string | null; category: string | null; cover_url: string | null; created_at: string; created_by: string | null; credit_hours: number | null; description: string | null; drip_enabled: boolean; icon: string | null; id: string; institution_id: string; instructor_id: string | null; is_live: boolean; level: string | null; module_lock: boolean; position: number | null; price_cents: number; sale_price_cents: number | null; sale_starts_at: string | null; sale_ends_at: string | null; instructor_request_price_cents: number | null; published_at: string | null; rating: number | null; slug: string; status: string; subtitle: string | null; title: string; zoom_meeting_id: string | null; zoom_url: string | null }
+        Insert: { accent?: string | null; category?: string | null; cover_url?: string | null; created_at?: string; created_by?: string | null; credit_hours?: number | null; description?: string | null; drip_enabled?: boolean; icon?: string | null; id?: string; institution_id: string; instructor_id?: string | null; is_live?: boolean; level?: string | null; module_lock?: boolean; position?: number | null; price_cents?: number; sale_price_cents?: number | null; sale_starts_at?: string | null; sale_ends_at?: string | null; instructor_request_price_cents?: number | null; published_at?: string | null; rating?: number | null; slug?: string; status?: string; subtitle?: string | null; title: string; zoom_meeting_id?: string | null; zoom_url?: string | null }
         Update: Partial<Database['public']['Tables']['courses']['Insert']>
         Relationships: []
       }
@@ -129,6 +147,12 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['audit_log']['Insert']>
         Relationships: []
       }
+      blog_posts: {
+        Row: { id: string; institution_id: string; author_id: string | null; title: string; slug: string; excerpt: string | null; body: string | null; category: string | null; cover_url: string | null; read_minutes: number | null; featured: boolean; status: string; published_at: string | null; created_at: string; updated_at: string }
+        Insert: { id?: string; institution_id: string; author_id?: string | null; title: string; slug: string; excerpt?: string | null; body?: string | null; category?: string | null; cover_url?: string | null; read_minutes?: number | null; featured?: boolean; status?: string; published_at?: string | null; created_at?: string; updated_at?: string }
+        Update: Partial<Database['public']['Tables']['blog_posts']['Insert']>
+        Relationships: []
+      }
       subscriptions: {
         Row: { id: string; institution_id: string; user_id: string; plan_id: string | null; status: string; stripe_subscription_id: string | null; current_period_end: string | null; created_at: string }
         Insert: { id?: string; institution_id: string; user_id: string; plan_id?: string | null; status?: string; stripe_subscription_id?: string | null; current_period_end?: string | null; created_at?: string }
@@ -184,8 +208,8 @@ export type Database = {
         Relationships: []
       }
       orders: {
-        Row: { amount_cents: number; coupon_id: string | null; course_id: string | null; created_at: string; id: string; institution_id: string; plan_id: string | null; status: string; user_id: string; provider: string; stripe_session_id: string | null; tax_cents: number }
-        Insert: { amount_cents?: number; coupon_id?: string | null; course_id?: string | null; created_at?: string; id?: string; institution_id: string; plan_id?: string | null; status?: string; user_id: string; provider?: string; stripe_session_id?: string | null; tax_cents?: number }
+        Row: { amount_cents: number; coupon_id: string | null; course_id: string | null; ebook_id: string | null; created_at: string; id: string; institution_id: string; plan_id: string | null; status: string; user_id: string; provider: string; stripe_session_id: string | null; tax_cents: number }
+        Insert: { amount_cents?: number; coupon_id?: string | null; course_id?: string | null; ebook_id?: string | null; created_at?: string; id?: string; institution_id: string; plan_id?: string | null; status?: string; user_id: string; provider?: string; stripe_session_id?: string | null; tax_cents?: number }
         Update: Partial<Database['public']['Tables']['orders']['Insert']>
         Relationships: []
       }
@@ -297,6 +321,9 @@ export type Database = {
       set_email_unsubscribed: { Args: { p_token: string; p_all: boolean }; Returns: boolean }
       current_streak: { Args: Record<string, never>; Returns: number }
       list_public_paths: { Args: Record<string, never>; Returns: { id: string; slug: string; title: string; subtitle: string | null; price_cents: number; currency: string; accent: string | null; icon: string | null; course_count: number }[] }
+      list_public_posts: { Args: Record<string, never>; Returns: { id: string; slug: string; title: string; excerpt: string | null; category: string | null; cover_url: string | null; read_minutes: number | null; featured: boolean; published_at: string | null; author_name: string | null }[] }
+      get_public_post: { Args: { p_slug: string }; Returns: Json }
+      approve_teacher: { Args: { p_user: string }; Returns: undefined }
       list_public_plans: { Args: Record<string, never>; Returns: { id: string; code: string; name: string; price_cents: number; bill_interval: string; currency: string }[] }
       get_public_path: { Args: { p_slug: string }; Returns: Json }
       path_progress: { Args: { p_path: string }; Returns: Json }

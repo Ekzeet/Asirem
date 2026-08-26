@@ -3,14 +3,21 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth/AuthContext'
 import { useI18n } from '../i18n/I18nContext'
 import { Icon } from './Icon'
-import { BtnGhost, BtnPrimary, Field, Modal, inputCss, textareaCss } from './Modal'
+import { BtnGhost, BtnPrimary, Field, Modal, inputCss } from './Modal'
+import { FileUpload } from './FileUpload'
+import { RichTextEditor } from './RichText'
 
 export type EditableCourse = {
   id?: string; title: string; subtitle: string | null; description?: string | null; category: string | null
   level: string | null; price_cents: number; instructor_id: string | null; accent: string | null; icon: string | null; status: string
   is_live?: boolean; zoom_url?: string | null; module_lock?: boolean
-  credit_hours?: number | null; slug?: string
+  credit_hours?: number | null; slug?: string; cover_url?: string | null
+  sale_price_cents?: number | null; sale_starts_at?: string | null; sale_ends_at?: string | null
+  instructor_request_price_cents?: number | null
 }
+
+/** yyyy-mm-dd for a date input; '' when null. */
+const toDateInput = (iso: string | null | undefined) => (iso ? new Date(iso).toISOString().slice(0, 10) : '')
 
 const ACCENTS = [
   'linear-gradient(135deg,#0F2C4C,#1B4B7F)',
@@ -21,7 +28,7 @@ const ACCENTS = [
   'linear-gradient(135deg,#556575,#6E8093)',
 ]
 const ICONS = ['file-text', 'landmark', 'shield', 'heart-pulse', 'monitor', 'stethoscope', 'book-open', 'briefcase', 'calculator', 'trending-up']
-const CATEGORIES = ['Fiscalité', 'Assurance', 'Health', 'Logiciel', 'Medicare', 'Finance']
+const CATEGORIES = ['Tax', 'Insurance', 'Health', 'Software', 'Medicare', 'Finance']
 
 export function CourseFormModal({ existing, onClose, onSaved }: {
   existing?: EditableCourse | null
@@ -33,9 +40,10 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
   const isStaff = me!.role === 'institution_admin' || me!.role === 'super_admin'
 
   const [form, setForm] = useState<EditableCourse>(existing ?? {
-    title: '', subtitle: '', description: '', category: 'Fiscalité', level: 'Débutant',
+    title: '', subtitle: '', description: '', category: 'Tax', level: 'Beginner',
     price_cents: 9900, instructor_id: me!.role === 'teacher' ? me!.userId : null, accent: ACCENTS[0], icon: ICONS[0], status: 'draft',
-    is_live: false, zoom_url: '', module_lock: false, credit_hours: null, slug: '',
+    is_live: false, zoom_url: '', module_lock: false, credit_hours: null, slug: '', cover_url: null,
+    sale_price_cents: null, sale_starts_at: null, sale_ends_at: null, instructor_request_price_cents: null,
   })
   const [teachers, setTeachers] = useState<{ id: string; name: string }[]>([])
   const [busy, setBusy] = useState(false)
@@ -50,6 +58,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
 
   async function save() {
     if (!form.title.trim()) { setError('Title required'); return }
+    if (form.sale_price_cents != null && form.sale_price_cents >= form.price_cents) { setError(t('saleTooHigh')); return }
     setBusy(true); setError(null)
     // slug is NOT NULL + unique per institution; auto-derive from the title when the
     // admin leaves it blank so course creation never collides on an empty slug.
@@ -64,7 +73,12 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
       accent: form.accent, icon: form.icon, status: form.status,
       is_live: form.is_live ?? false, zoom_url: form.zoom_url || null, module_lock: form.module_lock ?? false,
       credit_hours: form.credit_hours ?? null, slug,
+      sale_price_cents: form.sale_price_cents ?? null,
+      sale_starts_at: form.sale_starts_at ?? null,
+      sale_ends_at: form.sale_ends_at ?? null,
+      instructor_request_price_cents: form.instructor_request_price_cents ?? null,
       published_at: form.status === 'published' ? new Date().toISOString() : null,
+      ...(form.cover_url !== undefined ? { cover_url: form.cover_url } : {}),
     }
     let id = existing?.id
     if (id) {
@@ -87,7 +101,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
       {error && <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, background: '#FBEBEB', padding: '9px 12px', borderRadius: 10, marginBottom: 14 }}>{error}</div>}
       <Field label={t('courseTitle')}><input value={form.title} onChange={(e) => set('title', e.target.value)} style={inputCss} /></Field>
       <Field label={t('subtitle')}><input value={form.subtitle ?? ''} onChange={(e) => set('subtitle', e.target.value)} style={inputCss} /></Field>
-      <Field label={t('description')}><textarea value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} style={textareaCss} /></Field>
+      <Field label={t('description')}><RichTextEditor value={form.description ?? ''} onChange={(v) => set('description', v)} minHeight={110} placeholder="Describe the course…" /></Field>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <Field label={t('category')}>
@@ -111,6 +125,21 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
           </select>
         </Field>
       </div>
+
+      <div style={{ padding: '12px 14px', background: '#FBF7EC', border: '1px solid #EBD9A8', borderRadius: 11, marginBottom: 14 }}>
+        <div style={{ fontSize: 12.5, fontWeight: 800, color: '#8A6D1F', marginBottom: 10 }}>{t('salePromo')}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+          <Field label={t('salePriceUsd')}><input type="number" min={0} value={form.sale_price_cents != null ? form.sale_price_cents / 100 : ''} onChange={(e) => set('sale_price_cents', e.target.value === '' ? null : Math.round(Number(e.target.value) * 100))} style={inputCss} /></Field>
+          <Field label={t('couponStart')}><input type="date" value={toDateInput(form.sale_starts_at)} onChange={(e) => set('sale_starts_at', e.target.value ? new Date(e.target.value + 'T00:00:00').toISOString() : null)} style={inputCss} /></Field>
+          <Field label={t('couponEnd')}><input type="date" value={toDateInput(form.sale_ends_at)} onChange={(e) => set('sale_ends_at', e.target.value ? new Date(e.target.value + 'T23:59:59').toISOString() : null)} style={inputCss} /></Field>
+        </div>
+        <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600, marginTop: 8 }}>{t('saleHint')}</div>
+      </div>
+
+      <Field label={t('requestPriceUsd')}>
+        <input type="number" min={0} value={form.instructor_request_price_cents != null ? form.instructor_request_price_cents / 100 : ''} onChange={(e) => set('instructor_request_price_cents', e.target.value === '' ? null : Math.round(Number(e.target.value) * 100))} style={inputCss} placeholder="0" />
+        <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600, marginTop: 6 }}>{t('requestPriceHint')}</div>
+      </Field>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <Field label={t('creditHours')}><input type="number" step="0.5" min="0" value={form.credit_hours ?? ''} onChange={(e) => set('credit_hours', e.target.value === '' ? null : Number(e.target.value))} style={inputCss} /></Field>
@@ -138,7 +167,19 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
         </label>
       </div>
 
-      <Field label={t('cover')}>
+      <Field label={t('cover') + ' — thumbnail'}>
+        {form.cover_url ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+            <img src={form.cover_url} alt="cover" style={{ width: 120, height: 76, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--border)' }} />
+            <button onClick={() => set('cover_url', null)} style={{ border: '1px solid var(--border)', background: '#fff', color: '#D14343', fontWeight: 700, fontSize: 12.5, padding: '7px 12px', borderRadius: 9, cursor: 'pointer' }}>Remove image</button>
+          </div>
+        ) : (
+          <div style={{ marginBottom: 10 }}>
+            <FileUpload bucket="blog-media" pathPrefix={me!.institutionId} accept="image/*" label="Upload thumbnail image"
+              onUploaded={(path) => set('cover_url', supabase.storage.from('blog-media').getPublicUrl(path).data.publicUrl)} />
+          </div>
+        )}
+        <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600, marginBottom: 6 }}>Or pick a color (used when no image):</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {ACCENTS.map((a) => (
             <button key={a} onClick={() => set('accent', a)} style={{ width: 54, height: 34, borderRadius: 9, background: a, border: form.accent === a ? '2.5px solid #0F2C4C' : '2.5px solid transparent', cursor: 'pointer' }} />

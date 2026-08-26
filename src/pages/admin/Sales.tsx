@@ -11,18 +11,19 @@ import { BtnGhost, BtnPrimary, Field, Modal, inputCss } from '../../components/M
 type Stats = { revenue_cents: number; sales: number; subscriptions: number; avg_order_cents: number }
 type Mrr = { mrr_cents: number; delta: number | null }
 type Tx = { id: string; name: string; course: string; plan: string; amount: number; date: string; status: string; refundable: boolean }
-type Coupon = { code: string; discount_type: string; amount: number; uses_count: number }
+type Coupon = { id: string; code: string; discount_type: string; amount: number; uses_count: number; starts_at: string | null; ends_at: string | null; course_id: string | null; ebook_id: string | null; course?: { title: string } | null; ebook?: { title: string } | null }
+type CourseOpt = { id: string; title: string }
 
 export default function AdminSales() {
   const { me } = useAuth()
   const { t, lang } = useI18n()
   const inst = me!.institutionId
 
-  const [showCoupon, setShowCoupon] = useState(false)
+  const [couponForm, setCouponForm] = useState<Coupon | 'new' | null>(null)
   const [refunding, setRefunding] = useState<string | null>(null)
 
   const { data, loading, reload } = useAsync(async () => {
-    const [stats, mrr, orders, coupons] = await Promise.all([
+    const [stats, mrr, orders, coupons, courseList, ebookList] = await Promise.all([
       supabase.rpc('sales_stats', { p_institution_id: inst }),
       supabase.rpc('mrr', { p_institution_id: inst }),
       supabase
@@ -31,7 +32,9 @@ export default function AdminSales() {
         .eq('institution_id', inst)
         .order('created_at', { ascending: false })
         .limit(8),
-      supabase.from('coupons').select('code, discount_type, amount, uses_count').eq('institution_id', inst).eq('active', true),
+      supabase.from('coupons').select('id, code, discount_type, amount, uses_count, starts_at, ends_at, course_id, ebook_id, course:courses(title), ebook:ebooks(title)').eq('institution_id', inst).eq('active', true).order('created_at', { ascending: false }),
+      supabase.from('courses').select('id, title').eq('institution_id', inst).order('title'),
+      supabase.from('ebooks').select('id, title').eq('institution_id', inst).order('title'),
     ])
     const tx: Tx[] = (orders.data ?? []).map((o: any) => ({
       id: o.id,
@@ -43,11 +46,11 @@ export default function AdminSales() {
       status: o.status,
       refundable: o.status === 'paid' && o.provider === 'stripe' && !!o.stripe_session_id,
     }))
-    return { stats: stats.data as unknown as Stats, mrr: mrr.data as unknown as Mrr, tx, coupons: (coupons.data ?? []) as Coupon[] }
+    return { stats: stats.data as unknown as Stats, mrr: mrr.data as unknown as Mrr, tx, coupons: (coupons.data ?? []) as unknown as Coupon[], courseOpts: (courseList.data ?? []) as CourseOpt[], ebookOpts: (ebookList.data ?? []) as CourseOpt[] }
   }, [inst])
 
   if (loading || !data) return <Loader />
-  const { stats, mrr, tx, coupons } = data
+  const { stats, mrr, tx, coupons, courseOpts, ebookOpts } = data
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR', { day: '2-digit', month: 'short' })
 
   async function doRefund(id: string) {
@@ -56,6 +59,13 @@ export default function AdminSales() {
     const { data: res, error } = await supabase.functions.invoke('refund-order', { body: { order_id: id } })
     setRefunding(null)
     if (error || !(res as any)?.ok) { alert((res as any)?.error ?? error?.message ?? 'refund_failed'); return }
+    reload()
+  }
+
+  async function deleteCoupon(c: Coupon) {
+    if (!window.confirm(t('deleteCouponConfirm').replace('{code}', c.code))) return
+    const { data, error } = await supabase.functions.invoke('manage-coupon', { body: { action: 'delete', id: c.id } })
+    if (error || (data as any)?.error) { alert((data as any)?.error ?? error?.message ?? 'delete_failed'); return }
     reload()
   }
 
@@ -123,45 +133,79 @@ export default function AdminSales() {
           <Card style={{ padding: '18px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 15, color: 'var(--navy-800)' }}>{t('coupons')}</div>
-              <button onClick={() => setShowCoupon(true)} style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer' }}>+ {t('add')}</button>
+              <button onClick={() => setCouponForm('new')} style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer' }}>+ {t('add')}</button>
             </div>
             {coupons.map((c) => (
-              <div key={c.code} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', border: '1px dashed #D6DEE9', borderRadius: 10, marginBottom: 9, background: '#FAFBFD' }}>
-                <div>
-                  <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 13, color: 'var(--navy-800)', letterSpacing: .5 }}>{c.code}</div>
-                  <div style={{ fontSize: 11, color: '#93A1B4', fontWeight: 600 }}>{c.uses_count} {t('uses')}</div>
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 12px', border: '1px dashed #D6DEE9', borderRadius: 10, marginBottom: 9, background: '#FAFBFD' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 13, color: 'var(--navy-800)', letterSpacing: .5 }}>{c.code}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: (c.course_id || c.ebook_id) ? '#1B5FB0' : '#8494A8', background: (c.course_id || c.ebook_id) ? '#EAF1FB' : '#F1F4F8', padding: '2px 7px', borderRadius: 20, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.course?.title ?? c.ebook?.title ?? t('allCourses')}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#93A1B4', fontWeight: 600 }}>{c.uses_count} {t('uses')}{couponWindow(c, lang) ? ` · ${couponWindow(c, lang)}` : ''}</div>
                 </div>
-                <span style={{ fontSize: 12.5, fontWeight: 800, color: '#C99A2E' }}>{c.discount_type === 'percent' ? `-${c.amount}%` : `-${moneyFull(c.amount)}`}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 800, color: '#C99A2E' }}>{c.discount_type === 'percent' ? `-${c.amount}%` : `-${moneyFull(c.amount)}`}</span>
+                  <button onClick={() => setCouponForm(c)} title={t('edit')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5B6B82', padding: 2, display: 'flex' }}><Icon name="pencil" size={14} /></button>
+                  <button onClick={() => deleteCoupon(c)} title={t('delete')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#D14343', padding: 2, display: 'flex' }}><Icon name="trash-2" size={14} /></button>
+                </div>
               </div>
             ))}
+            {coupons.length === 0 && <div style={{ fontSize: 12.5, color: '#8494A8', fontWeight: 600 }}>{t('noCoupons')}</div>}
           </Card>
         </div>
       </div>
-      {showCoupon && <CouponModal institutionId={inst} onClose={() => setShowCoupon(false)} onSaved={() => { setShowCoupon(false); reload() }} />}
+      {couponForm && <CouponModal institutionId={inst} courseOpts={courseOpts} ebookOpts={ebookOpts} existing={couponForm === 'new' ? null : couponForm} onClose={() => setCouponForm(null)} onSaved={() => { setCouponForm(null); reload() }} />}
     </PageWrap>
   )
 }
 
-function CouponModal({ institutionId, onClose, onSaved }: { institutionId: string; onClose: () => void; onSaved: () => void }) {
+/** Short human label for a coupon's active window, or '' when it has no dates. */
+function couponWindow(c: Coupon, lang: string): string {
+  const fmt = (iso: string) => new Date(iso).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { day: '2-digit', month: 'short' })
+  if (c.starts_at && c.ends_at) return `${fmt(c.starts_at)} – ${fmt(c.ends_at)}`
+  if (c.ends_at) return `→ ${fmt(c.ends_at)}`
+  if (c.starts_at) return `${fmt(c.starts_at)} →`
+  return ''
+}
+
+/** yyyy-mm-dd for a date input; '' when null. */
+const toDateInput = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : '')
+
+function CouponModal({ institutionId, courseOpts, ebookOpts, existing, onClose, onSaved }: { institutionId: string; courseOpts: CourseOpt[]; ebookOpts: CourseOpt[]; existing: Coupon | null; onClose: () => void; onSaved: () => void }) {
   const { t } = useI18n()
-  const [code, setCode] = useState('')
-  const [type, setType] = useState<'percent' | 'amount'>('percent')
-  const [amount, setAmount] = useState(20)
+  const [code, setCode] = useState(existing?.code ?? '')
+  const [type, setType] = useState<'percent' | 'amount'>((existing?.discount_type as 'percent' | 'amount') ?? 'percent')
+  const [amount, setAmount] = useState(existing ? (existing.discount_type === 'amount' ? existing.amount / 100 : existing.amount) : 20)
+  // Target encodes scope: '' = all, 'c:<id>' = a course, 'e:<id>' = an ebook.
+  const [target, setTarget] = useState(existing?.course_id ? `c:${existing.course_id}` : existing?.ebook_id ? `e:${existing.ebook_id}` : '')
+  const [startsAt, setStartsAt] = useState(toDateInput(existing?.starts_at ?? null))
+  const [endsAt, setEndsAt] = useState(toDateInput(existing?.ends_at ?? null))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function save() {
     if (!code.trim()) return
+    if (startsAt && endsAt && endsAt < startsAt) { setError(t('couponDateOrder')); return }
     setBusy(true); setError(null)
     const value = type === 'amount' ? Math.round(amount * 100) : amount
-    const { error } = await supabase.from('coupons').insert({ institution_id: institutionId, code: code.trim().toUpperCase(), discount_type: type, amount: value, active: true })
-    if (error) { setError(error.message); setBusy(false); return }
+    // End date is inclusive: treat it as end-of-day so the coupon works through that whole day.
+    const payload = {
+      action: existing ? 'update' : 'create', id: existing?.id, institution_id: institutionId,
+      code: code.trim().toUpperCase(), discount_type: type, amount: value,
+      course_id: target.startsWith('c:') ? target.slice(2) : null,
+      ebook_id: target.startsWith('e:') ? target.slice(2) : null,
+      starts_at: startsAt ? new Date(startsAt + 'T00:00:00').toISOString() : null,
+      ends_at: endsAt ? new Date(endsAt + 'T23:59:59').toISOString() : null,
+    }
+    const { data, error } = await supabase.functions.invoke('manage-coupon', { body: payload })
+    if (error || (data as any)?.error) { setError((data as any)?.error ?? error!.message); setBusy(false); return }
     setBusy(false); onSaved()
   }
 
   return (
-    <Modal title={t('newCoupon')} onClose={onClose}
-      footer={<><BtnGhost onClick={onClose}>{t('cancel')}</BtnGhost><BtnPrimary onClick={save} disabled={busy}><Icon name="check" size={16} />{t('create')}</BtnPrimary></>}>
+    <Modal title={existing ? t('editCoupon') : t('newCoupon')} onClose={onClose}
+      footer={<><BtnGhost onClick={onClose}>{t('cancel')}</BtnGhost><BtnPrimary onClick={save} disabled={busy}><Icon name="check" size={16} />{existing ? t('save') : t('create')}</BtnPrimary></>}>
       {error && <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, background: '#FBEBEB', padding: '9px 12px', borderRadius: 10, marginBottom: 14 }}>{error}</div>}
       <Field label={t('couponCode')}><input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="LAUNCH30" style={{ ...inputCss, letterSpacing: .5, fontWeight: 700 }} /></Field>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -173,6 +217,18 @@ function CouponModal({ institutionId, onClose, onSaved }: { institutionId: strin
         </Field>
         <Field label={type === 'percent' ? '%' : '$'}><input type="number" min={0} value={amount} onChange={(e) => setAmount(Number(e.target.value))} style={inputCss} /></Field>
       </div>
+      <Field label={t('couponCategory')}>
+        <select value={target} onChange={(e) => setTarget(e.target.value)} style={inputCss}>
+          <option value="">{t('allCourses')}</option>
+          {courseOpts.length > 0 && <optgroup label={t('courses')}>{courseOpts.map((c) => <option key={c.id} value={`c:${c.id}`}>{c.title}</option>)}</optgroup>}
+          {ebookOpts.length > 0 && <optgroup label={t('ebooks')}>{ebookOpts.map((e) => <option key={e.id} value={`e:${e.id}`}>{e.title}</option>)}</optgroup>}
+        </select>
+      </Field>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Field label={t('couponStart')}><input type="date" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} style={inputCss} /></Field>
+        <Field label={t('couponEnd')}><input type="date" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} style={inputCss} /></Field>
+      </div>
+      <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600, marginTop: -4 }}>{t('couponDateHint')}</div>
     </Modal>
   )
 }

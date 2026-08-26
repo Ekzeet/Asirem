@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useI18n } from '../i18n/I18nContext'
@@ -14,9 +15,12 @@ const NAV: Record<string, NavItem[]> = {
     { to: '/admin/students', key: 'students', icon: 'graduation-cap' },
     { to: '/admin/teachers', key: 'teachers', icon: 'users' },
     { to: '/review', key: 'review', icon: 'clipboard-check' },
+    { to: '/admin/ebooks', key: 'ebooks', icon: 'book-marked' },
+    { to: '/admin/requests', key: 'requests', icon: 'user-plus' },
     { to: '/admin/sales', key: 'sales', icon: 'credit-card' },
     { to: '/admin/audit', key: 'audit', icon: 'shield' },
     { to: '/admin/analytics', key: 'analytics', icon: 'trending-up' },
+    { to: '/admin/blog', key: 'blog', icon: 'file-text' },
     { to: '/community', key: 'community', icon: 'messages-square', badge: '12' },
   ],
   teacher: [
@@ -29,6 +33,7 @@ const NAV: Record<string, NavItem[]> = {
   ],
   student: [
     { to: '/student', key: 'myCourses', icon: 'book-open' },
+    { to: '/library', key: 'library', icon: 'library' },
     { to: '/student/catalog', key: 'catalog', icon: 'compass' },
     { to: '/exams', key: 'exams', icon: 'file-check' },
     { to: '/community', key: 'community', icon: 'messages-square', badge: '3' },
@@ -41,8 +46,20 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
   const { t } = useI18n()
   const nav = useNavigate()
   const loc = useLocation()
+  const [commCount, setCommCount] = useState(0)
+  useEffect(() => {
+    if (!me) return
+    supabase.from('posts').select('id', { count: 'exact', head: true }).eq('institution_id', me.institutionId)
+      .then(({ count }) => setCommCount(count ?? 0))
+  }, [me])
   if (!me) return null
-  const items = NAV[me.role] ?? NAV.student
+  let items = NAV[me.role] ?? NAV.student
+  // A student who hasn't bought a course yet only gets to browse the catalog —
+  // no community, exams, certificates or course content until they enroll.
+  if (me.role === 'student' && !me.hasCourses) {
+    items = items.filter((it) => it.to === '/student' || it.to === '/student/catalog' || it.to === '/library')
+  }
+  const isAdmin = me.role === 'institution_admin' || me.role === 'super_admin'
 
   const isActive = (to: string) => (to === '/admin' || to === '/teacher' || to === '/student' ? loc.pathname === to : loc.pathname.startsWith(to))
 
@@ -64,6 +81,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
       <nav style={{ flex: 1, overflowY: 'auto', padding: '2px 12px 12px', display: 'flex', flexDirection: 'column', gap: 3 }}>
         {items.map((it) => {
           const active = isActive(it.to)
+          const badge = it.to === '/community' ? (commCount > 0 ? String(commCount) : undefined) : it.badge
           return (
             <button key={it.to} onClick={() => { nav(it.to); onClose?.() }} style={{
               display: 'flex', alignItems: 'center', gap: 12, height: 42, borderRadius: 11, border: 'none', cursor: 'pointer',
@@ -73,8 +91,8 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
             }}>
               <Icon name={it.icon} size={18} />
               <span style={{ flex: 1, textAlign: 'left' }}>{t(it.key)}</span>
-              {it.badge && (
-                <span style={{ fontSize: 10.5, fontWeight: 800, background: '#D9A441', color: '#0F2C4C', minWidth: 20, height: 18, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{it.badge}</span>
+              {badge && (
+                <span style={{ fontSize: 10.5, fontWeight: 800, background: '#D9A441', color: '#0F2C4C', minWidth: 20, height: 18, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{badge}</span>
               )}
             </button>
           )
@@ -82,11 +100,12 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
       </nav>
 
       <div style={{ padding: '12px 14px 16px', borderTop: '1px solid rgba(255,255,255,.07)' }}>
+        {isAdmin && (<>
         <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: .8, color: '#6E84A0', textTransform: 'uppercase', marginBottom: 9 }}>{t('viewAs')}</div>
         <div style={{ display: 'flex', gap: 6, background: 'rgba(255,255,255,.05)', padding: 4, borderRadius: 11 }}>
           {DEMO_ACCOUNTS.map((a) => {
             const active = me.role === a.role
-            const short = a.role === 'institution_admin' ? 'Admin' : a.role === 'teacher' ? 'Prof' : 'Élève'
+            const short = a.role === 'institution_admin' ? 'Admin' : a.role === 'teacher' ? 'Teacher' : 'Student'
             return (
               <button key={a.email} title={a.name} onClick={() => switchTo(a.email)} style={{
                 flex: 1, height: 34, border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--display)', fontWeight: 700, fontSize: 12,
@@ -95,6 +114,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: 
             )
           })}
         </div>
+        </>)}
         <button onClick={() => signOut()} style={{ marginTop: 10, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 36, borderRadius: 9, border: '1px solid rgba(255,255,255,.08)', background: 'transparent', color: '#8FA3BC', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>
           <Icon name="log-out" size={15} /> {t('signOut')}
         </button>

@@ -109,4 +109,17 @@ img, video { max-width: 100%; }
   /* Course player: stack the main area and the lesson-list aside */
   .player-shell { flex-direction: column !important; height: auto !important; }
   .player-aside { width: 100% !important; border-left: none !important; border-top: 1px solid var(--border) !important; }
+  /* Login: single column, hide the decorative branded panel */
+  .login-split { grid-template-columns: 1fr !important; }
+  .login-aside { display: none !important; }
 }
+
+/* Rich-text editor + rendered view */
+.rte:empty:before { content: attr(data-placeholder); color: #9AA7B8; pointer-events: none; }
+.rte ul, .rte-view ul { padding-left: 20px; list-style: disc; margin: 6px 0; }
+.rte ol, .rte-view ol { padding-left: 20px; list-style: decimal; margin: 6px 0; }
+.rte h3, .rte-view h3 { font-weight: 800; font-size: 1.05em; margin: 10px 0 4px; color: var(--navy-800); }
+.rte blockquote, .rte-view blockquote { border-left: 3px solid var(--border); margin: 8px 0; padding: 2px 12px; color: #5B6B82; }
+.rte a, .rte-view a { color: #1B5FB0; text-decoration: underline; }
+.rte-view { font-size: 14px; line-height: 1.6; color: var(--navy-800); }
+.rte-view p { margin: 6px 0; }
