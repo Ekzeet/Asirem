@@ -64,7 +64,7 @@ export default function CourseSales() {
   const onSale = saleActive(c.price_cents, c.sale_price_cents, c.sale_starts_at, c.sale_ends_at)
   const effCents = onSale ? c.sale_price_cents : c.price_cents
   function buy() {
-    if (!c.price_cents) { window.location.href = '/login'; return }
+    // Free and paid share the same funnel (account step first); free just skips payment.
     setBusy(true)
     nav(`/checkout?course=${slug}`, { state: { item: { kind: 'course', id: c.id, title: c.title, priceCents: effCents, currency: c.currency } } })
   }

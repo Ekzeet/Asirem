@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
@@ -36,7 +36,6 @@ function StepPill({ n, label, state }: { n: number; label: string; state: 'done'
 export default function Checkout() {
   const [sp] = useSearchParams()
   const loc = useLocation()
-  const nav = useNavigate()
   const { t } = useI18n()
   useDocumentHead({ title: 'Checkout · Asirem Academy' })
 
@@ -144,8 +143,7 @@ export default function Checkout() {
 
   if (loading || session === undefined) return <Loader />
   if (!item) return <div style={{ padding: 24, textAlign: 'center' }}>{t('noData')}</div>
-  if (!item.priceCents) { nav('/login', { replace: true }); return null }
-
+  const isFree = !item.priceCents
   const discountCents = applied ? (applied.discount_type === 'percent' ? Math.round(item.priceCents * applied.amount / 100) : applied.amount) : 0
   const finalCents = Math.max(0, item.priceCents - discountCents)
 
@@ -187,7 +185,7 @@ export default function Checkout() {
                 <button type="button" onClick={() => setStep(1)} style={{ ...toggleBtn, padding: 0 }}>{t('editAccount')}</button>
               )}
             </div>
-            {item.kind !== 'plan' && item.kind !== 'request' && (
+            {item.kind !== 'plan' && item.kind !== 'request' && !isFree && (
               <div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input style={{ ...inputCss, flex: 1 }} placeholder={t('couponPlaceholder')} value={coupon}
@@ -199,7 +197,7 @@ export default function Checkout() {
               </div>
             )}
             {error && <div style={{ color: '#c0392b', fontWeight: 700, fontSize: 13 }}>{error}</div>}
-            <button onClick={pay} disabled={busy} style={payBtn}>{busy ? '…' : t('paySecurely')}</button>
+            <button onClick={pay} disabled={busy} style={payBtn}>{busy ? '…' : (isFree ? t('enrollFree') : t('paySecurely'))}</button>
           </div>
         )}
 
