@@ -134,8 +134,9 @@ export default function Player() {
 
   async function downloadResource(r: Resource) {
     if (!r.file_url) return
-    const { data } = await supabase.storage.from('course-media').createSignedUrl(r.file_url, 3600)
-    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+    // Force a real download with the ORIGINAL filename + extension (e.g. .docx), not an inline preview.
+    const { data } = await supabase.storage.from('course-media').createSignedUrl(r.file_url, 3600, { download: r.name || true })
+    if (data?.signedUrl) window.location.href = data.signedUrl
   }
 
   const tabs: { id: TabId; label: string }[] = [
