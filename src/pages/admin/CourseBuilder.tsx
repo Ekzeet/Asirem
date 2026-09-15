@@ -81,8 +81,11 @@ export default function CourseBuilder() {
         {course.is_live && (
           <button onClick={async () => {
             const { data, error } = await supabase.functions.invoke('zoom-start', { body: { course_id: course.id } })
-            const startUrl = (data as any)?.start_url
-            if (error || !startUrl) { alert((data as any)?.error ?? error?.message ?? 'zoom_error'); return }
+            // On a non-2xx the SDK returns error with the Response in .context — read it for the real Zoom message.
+            let payload: any = data
+            if (error && (error as any).context?.json) { try { payload = await (error as any).context.json() } catch { /* ignore */ } }
+            const startUrl = payload?.start_url
+            if (!startUrl) { alert(payload?.detail?.message || payload?.error || error?.message || 'zoom_error'); return }
             window.open(startUrl, '_blank')
           }} title={t('startLiveHint')} style={{ height: 42, padding: '0 15px', borderRadius: 11, border: 'none', background: 'linear-gradient(135deg,#2D8CFF,#1B5FB0)', color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
             <Icon name="video" size={15} /> {t('startLiveClass')}
