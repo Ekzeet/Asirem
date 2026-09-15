@@ -125,6 +125,11 @@ export default function App() {
 
   if (!supabaseConfigured) return <ConfigNotice />
   if (loading) return <Loading />
+  // Password recovery: the emailed link establishes a session but needs_password is false,
+  // so it would otherwise fall through to a dashboard — pin it to the reset page instead.
+  if (window.location.pathname === '/reset-password') {
+    return <Suspense fallback={<Loading />}><AcceptInvite variant="reset" /></Suspense>
+  }
   // Invited users must set a password before reaching any dashboard.
   if (session && (session.user?.user_metadata as { needs_password?: boolean } | undefined)?.needs_password === true) {
     return <Suspense fallback={<Loading />}><AcceptInvite /></Suspense>

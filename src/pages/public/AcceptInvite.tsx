@@ -3,8 +3,9 @@ import { supabase } from '../../lib/supabase'
 import { useI18n } from '../../i18n/I18nContext'
 
 /** Landing page for the invite/recovery link: the invited user (teacher/student)
- *  sets their name + password here, then goes to their dashboard. */
-export default function AcceptInvite() {
+ *  sets their name + password here, then goes to their dashboard.
+ *  variant='reset' reuses the same recovery-session flow for "forgot password". */
+export default function AcceptInvite({ variant = 'invite' }: { variant?: 'invite' | 'reset' }) {
   const { t, lang } = useI18n()
   const [ready, setReady] = useState<'checking' | 'ok' | 'nosession'>('checking')
   const [name, setName] = useState('')
@@ -42,12 +43,12 @@ export default function AcceptInvite() {
   }
 
   const T = {
-    title: lang === 'es' ? 'Configura tu cuenta' : 'Set up your account',
-    sub: lang === 'es' ? 'Elige una contraseña para acceder a tu panel.' : 'Choose a password to access your dashboard.',
+    title: variant === 'reset' ? (lang === 'es' ? 'Nueva contraseña' : 'Set a new password') : (lang === 'es' ? 'Configura tu cuenta' : 'Set up your account'),
+    sub: variant === 'reset' ? (lang === 'es' ? 'Elige una nueva contraseña para tu cuenta.' : 'Choose a new password for your account.') : (lang === 'es' ? 'Elige una contraseña para acceder a tu panel.' : 'Choose a password to access your dashboard.'),
     newPass: lang === 'es' ? 'Nueva contraseña' : 'New password',
     confirm: lang === 'es' ? 'Confirmar contraseña' : 'Confirm password',
     save: lang === 'es' ? 'Guardar y continuar' : 'Save and continue',
-    expired: lang === 'es' ? 'Este enlace de invitación no es válido o ha expirado.' : 'This invitation link is invalid or has expired.',
+    expired: variant === 'reset' ? (lang === 'es' ? 'Este enlace para restablecer la contraseña no es válido o ha expirado.' : 'This password reset link is invalid or has expired.') : (lang === 'es' ? 'Este enlace de invitación no es válido o ha expirado.' : 'This invitation link is invalid or has expired.'),
     goLogin: lang === 'es' ? 'Ir a iniciar sesión' : 'Go to login',
   }
   const inputCss: React.CSSProperties = { width: '100%', padding: '11px 12px', borderRadius: 10, border: '1px solid var(--border-soft)', fontSize: 15, fontWeight: 600, color: 'var(--navy-800)', background: '#fff', outline: 'none' }
@@ -65,7 +66,7 @@ export default function AcceptInvite() {
           <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 22, color: 'var(--navy-800)' }}>{T.title}</div>
             <div style={{ color: '#5B6B82', fontWeight: 600, fontSize: 14, marginTop: -4, marginBottom: 4 }}>{T.sub}</div>
-            <input style={inputCss} placeholder={t('fullName')} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+            {variant !== 'reset' && <input style={inputCss} placeholder={t('fullName')} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />}
             <input style={inputCss} type="password" placeholder={T.newPass} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required minLength={8} />
             <input style={inputCss} type="password" placeholder={T.confirm} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" required />
             {error && <div style={{ color: '#c0392b', fontWeight: 700, fontSize: 13 }}>{error}</div>}

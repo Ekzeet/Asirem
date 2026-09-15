@@ -8,7 +8,7 @@ import { Icon } from '../components/Icon'
 export default function LoginPage() {
   const { t, lang, setLang } = useI18n()
   const { signIn } = useAuth()
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -30,6 +30,8 @@ export default function LoginPage() {
   const clearMismatch = () => { if (sessionStorage.getItem('panelMismatch')) { sessionStorage.removeItem('panelMismatch'); setError(null) } }
 
   const signupCopy = lang === 'es' ? 'Espacio instructor' : 'Instructor sign-up'
+  const forgotTitle = lang === 'es' ? 'Restablecer contraseña' : 'Reset your password'
+  const forgotSub = lang === 'es' ? 'Escribe tu correo y te enviaremos un enlace para crear una nueva contraseña.' : "Enter your email and we'll send you a link to set a new password."
   const toLogin = lang === 'es' ? '¿Ya tienes cuenta? Inicia sesión' : 'Already have an account? Log in'
   const toSignup = lang === 'es' ? '¿Instructor? Crea una cuenta' : 'Instructor? Create an account'
   const studentNote = lang === 'es' ? '¿Estudiante? Tu cuenta se crea al comprar un curso.' : 'Student? Your account is created when you buy a course.'
@@ -48,6 +50,14 @@ export default function LoginPage() {
   async function submit(e?: React.FormEvent) {
     e?.preventDefault()
     setBusy(true); setError(null); setInfo(null)
+    // Password recovery: email the user a link that lands on /reset-password.
+    if (mode === 'forgot') {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin + '/reset-password' })
+      setBusy(false)
+      if (error) { setError(error.message); return }
+      setInfo(es ? 'Te enviamos un enlace para restablecer tu contraseña. Revisa tu correo (y el spam).' : 'We sent you a link to reset your password. Check your email (and spam).')
+      return
+    }
     if (mode === 'login') {
       const { error } = await signIn(email.trim(), password)
       if (error) { setError(error); setBusy(false); return }
@@ -108,8 +118,8 @@ export default function LoginPage() {
             })}
           </div>
 
-          <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 24, color: 'var(--ink)', marginBottom: 6 }}>{mode === 'login' ? panelCfg.title : signupCopy}</div>
-          <div style={{ fontSize: 13.5, color: 'var(--muted)', fontWeight: 500, marginBottom: 24 }}>{mode === 'login' ? panelCfg.sub : studentNote}</div>
+          <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 24, color: 'var(--ink)', marginBottom: 6 }}>{mode === 'login' ? panelCfg.title : mode === 'forgot' ? forgotTitle : signupCopy}</div>
+          <div style={{ fontSize: 13.5, color: 'var(--muted)', fontWeight: 500, marginBottom: 24 }}>{mode === 'login' ? panelCfg.sub : mode === 'forgot' ? forgotSub : studentNote}</div>
 
           <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {mode === 'signup' && (
@@ -122,19 +132,26 @@ export default function LoginPage() {
               <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-soft)' }}>{t('email')}</span>
               <input value={email} onChange={(e) => setEmail(e.target.value)} onFocus={clearMismatch} type="email" required style={inputStyle} />
             </label>
-            <label style={{ display: 'block' }}>
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-soft)' }}>{t('password')}</span>
-              <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required minLength={6} style={inputStyle} />
-            </label>
+            {mode !== 'forgot' && (
+              <label style={{ display: 'block' }}>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-soft)' }}>{t('password')}</span>
+                <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required minLength={6} style={inputStyle} />
+                {mode === 'login' && (
+                  <button type="button" onClick={() => { setMode('forgot'); setError(null); setInfo(null); clearMismatch() }} style={{ display: 'block', marginTop: 8, marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: 'var(--navy-800)' }}>
+                    {es ? '¿Olvidaste tu contraseña?' : 'Forgot your password?'}
+                  </button>
+                )}
+              </label>
+            )}
             {error && <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, background: '#FBEBEB', padding: '9px 12px', borderRadius: 10 }}>{error}</div>}
             {info && <div style={{ fontSize: 12.5, color: '#1F8A5B', fontWeight: 600, background: '#EAF6EF', padding: '9px 12px', borderRadius: 10 }}>{info}</div>}
             <button type="submit" disabled={busy} style={{ height: 46, borderRadius: 12, border: 'none', cursor: busy ? 'default' : 'pointer', background: 'linear-gradient(135deg,#E7B450,#D9A441)', color: '#0F2C4C', fontWeight: 800, fontSize: 14, boxShadow: '0 4px 14px rgba(217,164,65,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              {busy ? <span className="spin" style={{ width: 18, height: 18, borderTopColor: '#0F2C4C' }} /> : <><Icon name={mode === 'login' ? 'log-in' : 'user-plus'} size={17} /> {mode === 'login' ? t('login') : signupCopy}</>}
+              {busy ? <span className="spin" style={{ width: 18, height: 18, borderTopColor: '#0F2C4C' }} /> : <><Icon name={mode === 'login' ? 'log-in' : mode === 'forgot' ? 'mail' : 'user-plus'} size={17} /> {mode === 'login' ? t('login') : mode === 'forgot' ? (es ? 'Enviar enlace' : 'Send reset link') : signupCopy}</>}
             </button>
           </form>
 
-          {mode === 'signup' ? (
-            <button onClick={() => { setMode('login'); setError(null); setInfo(null) }} style={bottomBtn}>{toLogin}</button>
+          {mode === 'signup' || mode === 'forgot' ? (
+            <button onClick={() => { setMode('login'); setError(null); setInfo(null) }} style={bottomBtn}>{mode === 'forgot' ? (es ? '← Volver a iniciar sesión' : '← Back to login') : toLogin}</button>
           ) : panel === 'teacher' ? (
             <button onClick={() => { setMode('signup'); setError(null); setInfo(null) }} style={bottomBtn}>{toSignup}</button>
           ) : panel === 'student' ? (
