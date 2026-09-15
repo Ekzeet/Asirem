@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useI18n } from '../i18n/I18nContext'
 import { supabase } from '../lib/supabase'
@@ -16,6 +16,37 @@ function fmtCountdown(totalSeconds: number) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
+/* ---- Anti-memorization: on each failed retake, deterministically rotate the
+ * order of the questions and their options. Grading is keyed by id, so shuffling
+ * is purely presentational and never affects the score. A seed derived from the
+ * attempt number keeps one attempt stable while giving every retake a fresh layout. */
+function hashSeed(str: string): number {
+  let h = 1779033703 ^ str.length
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353)
+    h = (h << 13) | (h >>> 19)
+  }
+  return (h ^ (h >>> 16)) >>> 0
+}
+function mulberry32(seed: number): () => number {
+  let a = seed
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+function seededShuffle<T>(arr: T[], seedStr: string): T[] {
+  const rng = mulberry32(hashSeed(seedStr))
+  const a = arr.slice()
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export default function ExamPlayer() {
   const { examId } = useParams()
   const { t } = useI18n()
@@ -26,9 +57,25 @@ export default function ExamPlayer() {
   const [remaining, setRemaining] = useState<number | null>(null)
 
   const { data, loading } = useAsync(async () => {
-    const { data } = await supabase.rpc('get_exam', { p_exam: examId! })
-    return data as unknown as Exam | null
+    const [{ data: ex }, { count }] = await Promise.all([
+      supabase.rpc('get_exam', { p_exam: examId! }),
+      // RLS limits exam_attempts to the caller's own rows, so this counts *my* prior tries.
+      supabase.from('exam_attempts').select('id', { count: 'exact', head: true }).eq('exam_id', examId!),
+    ])
+    return { exam: ex as unknown as Exam | null, attempts: count ?? 0 }
   }, [examId])
+
+  // First attempt keeps the authored order; every failed retake rotates positions.
+  const questions = useMemo<Q[]>(() => {
+    const exam = data?.exam
+    if (!exam) return []
+    const attempt = data?.attempts ?? 0
+    if (attempt <= 0) return exam.questions
+    return seededShuffle(exam.questions, `${exam.id}:${attempt}`).map((q) => ({
+      ...q,
+      options: seededShuffle(q.options, `${q.id}:${attempt}`),
+    }))
+  }, [data])
 
   async function submit() {
     setBusy(true)
@@ -39,7 +86,7 @@ export default function ExamPlayer() {
 
   // Start the countdown once the exam (with its time limit) has loaded.
   useEffect(() => {
-    if (data?.time_limit_minutes) setRemaining(data.time_limit_minutes * 60)
+    if (data?.exam?.time_limit_minutes) setRemaining(data.exam.time_limit_minutes * 60)
   }, [data])
 
   // Tick the countdown down every second; auto-submit when it reaches 0.
@@ -52,8 +99,8 @@ export default function ExamPlayer() {
   }, [remaining, result])
 
   if (loading) return <Loader />
-  if (!data) return <div style={{ padding: 40, color: 'var(--muted)' }}>{t('noData')}</div>
-  const exam = data
+  if (!data?.exam) return <div style={{ padding: 40, color: 'var(--muted)' }}>{t('noData')}</div>
+  const exam = data.exam
 
   if (result) {
     return (
@@ -81,7 +128,7 @@ export default function ExamPlayer() {
       {exam.description && <div style={{ fontSize: 13.5, color: '#5B6B82', lineHeight: 1.6, margin: '6px 0 4px' }}>{exam.description}</div>}
       <div style={{ fontSize: 12.5, color: '#9AA7B8', fontWeight: 600, marginBottom: 20 }}>{exam.questions.length} {t('questions').toLowerCase()} · {t('passScore')} {exam.pass_score}%</div>
 
-      {exam.questions.map((q, i) => (
+      {questions.map((q, i) => (
         <Card key={q.id} style={{ padding: '18px 20px', marginBottom: 14 }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--navy-800)', marginBottom: 14 }}>{i + 1}. {q.prompt} <span style={{ fontSize: 11.5, color: '#9AA7B8' }}>({q.points} pts)</span></div>
           {q.question_type === 'short_answer' ? (
