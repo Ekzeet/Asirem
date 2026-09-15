@@ -14,7 +14,7 @@ import { RichTextEditor } from '../../components/RichText'
 type Lesson = { id: string; title: string; content_type: string; duration: string | null; duration_seconds: number | null; file_url: string | null; external_url: string | null; is_preview: boolean; position: number; hasQuiz: boolean }
 type Section = { id: string; title: string; position: number; lessons: Lesson[] }
 type Assignment = { id: string; title: string; instructions: string | null; due_at: string | null; points: number; submission_types: string[]; status: string; available_from: string | null; allow_late: boolean; late_penalty: number; max_attempts: number; rubric: any }
-type Course = { id: string; title: string; status: string; category: string | null; accent: string | null; icon: string | null; subtitle: string | null; level: string | null; price_cents: number; instructor_id: string | null; drip_enabled: boolean; credit_hours: number | null; slug: string }
+type Course = { id: string; title: string; status: string; category: string | null; accent: string | null; icon: string | null; subtitle: string | null; level: string | null; price_cents: number; instructor_id: string | null; drip_enabled: boolean; credit_hours: number | null; slug: string; is_live?: boolean }
 
 export default function CourseBuilder() {
   const { courseId } = useParams()
@@ -78,6 +78,16 @@ export default function CourseBuilder() {
         <button onClick={async () => { await supabase.from('courses').update({ drip_enabled: !course.drip_enabled }).eq('id', course.id); reload() }} title={t('dripHint')} style={{ height: 42, padding: '0 14px', borderRadius: 11, border: '1px solid var(--border)', background: course.drip_enabled ? '#EAF1FB' : '#fff', color: course.drip_enabled ? '#1B5FB0' : '#5B6B82', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
           <Icon name={course.drip_enabled ? 'lock' : 'unlock'} size={15} />{t('drip')}
         </button>
+        {course.is_live && (
+          <button onClick={async () => {
+            const { data, error } = await supabase.functions.invoke('zoom-start', { body: { course_id: course.id } })
+            const startUrl = (data as any)?.start_url
+            if (error || !startUrl) { alert((data as any)?.error ?? error?.message ?? 'zoom_error'); return }
+            window.open(startUrl, '_blank')
+          }} title={t('startLiveHint')} style={{ height: 42, padding: '0 15px', borderRadius: 11, border: 'none', background: 'linear-gradient(135deg,#2D8CFF,#1B5FB0)', color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
+            <Icon name="video" size={15} /> {t('startLiveClass')}
+          </button>
+        )}
         <button onClick={async () => { if (confirm(t('confirmDeleteCourse'))) { await supabase.from('courses').delete().eq('id', course.id); nav('/admin/courses') } }} title={t('delete')} style={{ height: 42, width: 42, borderRadius: 11, border: '1px solid #F1D5D5', background: '#fff', color: '#D14343', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="trash-2" size={16} />
         </button>
