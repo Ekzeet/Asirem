@@ -105,7 +105,7 @@ export default function EbookSales() {
 
                 <div style={{ display: 'flex', gap: 10, margin: '18px 0 22px', flexWrap: 'wrap' }}>
                   <button onClick={buy} style={{ flex: 1, minWidth: 190, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: gold, color: '#0F2C4C', border: 0, padding: '14px 22px', borderRadius: 11, fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>
-                    <Icon name="shopping-cart" size={18} /> Buy &amp; download
+                    <Icon name={e.price_cents === 0 ? 'download' : 'shopping-cart'} size={18} /> {e.price_cents === 0 ? 'Get it free' : 'Buy & download'}
                   </button>
                   <button onClick={share} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: '#fff', color: navy, border, padding: '14px 20px', borderRadius: 11, fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>
                     <Icon name="share-2" size={18} /> Share
