@@ -10,7 +10,7 @@ import { RichTextEditor } from './RichText'
 export type EditableCourse = {
   id?: string; title: string; subtitle: string | null; description?: string | null; category: string | null
   level: string | null; price_cents: number; instructor_id: string | null; accent: string | null; icon: string | null; status: string
-  is_live?: boolean; zoom_url?: string | null; module_lock?: boolean
+  is_live?: boolean; zoom_url?: string | null; zoom_host_email?: string | null; module_lock?: boolean
   credit_hours?: number | null; slug?: string; cover_url?: string | null
   sale_price_cents?: number | null; sale_starts_at?: string | null; sale_ends_at?: string | null
   instructor_request_price_cents?: number | null
@@ -42,7 +42,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
   const [form, setForm] = useState<EditableCourse>(existing ?? {
     title: '', subtitle: '', description: '', category: 'Tax', level: 'Beginner',
     price_cents: 9900, instructor_id: me!.role === 'teacher' ? me!.userId : null, accent: ACCENTS[0], icon: ICONS[0], status: 'draft',
-    is_live: false, zoom_url: '', module_lock: false, credit_hours: null, slug: '', cover_url: null,
+    is_live: false, zoom_url: '', zoom_host_email: '', module_lock: false, credit_hours: null, slug: '', cover_url: null,
     sale_price_cents: null, sale_starts_at: null, sale_ends_at: null, instructor_request_price_cents: null,
   })
   const [teachers, setTeachers] = useState<{ id: string; name: string }[]>([])
@@ -71,7 +71,7 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
       category: form.category, level: form.level, price_cents: form.price_cents,
       instructor_id: form.instructor_id ?? (me!.role === 'teacher' ? me!.userId : null),
       accent: form.accent, icon: form.icon, status: form.status,
-      is_live: form.is_live ?? false, zoom_url: form.zoom_url || null, module_lock: form.module_lock ?? false,
+      is_live: form.is_live ?? false, zoom_url: form.zoom_url || null, zoom_host_email: (form.zoom_host_email || '').trim() || null, module_lock: form.module_lock ?? false,
       credit_hours: form.credit_hours ?? null, slug,
       sale_price_cents: form.sale_price_cents ?? null,
       sale_starts_at: form.sale_starts_at ?? null,
@@ -159,9 +159,10 @@ export function CourseFormModal({ existing, onClose, onSaved }: {
         <label style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, fontWeight: 600, color: 'var(--ink-soft)', cursor: 'pointer' }}>
           <input type="checkbox" checked={!!form.is_live} onChange={(e) => set('is_live', e.target.checked)} /> {t('liveCourse')}
         </label>
-        {form.is_live && (
+        {form.is_live && (<>
           <input value={form.zoom_url ?? ''} onChange={(e) => set('zoom_url', e.target.value)} placeholder={t('zoomUrlHint')} style={inputCss} />
-        )}
+          <input value={form.zoom_host_email ?? ''} onChange={(e) => set('zoom_host_email', e.target.value)} placeholder={t('zoomHostHint')} style={inputCss} type="email" autoComplete="off" />
+        </>)}
         <label style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, fontWeight: 600, color: 'var(--ink-soft)', cursor: 'pointer' }}>
           <input type="checkbox" checked={!!form.module_lock} onChange={(e) => set('module_lock', e.target.checked)} /> {t('moduleLock')}
         </label>
