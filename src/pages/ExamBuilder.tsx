@@ -20,6 +20,7 @@ export default function ExamBuilder() {
     return { exam, qs: (qs ?? []) as any[] }
   }, [examId])
 
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [prompt, setPrompt] = useState('')
   const [qtype, setQtype] = useState<'single' | 'multiple' | 'true_false' | 'short_answer'>('single')
   const [opts, setOpts] = useState(['', '', '', ''])
@@ -34,18 +35,51 @@ export default function ExamBuilder() {
 
   async function saveMeta(patch: any) { await supabase.from('exams').update(patch).eq('id', examId!); reload() }
 
-  async function addQuestion() {
+  function resetForm() { setEditingId(null); setPrompt(''); setQtype('single'); setOpts(['', '', '', '']); setCorrect(0); setMulti([]); setAnswer(''); setPts(10) }
+
+  // Load an existing question back into the form for editing.
+  function editQ(q: any) {
+    setEditingId(q.id); setPrompt(q.prompt); setQtype(q.question_type); setPts(q.points)
+    const options = [...(q.options ?? [])].sort((a: any, b: any) => a.position - b.position)
+    if (q.question_type === 'short_answer') { setAnswer(q.answer_text ?? ''); setOpts(['', '', '', '']); setCorrect(0); setMulti([]) }
+    else if (q.question_type === 'true_false') { const tf = options.find((o: any) => /^true$/i.test(o.label)); setCorrect(tf?.is_correct ? 0 : 1); setOpts(['', '', '', '']); setMulti([]); setAnswer('') }
+    else {
+      const labels = options.map((o: any) => o.label); while (labels.length < 4) labels.push('')
+      setOpts(labels); setAnswer('')
+      if (q.question_type === 'single') { setCorrect(Math.max(0, options.findIndex((o: any) => o.is_correct))); setMulti([]) }
+      else { setMulti(options.map((o: any, i: number) => (o.is_correct ? i : -1)).filter((i: number) => i >= 0)); setCorrect(0) }
+    }
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+  }
+
+  // Build the option rows for the current form state, keyed to a question id.
+  function optionRows(qid: string) {
+    if (qtype === 'true_false') return [{ question_id: qid, label: 'True', is_correct: correct === 0, position: 0 }, { question_id: qid, label: 'False', is_correct: correct === 1, position: 1 }]
+    if (qtype === 'single') return opts.filter((o) => o.trim()).map((label, i) => ({ question_id: qid, label: label.trim(), is_correct: i === correct, position: i }))
+    if (qtype === 'multiple') return opts.map((o, i) => ({ label: o.trim(), keep: !!o.trim(), correct: multi.includes(i) })).filter((o) => o.keep).map((o, i) => ({ question_id: qid, label: o.label, is_correct: o.correct, position: i }))
+    return []
+  }
+
+  async function saveQuestion() {
     if (!prompt.trim()) return
     if (qtype === 'short_answer' && !answer.trim()) return
     if ((qtype === 'single' || qtype === 'multiple') && opts.filter((o) => o.trim()).length < 2) return
     if (qtype === 'multiple' && !opts.some((o, i) => o.trim() && multi.includes(i))) return
-    const { data: q } = await supabase.from('exam_questions').insert({ exam_id: examId!, prompt: prompt.trim(), question_type: qtype, points: pts, answer_text: qtype === 'short_answer' ? answer.trim() : null, position: data!.qs.length }).select('id').single()
-    if (qtype === 'true_false') await supabase.from('exam_options').insert([{ question_id: q!.id, label: 'True', is_correct: correct === 0, position: 0 }, { question_id: q!.id, label: 'False', is_correct: correct === 1, position: 1 }])
-    else if (qtype === 'single') await supabase.from('exam_options').insert(opts.filter((o) => o.trim()).map((label, i) => ({ question_id: q!.id, label: label.trim(), is_correct: i === correct, position: i })))
-    else if (qtype === 'multiple') await supabase.from('exam_options').insert(opts.map((o, i) => ({ label: o.trim(), keep: !!o.trim(), correct: multi.includes(i) })).filter((o) => o.keep).map((o, i) => ({ question_id: q!.id, label: o.label, is_correct: o.correct, position: i })))
-    setPrompt(''); setOpts(['', '', '', '']); setCorrect(0); setMulti([]); setAnswer(''); setPts(10); reload()
+    const meta = { prompt: prompt.trim(), question_type: qtype, points: pts, answer_text: qtype === 'short_answer' ? answer.trim() : null }
+    if (editingId) {
+      // Edit: update the question, then replace its options wholesale.
+      await supabase.from('exam_questions').update(meta).eq('id', editingId)
+      await supabase.from('exam_options').delete().eq('question_id', editingId)
+      const rows = optionRows(editingId)
+      if (rows.length) await supabase.from('exam_options').insert(rows)
+    } else {
+      const { data: q } = await supabase.from('exam_questions').insert({ exam_id: examId!, ...meta, position: data!.qs.length }).select('id').single()
+      const rows = optionRows(q!.id)
+      if (rows.length) await supabase.from('exam_options').insert(rows)
+    }
+    resetForm(); reload()
   }
-  async function delQ(id: string) { await supabase.from('exam_questions').delete().eq('id', id); reload() }
+  async function delQ(id: string) { if (!window.confirm(t('confirmDelete'))) return; if (editingId === id) resetForm(); await supabase.from('exam_questions').delete().eq('id', id); reload() }
 
   return (
     <div className="lmsfade" style={{ padding: '22px 30px 46px', maxWidth: 820 }}>
@@ -65,9 +99,10 @@ export default function ExamBuilder() {
 
       <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 15, color: 'var(--navy-800)', marginBottom: 10 }}>{t('questions')} ({data.qs.length})</div>
       {data.qs.map((q, i) => (
-        <Card key={q.id} style={{ padding: '12px 16px', marginBottom: 8 }}>
+        <Card key={q.id} style={{ padding: '12px 16px', marginBottom: 8, border: editingId === q.id ? '1.5px solid #D9A441' : undefined, background: editingId === q.id ? '#FBF7EE' : undefined }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ flex: 1, fontSize: 13.5, fontWeight: 700, color: 'var(--navy-800)' }}>{i + 1}. {q.prompt} <span style={{ fontSize: 11, color: '#9AA7B8' }}>· {q.points} pts</span></span>
+            <button onClick={() => editQ(q)} title={t('edit')} style={{ border: 'none', background: 'none', color: 'var(--blue)', cursor: 'pointer' }}><Icon name="pencil" size={15} /></button>
             <button onClick={() => delQ(q.id)} style={{ border: 'none', background: 'none', color: '#D14343', cursor: 'pointer' }}><Icon name="trash-2" size={15} /></button>
           </div>
           {(q.options ?? []).map((o: any) => <div key={o.id} style={{ fontSize: 12.5, color: o.is_correct ? '#1F8A5B' : '#5B6B82', fontWeight: o.is_correct ? 700 : 500 }}>{o.is_correct ? '✓' : '○'} {o.label}</div>)}
@@ -75,7 +110,8 @@ export default function ExamBuilder() {
         </Card>
       ))}
 
-      <Card style={{ padding: '16px 18px', marginTop: 8 }}>
+      <Card style={{ padding: '16px 18px', marginTop: 8, border: editingId ? '1.5px solid #D9A441' : undefined }}>
+        <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 13.5, color: editingId ? '#C99A2E' : 'var(--navy-800)', marginBottom: 10 }}>{editingId ? `✎ ${t('edit')}` : t('addQuestion')}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
           <Field label={t('questionType')}><select value={qtype} onChange={(e) => setQtype(e.target.value as any)} style={inputCss}><option value="single">{t('typeSingle')}</option><option value="multiple">{t('typeMultiple')}</option><option value="true_false">{t('typeTrueFalse')}</option><option value="short_answer">{t('typeShort')}</option></select></Field>
           <Field label={t('points')}><input type="number" min={1} value={pts} onChange={(e) => setPts(Number(e.target.value))} style={inputCss} /></Field>
@@ -102,7 +138,10 @@ export default function ExamBuilder() {
           <button key={i} onClick={() => setCorrect(i)} style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', marginBottom: 8, padding: '9px 12px', borderRadius: 9, border: `1.5px solid ${correct === i ? '#1F8A5B' : 'var(--border)'}`, background: correct === i ? '#EAF6EF' : '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13, color: 'var(--ink-soft)' }}><Icon name={correct === i ? 'check-circle' : 'circle'} size={16} color={correct === i ? '#1F8A5B' : '#B0BCCB'} />{label}</button>
         ))}
         {qtype === 'short_answer' && <Field label={t('acceptedAnswer')}><input value={answer} onChange={(e) => setAnswer(e.target.value)} style={inputCss} /></Field>}
-        <BtnPrimary onClick={addQuestion}><Icon name="plus" size={15} />{t('addQuestion')}</BtnPrimary>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <BtnPrimary onClick={saveQuestion}><Icon name={editingId ? 'save' : 'plus'} size={15} />{editingId ? t('save') : t('addQuestion')}</BtnPrimary>
+          {editingId && <BtnGhost onClick={resetForm}>{t('cancel')}</BtnGhost>}
+        </div>
       </Card>
     </div>
   )
