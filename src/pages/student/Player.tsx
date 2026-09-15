@@ -13,7 +13,8 @@ import { relTime } from '../../lib/format'
 
 type Lesson = { id: string; title: string; duration: string | null; body: string | null; done: boolean; content_type: string; file_url: string | null; external_url: string | null; duration_seconds: number | null }
 type Section = { id: string; title: string; lessons: Lesson[] }
-type Resource = { id: string; name: string; size_label: string | null; icon: string | null; kind: string | null }
+type Resource = { id: string; name: string; size_label: string | null; icon: string | null; kind: string | null; file_url: string | null; lesson_id: string | null; section_id: string | null }
+type ResourceGroup = { id: string; title: string; items: Resource[] }
 type QuizOption = { id: string; label: string }
 type QuizQuestion = { id: string; prompt: string; points: number; question_type: string; options: QuizOption[] }
 type Quiz = { id: string; title: string; pass_score: number; questions: QuizQuestion[] }
@@ -55,7 +56,25 @@ export default function Player() {
       if (secQuizzes.length > 0) sectionPassed[s.id] = secQuizzes.some((q) => (bestScore[q.id] ?? 0) >= q.pass_score)
       else sectionPassed[s.id] = s.lessons.length > 0 && s.lessons.every((l) => l.done) // no test → all lessons done
     }
-    return { course: course as { id: string; title: string; drip_enabled: boolean; module_lock: boolean }, sections: secs, sectionPassed }
+
+    // All resources for the whole course — attached at the MODULE (section) level or the lesson
+    // level — grouped by module, so nothing the instructor uploaded stays hidden.
+    const secIds = secs.map((s) => s.id)
+    const lesIds = secs.flatMap((s) => s.lessons.map((l) => l.id))
+    const orFilter = [secIds.length ? `section_id.in.(${secIds.join(',')})` : '', lesIds.length ? `lesson_id.in.(${lesIds.join(',')})` : ''].filter(Boolean).join(',')
+    const { data: resAll } = orFilter
+      ? await supabase.from('lesson_resources').select('id,name,size_label,icon,kind,file_url,lesson_id,section_id,position').or(orFilter).order('position')
+      : { data: [] as any[] }
+    const lessonToSection: Record<string, string> = {}
+    secs.forEach((s) => s.lessons.forEach((l) => { lessonToSection[l.id] = s.id }))
+    const byModule: Record<string, Resource[]> = {}
+    for (const r of (resAll ?? []) as any[]) {
+      const sid = r.section_id ?? lessonToSection[r.lesson_id]
+      if (sid) (byModule[sid] ||= []).push(r)
+    }
+    const resourceGroups: ResourceGroup[] = secs.map((s) => ({ id: s.id, title: s.title, items: byModule[s.id] ?? [] })).filter((g) => g.items.length > 0)
+
+    return { course: course as { id: string; title: string; drip_enabled: boolean; module_lock: boolean }, sections: secs, sectionPassed, quizByLesson, resourceGroups }
   }, [courseId, me!.userId])
 
   // Sections unlocked when the previous module is "passed" (test passed, or all lessons done if no test)
@@ -85,17 +104,22 @@ export default function Player() {
 
   const current = flat.find((l) => l.id === currentId) ?? null
 
-  // Load quiz + note for the current lesson
+  // The quiz for the CURRENT MODULE (section) — surfaced from any lesson in the module that has one,
+  // so a module test is reachable at the end of the module regardless of which lesson is open.
+  const quizLessonId = useMemo(() => {
+    if (!data || !current) return null
+    const sec = data.sections.find((s) => s.id === (current as any).sectionId)
+    return sec?.lessons.find((l) => data.quizByLesson[l.id])?.id ?? null
+  }, [data, current])
+
+  // Load the module quiz + this lesson's note
   const detail = useAsync(async () => {
-    if (!currentId) return { quiz: null as Quiz | null, note: '' }
-    const [{ data: resources }, { data: quizData }, { data: note }] = await Promise.all([
-      supabase.from('lesson_resources').select('id,name,size_label,icon,kind,position').eq('lesson_id', currentId).order('position'),
-      supabase.rpc('get_quiz', { p_lesson: currentId }),
-      supabase.from('notes').select('body').eq('lesson_id', currentId).eq('user_id', me!.userId).maybeSingle(),
+    const [quizRes, noteRes] = await Promise.all([
+      quizLessonId ? supabase.rpc('get_quiz', { p_lesson: quizLessonId }) : Promise.resolve({ data: null }),
+      currentId ? supabase.from('notes').select('body').eq('lesson_id', currentId).eq('user_id', me!.userId).maybeSingle() : Promise.resolve({ data: null }),
     ])
-    const quiz = (quizData as unknown as Quiz | null) ?? null
-    return { resources: (resources ?? []) as Resource[], quiz, note: note?.body ?? '' }
-  }, [currentId])
+    return { quiz: (quizRes.data as unknown as Quiz | null) ?? null, note: (noteRes.data as any)?.body ?? '' }
+  }, [quizLessonId, currentId])
 
   if (loading || !data || !current) return <Loader />
 
@@ -106,6 +130,12 @@ export default function Player() {
     if (!current) return
     await supabase.from('lesson_progress').upsert({ user_id: me!.userId, lesson_id: current.id, completed_at: new Date().toISOString() }, { onConflict: 'user_id,lesson_id' })
     reload()
+  }
+
+  async function downloadResource(r: Resource) {
+    if (!r.file_url) return
+    const { data } = await supabase.storage.from('course-media').createSignedUrl(r.file_url, 3600)
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
   }
 
   const tabs: { id: TabId; label: string }[] = [
@@ -157,18 +187,23 @@ export default function Player() {
 
           {tab === 'resources' && (
             <>
-              {(detail.data?.resources ?? []).length === 0 && <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t('noData')}</div>}
-              {(detail.data?.resources ?? []).map((r) => {
-                const tints: Record<string, [string, string]> = { pdf: ['#FBEBEB', '#D14343'], xlsx: ['#EAF6EF', '#1F8A5B'], docx: ['#EAF1FB', '#1B5FB0'] }
-                const [tint, color] = tints[r.kind ?? ''] ?? ['#EAF1FB', '#1B5FB0']
-                return (
-                  <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', background: '#fff', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 10, cursor: 'pointer' }}>
-                    <div style={{ width: 38, height: 38, borderRadius: 10, background: tint, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={r.icon ?? 'file-text'} size={18} /></div>
-                    <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--navy-800)' }}>{r.name}</div><div style={{ fontSize: 11.5, color: '#93A1B4', fontWeight: 600 }}>{r.size_label}</div></div>
-                    <Icon name="download" size={18} color="#8494A8" />
-                  </div>
-                )
-              })}
+              {(data.resourceGroups ?? []).length === 0 && <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t('noData')}</div>}
+              {(data.resourceGroups ?? []).map((g) => (
+                <div key={g.id} style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#8494A8', textTransform: 'uppercase', letterSpacing: .4, marginBottom: 8 }}>{g.title}</div>
+                  {g.items.map((r) => {
+                    const tints: Record<string, [string, string]> = { pdf: ['#FBEBEB', '#D14343'], xlsx: ['#EAF6EF', '#1F8A5B'], docx: ['#EAF1FB', '#1B5FB0'] }
+                    const [tint, color] = tints[r.kind ?? ''] ?? ['#EAF1FB', '#1B5FB0']
+                    return (
+                      <div key={r.id} onClick={() => downloadResource(r)} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', background: '#fff', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 10, cursor: 'pointer' }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: tint, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={r.icon ?? 'file-text'} size={18} /></div>
+                        <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--navy-800)' }}>{r.name}</div><div style={{ fontSize: 11.5, color: '#93A1B4', fontWeight: 600 }}>{r.size_label}</div></div>
+                        <Icon name="download" size={18} color="#8494A8" />
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
             </>
           )}
 
