@@ -134,6 +134,8 @@ export default function Player() {
 
   async function downloadResource(r: Resource) {
     if (!r.file_url) return
+    // Link resources point straight at an external URL — open in a new tab.
+    if (r.kind === 'link' || /^https?:\/\//i.test(r.file_url)) { window.open(r.file_url, '_blank', 'noopener'); return }
     // Force a real download with the ORIGINAL filename + extension (e.g. .docx), not an inline preview.
     const { data } = await supabase.storage.from('course-media').createSignedUrl(r.file_url, 3600, { download: r.name || true })
     if (data?.signedUrl) window.location.href = data.signedUrl
@@ -193,13 +195,14 @@ export default function Player() {
                 <div key={g.id} style={{ marginBottom: 18 }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: '#8494A8', textTransform: 'uppercase', letterSpacing: .4, marginBottom: 8 }}>{g.title}</div>
                   {g.items.map((r) => {
-                    const tints: Record<string, [string, string]> = { pdf: ['#FBEBEB', '#D14343'], xlsx: ['#EAF6EF', '#1F8A5B'], docx: ['#EAF1FB', '#1B5FB0'] }
+                    const tints: Record<string, [string, string]> = { pdf: ['#FBEBEB', '#D14343'], xlsx: ['#EAF6EF', '#1F8A5B'], docx: ['#EAF1FB', '#1B5FB0'], link: ['#F3EDFB', '#7C5CD6'] }
                     const [tint, color] = tints[r.kind ?? ''] ?? ['#EAF1FB', '#1B5FB0']
+                    const isLink = r.kind === 'link'
                     return (
                       <div key={r.id} onClick={() => downloadResource(r)} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', background: '#fff', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 10, cursor: 'pointer' }}>
-                        <div style={{ width: 38, height: 38, borderRadius: 10, background: tint, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={r.icon ?? 'file-text'} size={18} /></div>
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: tint, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={isLink ? 'link' : (r.icon ?? 'file-text')} size={18} /></div>
                         <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--navy-800)' }}>{r.name}</div><div style={{ fontSize: 11.5, color: '#93A1B4', fontWeight: 600 }}>{r.size_label}</div></div>
-                        <Icon name="download" size={18} color="#8494A8" />
+                        <Icon name={isLink ? 'external-link' : 'download'} size={18} color="#8494A8" />
                       </div>
                     )
                   })}

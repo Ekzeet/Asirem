@@ -243,13 +243,23 @@ function ResourcesModal({ courseId, target, onClose }: { courseId: string; targe
     return (data ?? []) as { id: string; name: string; size_label: string | null; kind: string | null; file_url: string | null; position: number }[]
   }, [target.lessonId, target.sectionId])
 
-  const kindIcon: Record<string, string> = { pdf: 'file-text', xlsx: 'table', docx: 'file', image: 'image', zip: 'archive' }
+  const kindIcon: Record<string, string> = { pdf: 'file-text', xlsx: 'table', docx: 'file', image: 'image', zip: 'archive', link: 'link' }
+  const [linkName, setLinkName] = useState('')
+  const [linkUrl, setLinkUrl] = useState('')
   async function add(path: string, file: File) {
     const ext = (file.name.split('.').pop() ?? '').toLowerCase()
     const kind = ['pdf', 'xlsx', 'docx', 'zip', 'png', 'jpg', 'jpeg'].includes(ext) ? (ext === 'png' || ext === 'jpg' || ext === 'jpeg' ? 'image' : ext) : 'file'
     const owner = target.lessonId ? { lesson_id: target.lessonId } : { section_id: target.sectionId }
     await supabase.from('lesson_resources').insert({ ...owner, name: file.name, file_url: path, kind, icon: kindIcon[kind] ?? 'file', size_label: `${Math.max(1, Math.round(file.size / 1024))} KB`, position: (data?.length ?? 0) } as any)
     reload()
+  }
+  async function addLink() {
+    const raw = linkUrl.trim()
+    if (!raw) return
+    const href = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw
+    const owner = target.lessonId ? { lesson_id: target.lessonId } : { section_id: target.sectionId }
+    await supabase.from('lesson_resources').insert({ ...owner, name: linkName.trim() || href, file_url: href, kind: 'link', icon: 'link', size_label: t('link'), position: (data?.length ?? 0) } as any)
+    setLinkName(''); setLinkUrl(''); reload()
   }
   async function del(id: string) { await supabase.from('lesson_resources').delete().eq('id', id); reload() }
 
@@ -265,6 +275,20 @@ function ResourcesModal({ courseId, target, onClose }: { courseId: string; targe
       ))}
       <div style={{ marginTop: 4 }}>
         <FileUpload bucket="course-media" pathPrefix={courseId} label={t('attachFile')} onUploaded={add} />
+      </div>
+
+      {/* Or add a resource by URL (an external link, Google Drive doc, video, etc.) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '14px 0 10px' }}>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: '#9AA7B8', textTransform: 'uppercase', letterSpacing: .4 }}>{t('orLabel')}</span>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <input value={linkName} onChange={(e) => setLinkName(e.target.value)} placeholder={t('linkNamePh')} style={{ ...inputCss, height: 40 }} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addLink() }} placeholder="https://…" style={{ ...inputCss, height: 40, flex: 1 }} />
+          <BtnPrimary onClick={addLink} disabled={!linkUrl.trim()}><Icon name="link" size={15} />{t('addLink')}</BtnPrimary>
+        </div>
       </div>
     </Modal>
   )
