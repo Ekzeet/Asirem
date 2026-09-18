@@ -10,17 +10,17 @@ import NotificationBell from './NotificationBell'
 function usePageMeta(): { title: string; sub: string } {
   const { t, lang } = useI18n()
   const { pathname } = useLocation()
-  const sub = (fr: string, en: string, es: string) => (lang === 'en' ? en : lang === 'es' ? es : fr)
-  if (pathname.startsWith('/admin/courses')) return { title: t('courses'), sub: sub('Crée, publie et tarife tes cours', 'Create, publish and price your courses', 'Crea, publica y fija precios') }
-  if (pathname.startsWith('/admin/students')) return { title: t('students'), sub: sub('Inscriptions et progression', 'Enrollments and progress', 'Inscripciones y progreso') }
-  if (pathname.startsWith('/admin/teachers')) return { title: t('teachers'), sub: sub('Formateurs et permissions', 'Instructors and permissions', 'Formadores y permisos') }
-  if (pathname.startsWith('/admin/sales')) return { title: t('sales'), sub: sub('Revenus, formules et coupons', 'Revenue, plans and coupons', 'Ingresos, planes y cupones') }
-  if (pathname.startsWith('/admin')) return { title: t('dashboard'), sub: sub('Vue d’ensemble de ton académie', 'Overview of your academy', 'Resumen de tu academia') }
-  if (pathname.startsWith('/teacher')) return { title: t('dashboard'), sub: sub('Ton activité de formateur', 'Your teaching at a glance', 'Tu enseñanza') }
-  if (pathname.startsWith('/student/course')) return { title: sub('Lecture en cours', 'Now playing', 'Reproduciendo'), sub: 'Asirem Academy' }
-  if (pathname.startsWith('/student/certificates')) return { title: t('certificates'), sub: sub('Tes attestations obtenues', 'Your earned credentials', 'Tus credenciales') }
-  if (pathname.startsWith('/student')) return { title: t('myCourses'), sub: sub('Ta progression', 'Your learning journey', 'Tu ruta de aprendizaje') }
-  if (pathname.startsWith('/community')) return { title: t('community'), sub: sub('Discussions, groupes et événements', 'Discussions, groups and events', 'Debates, grupos y eventos') }
+  const sub = (en: string, es: string) => (lang === 'es' ? es : en)
+  if (pathname.startsWith('/admin/courses')) return { title: t('courses'), sub: sub('Create, publish and price your courses', 'Crea, publica y fija precios') }
+  if (pathname.startsWith('/admin/students')) return { title: t('students'), sub: sub('Enrollments and progress', 'Inscripciones y progreso') }
+  if (pathname.startsWith('/admin/teachers')) return { title: t('teachers'), sub: sub('Instructors and permissions', 'Formadores y permisos') }
+  if (pathname.startsWith('/admin/sales')) return { title: t('sales'), sub: sub('Revenue, plans and coupons', 'Ingresos, planes y cupones') }
+  if (pathname.startsWith('/admin')) return { title: t('dashboard'), sub: sub('Overview of your academy', 'Resumen de tu academia') }
+  if (pathname.startsWith('/teacher')) return { title: t('dashboard'), sub: sub('Your teaching at a glance', 'Tu enseñanza') }
+  if (pathname.startsWith('/student/course')) return { title: sub('Now playing', 'Reproduciendo'), sub: 'Asirem Academy' }
+  if (pathname.startsWith('/student/certificates')) return { title: t('certificates'), sub: sub('Your earned credentials', 'Tus credenciales') }
+  if (pathname.startsWith('/student')) return { title: t('myCourses'), sub: sub('Your learning journey', 'Tu ruta de aprendizaje') }
+  if (pathname.startsWith('/community')) return { title: t('community'), sub: sub('Discussions, groups and events', 'Debates, grupos y eventos') }
   return { title: t('dashboard'), sub: '' }
 }
 
