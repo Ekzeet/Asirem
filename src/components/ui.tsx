@@ -32,10 +32,10 @@ export function StatusChip({ status }: { status: string }) {
   return <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: bg, color: fg }}>{label}</span>
 }
 
-export function CourseCover({ accent, icon, height = 104, children }: { accent?: string | null; icon?: string | null; height?: number; children?: React.ReactNode }) {
+export function CourseCover({ accent, icon, cover, height = 104, children }: { accent?: string | null; icon?: string | null; cover?: string | null; height?: number; children?: React.ReactNode }) {
   return (
-    <div style={{ height, background: accent ?? 'linear-gradient(135deg,#0F2C4C,#1B4B7F)', position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 12 }}>
-      {icon && <Icon name={icon} size={24} style={{ position: 'absolute', top: 14, right: 14, color: 'rgba(255,255,255,.85)' }} />}
+    <div style={{ height, background: cover ? `center/cover no-repeat url(${cover})` : (accent ?? 'linear-gradient(135deg,#0F2C4C,#1B4B7F)'), position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 12 }}>
+      {!cover && icon && <Icon name={icon} size={24} style={{ position: 'absolute', top: 14, right: 14, color: 'rgba(255,255,255,.85)' }} />}
       {children}
     </div>
   )

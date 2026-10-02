@@ -4,13 +4,15 @@ import { useAuth } from '../../auth/AuthContext'
 import { useI18n } from '../../i18n/I18nContext'
 import { supabase } from '../../lib/supabase'
 import { useAsync } from '../../hooks/useAsync'
-import { money, relTime } from '../../lib/format'
+import { money, moneyFull, relTime } from '../../lib/format'
 import { Icon } from '../../components/Icon'
 import { Avatar, Card, CourseCover, Loader, PageWrap, SectionTitle, StatusChip } from '../../components/ui'
+import { BtnGhost, BtnPrimary, Field, Modal, inputCss } from '../../components/Modal'
 
 type Stats = { students: number; earnings_cents: number; courses: number; rating: number | null }
 type Course = { id: string; title: string; category: string | null; accent: string | null; icon: string | null; status: string; rating: number | null }
 type Question = { id: string; text: string; author: string; at: string }
+type Coupon = { id: string; code: string; discount_type: string; amount: number; uses_count: number; starts_at: string | null; ends_at: string | null; course_id: string | null; course?: { title: string } | null }
 
 export default function TeacherDashboard() {
   const { me } = useAuth()
@@ -18,18 +20,28 @@ export default function TeacherDashboard() {
   const nav = useNavigate()
   const inst = me!.institutionId
 
-  const { data, loading } = useAsync(async () => {
-    const [stats, courses, posts] = await Promise.all([
+  const [couponForm, setCouponForm] = useState<Coupon | 'new' | null>(null)
+
+  const { data, loading, reload } = useAsync(async () => {
+    const [stats, courses, posts, coupons] = await Promise.all([
       supabase.rpc('teacher_dashboard_stats', { p_institution_id: inst }),
       supabase.from('courses').select('id,title,category,accent,icon,status,rating').eq('institution_id', inst).eq('instructor_id', me!.userId).order('created_at', { ascending: false }),
       supabase.from('posts').select('id, body, created_at, author:profiles!posts_author_profile_fkey(full_name)').eq('institution_id', inst).order('created_at', { ascending: false }).limit(4),
+      supabase.from('coupons').select('id, code, discount_type, amount, uses_count, starts_at, ends_at, course_id, course:courses(title)').eq('institution_id', inst).eq('active', true).order('created_at', { ascending: false }),
     ])
     const questions: Question[] = (posts.data ?? []).map((p: any) => ({ id: p.id, text: p.body, author: p.author?.full_name ?? '—', at: p.created_at }))
-    return { stats: stats.data as unknown as Stats, courses: (courses.data ?? []) as Course[], questions }
+    return { stats: stats.data as unknown as Stats, courses: (courses.data ?? []) as Course[], questions, coupons: (coupons.data ?? []) as unknown as Coupon[] }
   }, [inst, me!.userId])
 
+  async function deleteCoupon(c: Coupon) {
+    if (!window.confirm(t('deleteCouponConfirm').replace('{code}', c.code))) return
+    const { data, error } = await supabase.functions.invoke('manage-coupon', { body: { action: 'delete', id: c.id } })
+    if (error || (data as any)?.error) { alert((data as any)?.error ?? error?.message ?? 'delete_failed'); return }
+    reload()
+  }
+
   if (loading || !data) return <Loader />
-  const { stats, courses, questions } = data
+  const { stats, courses, questions, coupons } = data
 
   const kpis = [
     { icon: 'graduation-cap', tint: '#EAF1FB', color: '#1B5FB0', value: String(stats.students), label: t('yourStudents') },
@@ -71,13 +83,109 @@ export default function TeacherDashboard() {
           </div>
         </div>
 
-        <Card style={{ padding: '18px 20px', alignSelf: 'start' }}>
-          <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 16, color: 'var(--navy-800)', marginBottom: 3 }}>{t('studentQuestions')}</div>
-          <div style={{ fontSize: 12.5, color: '#8494A8', fontWeight: 600, marginBottom: 14 }}>{t('needsReply')}</div>
-          {questions.map((q) => <QuestionRow key={q.id} q={q} />)}
-        </Card>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignSelf: 'start' }}>
+          <Card style={{ padding: '18px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 15, color: 'var(--navy-800)' }}>{t('coupons')}</div>
+              <button onClick={() => setCouponForm('new')} style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer' }}>+ {t('add')}</button>
+            </div>
+            {coupons.map((c) => (
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 12px', border: '1px dashed #D6DEE9', borderRadius: 10, marginBottom: 9, background: '#FAFBFD' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 13, color: 'var(--navy-800)', letterSpacing: .5 }}>{c.code}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: c.course_id ? '#1B5FB0' : '#8494A8', background: c.course_id ? '#EAF1FB' : '#F1F4F8', padding: '2px 7px', borderRadius: 20, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.course?.title ?? t('allCourses')}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#93A1B4', fontWeight: 600 }}>{c.uses_count} {t('uses')}{couponWindow(c, lang) ? ` · ${couponWindow(c, lang)}` : ''}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 800, color: '#C99A2E' }}>{c.discount_type === 'percent' ? `-${c.amount}%` : `-${moneyFull(c.amount)}`}</span>
+                  <button onClick={() => setCouponForm(c)} title={t('edit')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5B6B82', padding: 2, display: 'flex' }}><Icon name="pencil" size={14} /></button>
+                  <button onClick={() => deleteCoupon(c)} title={t('delete')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#D14343', padding: 2, display: 'flex' }}><Icon name="trash-2" size={14} /></button>
+                </div>
+              </div>
+            ))}
+            {coupons.length === 0 && <div style={{ fontSize: 12.5, color: '#8494A8', fontWeight: 600 }}>{t('noCoupons')}</div>}
+          </Card>
+
+          <Card style={{ padding: '18px 20px' }}>
+            <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 16, color: 'var(--navy-800)', marginBottom: 3 }}>{t('studentQuestions')}</div>
+            <div style={{ fontSize: 12.5, color: '#8494A8', fontWeight: 600, marginBottom: 14 }}>{t('needsReply')}</div>
+            {questions.map((q) => <QuestionRow key={q.id} q={q} />)}
+          </Card>
+        </div>
       </div>
+      {couponForm && <CouponModal institutionId={inst} courseOpts={courses} existing={couponForm === 'new' ? null : couponForm} onClose={() => setCouponForm(null)} onSaved={() => { setCouponForm(null); reload() }} />}
     </PageWrap>
+  )
+}
+
+/** Short human label for a coupon's active window, or '' when it has no dates. */
+function couponWindow(c: Coupon, lang: string): string {
+  const fmt = (iso: string) => new Date(iso).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { day: '2-digit', month: 'short' })
+  if (c.starts_at && c.ends_at) return `${fmt(c.starts_at)} – ${fmt(c.ends_at)}`
+  if (c.ends_at) return `→ ${fmt(c.ends_at)}`
+  if (c.starts_at) return `${fmt(c.starts_at)} →`
+  return ''
+}
+
+/** yyyy-mm-dd for a date input; '' when null. */
+const toDateInput = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : '')
+
+function CouponModal({ institutionId, courseOpts, existing, onClose, onSaved }: { institutionId: string; courseOpts: { id: string; title: string }[]; existing: Coupon | null; onClose: () => void; onSaved: () => void }) {
+  const { t } = useI18n()
+  const [code, setCode] = useState(existing?.code ?? '')
+  const [type, setType] = useState<'percent' | 'amount'>((existing?.discount_type as 'percent' | 'amount') ?? 'percent')
+  const [amount, setAmount] = useState(existing ? (existing.discount_type === 'amount' ? existing.amount / 100 : existing.amount) : 20)
+  const [courseId, setCourseId] = useState(existing?.course_id ?? '')
+  const [startsAt, setStartsAt] = useState(toDateInput(existing?.starts_at ?? null))
+  const [endsAt, setEndsAt] = useState(toDateInput(existing?.ends_at ?? null))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function save() {
+    if (!code.trim()) return
+    if (startsAt && endsAt && endsAt < startsAt) { setError(t('couponDateOrder')); return }
+    setBusy(true); setError(null)
+    const value = type === 'amount' ? Math.round(amount * 100) : amount
+    // End date is inclusive: treat it as end-of-day so the coupon works through that whole day.
+    const payload = {
+      action: existing ? 'update' : 'create', id: existing?.id, institution_id: institutionId,
+      code: code.trim().toUpperCase(), discount_type: type, amount: value, course_id: courseId || null,
+      starts_at: startsAt ? new Date(startsAt + 'T00:00:00').toISOString() : null,
+      ends_at: endsAt ? new Date(endsAt + 'T23:59:59').toISOString() : null,
+    }
+    const { data, error } = await supabase.functions.invoke('manage-coupon', { body: payload })
+    if (error || (data as any)?.error) { setError((data as any)?.error ?? error!.message); setBusy(false); return }
+    setBusy(false); onSaved()
+  }
+
+  return (
+    <Modal title={existing ? t('editCoupon') : t('newCoupon')} onClose={onClose}
+      footer={<><BtnGhost onClick={onClose}>{t('cancel')}</BtnGhost><BtnPrimary onClick={save} disabled={busy}><Icon name="check" size={16} />{existing ? t('save') : t('create')}</BtnPrimary></>}>
+      {error && <div style={{ fontSize: 12.5, color: 'var(--red)', fontWeight: 600, background: '#FBEBEB', padding: '9px 12px', borderRadius: 10, marginBottom: 14 }}>{error}</div>}
+      <Field label={t('couponCode')}><input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="LAUNCH30" style={{ ...inputCss, letterSpacing: .5, fontWeight: 700 }} /></Field>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Field label={t('discountType')}>
+          <select value={type} onChange={(e) => setType(e.target.value as any)} style={inputCss}>
+            <option value="percent">{t('percentOff')}</option>
+            <option value="amount">{t('amountOff')}</option>
+          </select>
+        </Field>
+        <Field label={type === 'percent' ? '%' : '$'}><input type="number" min={0} value={amount} onChange={(e) => setAmount(Number(e.target.value))} style={inputCss} /></Field>
+      </div>
+      <Field label={t('couponCategory')}>
+        <select value={courseId} onChange={(e) => setCourseId(e.target.value)} style={inputCss}>
+          <option value="">{t('allCourses')}</option>
+          {courseOpts.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+        </select>
+      </Field>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Field label={t('couponStart')}><input type="date" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} style={inputCss} /></Field>
+        <Field label={t('couponEnd')}><input type="date" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} style={inputCss} /></Field>
+      </div>
+      <div style={{ fontSize: 11.5, color: '#8494A8', fontWeight: 600, marginTop: -4 }}>{t('couponDateHint')}</div>
+    </Modal>
   )
 }
 

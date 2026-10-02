@@ -45,7 +45,7 @@ export default function AdminStudents() {
       const ps = (prog ?? []).filter((p) => p.user_id === userId)
       const avgPct = ps.length ? Math.round(ps.reduce((s, p) => s + (p.pct ?? 0), 0) / ps.length) : 0
       const lastActive = es.map((e: any) => e.last_active_at).sort().at(-1) ?? new Date().toISOString()
-      const topPlan = es.map((e: any) => (e.plan_id ? planById[e.plan_id] : 'Gratuit')).sort().at(0) ?? 'Gratuit'
+      const topPlan = es.map((e: any) => (e.plan_id ? planById[e.plan_id] : 'Free')).sort().at(0) ?? 'Free'
       return { userId, name, email: '', courses: es.length, pct: avgPct, last: lastActive, plan: topPlan }
     })
     return rows.sort((a, b) => b.pct - a.pct)

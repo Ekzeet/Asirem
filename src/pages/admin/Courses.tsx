@@ -12,7 +12,7 @@ import { CourseFormModal } from '../../components/CourseFormModal'
 type Course = {
   id: string; title: string; subtitle: string | null; category: string | null
   price_cents: number; rating: number | null; accent: string | null; icon: string | null
-  status: string; instructor: { full_name: string | null } | null
+  status: string; position: number | null; instructor: { full_name: string | null } | null
 }
 
 export default function AdminCourses() {
@@ -29,9 +29,9 @@ export default function AdminCourses() {
     const [{ data: courses }, { data: enr }, { data: coInstr }] = await Promise.all([
       supabase
         .from('courses')
-        .select('id,title,subtitle,category,price_cents,rating,accent,icon,status,instructor_id,instructor:profiles!courses_instructor_id_fkey(full_name)')
+        .select('id,title,subtitle,category,price_cents,rating,accent,icon,cover_url,status,position,instructor_id,instructor:profiles!courses_instructor_id_fkey(full_name)')
         .eq('institution_id', inst)
-        .order('created_at', { ascending: false }),
+        .order('position', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false }),
       supabase.from('enrollments').select('course_id').eq('institution_id', inst),
       isTeacher ? supabase.from('course_instructors').select('course_id').eq('user_id', me!.userId) : Promise.resolve({ data: [] as { course_id: string }[] }),
     ])
@@ -44,6 +44,37 @@ export default function AdminCourses() {
     }
     return { courses: list as unknown as Course[], counts }
   }, [inst])
+
+  const [dupBusy, setDupBusy] = useState<string | null>(null)
+  async function duplicate(id: string) {
+    setDupBusy(id)
+    const { data, error } = await (supabase.rpc as any)('duplicate_course', { p_course: id })
+    setDupBusy(null)
+    if (error) { alert(error.message); return }
+    if (data) nav(`/admin/courses/${data}/edit`)
+  }
+
+  async function del(id: string, title: string) {
+    if (!window.confirm(`Delete "${title}"? This permanently removes the course and all its content. This cannot be undone.`)) return
+    const { error } = await supabase.from('courses').delete().eq('id', id)
+    if (error) { alert(error.message); return }
+    reload()
+  }
+
+  // Swap this course's position with its neighbour to reorder how courses appear everywhere.
+  async function move(id: string, dir: 'up' | 'down') {
+    const list = data?.courses ?? []
+    const i = list.findIndex((c) => c.id === id)
+    const j = dir === 'up' ? i - 1 : i + 1
+    if (i < 0 || j < 0 || j >= list.length) return
+    const a = list[i], b = list[j]
+    const pa = a.position ?? i + 1, pb = b.position ?? j + 1
+    await Promise.all([
+      supabase.from('courses').update({ position: pb }).eq('id', a.id),
+      supabase.from('courses').update({ position: pa }).eq('id', b.id),
+    ])
+    reload()
+  }
 
   const filtered = useMemo(() => {
     const list = data?.courses ?? []
@@ -82,12 +113,20 @@ export default function AdminCourses() {
           return (
             <div key={c.id} className="card" style={{ overflow: 'hidden' }}>
               <div onClick={() => nav(`/admin/courses/${c.id}/edit`)} style={{ cursor: 'pointer' }}>
-              <CourseCover accent={c.accent} icon={c.icon}>
+              <CourseCover accent={c.accent} icon={c.icon} cover={(c as any).cover_url}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: st ? 'rgba(31,138,91,.9)' : 'rgba(0,0,0,.32)', padding: '3px 10px', borderRadius: 20 }}>
                   {st ? t('published') : t('drafts').replace(/s$/, '')}
                 </span>
                 {c.category && <span style={{ position: 'absolute', top: 14, left: 14, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.9)', background: 'rgba(0,0,0,.18)', padding: '3px 9px', borderRadius: 20 }}>{c.category}</span>}
                 <button onClick={(e) => { e.stopPropagation(); nav(`/admin/courses/${c.id}/edit`) }} title={t('editCourse')} style={{ position: 'absolute', top: 12, right: 12, width: 30, height: 30, borderRadius: 9, border: 'none', background: 'rgba(255,255,255,.9)', color: '#0F2C4C', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="pencil" size={15} /></button>
+                <button onClick={(e) => { e.stopPropagation(); duplicate(c.id) }} title="Duplicate course" disabled={dupBusy === c.id} style={{ position: 'absolute', top: 12, right: 48, width: 30, height: 30, borderRadius: 9, border: 'none', background: 'rgba(255,255,255,.9)', color: '#0F2C4C', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name={dupBusy === c.id ? 'loader' : 'copy'} size={15} /></button>
+                <button onClick={(e) => { e.stopPropagation(); del(c.id, c.title) }} title="Delete course" style={{ position: 'absolute', top: 12, right: 84, width: 30, height: 30, borderRadius: 9, border: 'none', background: 'rgba(255,255,255,.9)', color: '#D14343', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="trash-2" size={15} /></button>
+                {filter === 'all' && (
+                  <div style={{ position: 'absolute', bottom: 12, left: 12, display: 'flex', gap: 6 }}>
+                    <button onClick={(e) => { e.stopPropagation(); move(c.id, 'up') }} disabled={courses.findIndex((x) => x.id === c.id) === 0} title={t('moveUp')} style={{ width: 30, height: 30, borderRadius: 9, border: 'none', background: 'rgba(255,255,255,.9)', color: '#0F2C4C', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="arrow-up" size={15} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); move(c.id, 'down') }} disabled={courses.findIndex((x) => x.id === c.id) === courses.length - 1} title={t('moveDown')} style={{ width: 30, height: 30, borderRadius: 9, border: 'none', background: 'rgba(255,255,255,.9)', color: '#0F2C4C', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="arrow-down" size={15} /></button>
+                  </div>
+                )}
               </CourseCover>
               </div>
               <div style={{ padding: '15px 16px 16px' }}>
@@ -98,7 +137,7 @@ export default function AdminCourses() {
                   {c.rating != null && <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#C99A2E' }}>★ {c.rating}</span>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid var(--border-soft)' }}>
-                  <span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 17, color: 'var(--navy-800)' }}>{c.price_cents === 0 ? (lang === 'fr' ? 'Gratuit' : lang === 'es' ? 'Gratis' : 'Free') : moneyFull(c.price_cents)}</span>
+                  <span style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 17, color: 'var(--navy-800)' }}>{c.price_cents === 0 ? (lang === 'es' ? 'Gratis' : 'Free') : moneyFull(c.price_cents)}</span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: '#1F8A5B' }}>{money((counts[c.id] ?? 0) * c.price_cents)} {t('earned')}</span>
                 </div>
               </div>

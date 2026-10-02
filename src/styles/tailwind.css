@@ -1,0 +1,30 @@
+/* Tailwind v4 for the shadcn components. Imported WITHOUT preflight so it never resets
+   the existing plain-CSS app (theme.css / marketing.css / inline styles stay untouched).
+   Only the utility classes the shadcn hero uses are emitted. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* shadcn design tokens, mapped to the Asirem brand palette so the component looks on-brand. */
+@theme {
+  /* Asirem Tax Academy brand: deep navy + metallic gold. */
+  --color-background: #ffffff;
+  --color-foreground: #0b2143;          /* navy text/headings */
+  --color-card: #ffffff;
+  --color-card-foreground: #0b2143;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0b2143;
+  --color-primary: #0b2143;             /* navy button */
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f4edd8;           /* soft gold button */
+  --color-secondary-foreground: #0b2143;
+  --color-muted: #f4f3ee;
+  --color-muted-foreground: #6b7078;
+  --color-accent: #f4edd8;              /* gold tint hover */
+  --color-accent-foreground: #0b2143;
+  --color-destructive: #d14343;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #ded9cc;             /* warm border */
+  --color-input: #ded9cc;
+  --color-ring: #c6a052;               /* gold focus */
+}

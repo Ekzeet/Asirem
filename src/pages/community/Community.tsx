@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { useI18n } from '../../i18n/I18nContext'
 import { supabase } from '../../lib/supabase'
@@ -22,6 +22,10 @@ export default function Community() {
   const [activeGroup, setActiveGroup] = useState<string>('all')
   const [composer, setComposer] = useState('')
   const [posting, setPosting] = useState(false)
+  const [openComments, setOpenComments] = useState<string | null>(null)
+  const [showEvent, setShowEvent] = useState(false)
+  const [evTitle, setEvTitle] = useState('')
+  const [evWhen, setEvWhen] = useState('')
 
   const { data, loading, reload } = useAsync(async () => {
     const [{ data: groups }, { data: posts }, { data: likes }, { data: comments }, { data: events }, { data: leaders }] = await Promise.all([
@@ -67,6 +71,14 @@ export default function Community() {
     setComposer('')
     setPosting(false)
     reload()
+  }
+
+  const isStaff = me!.role === 'institution_admin' || me!.role === 'super_admin' || me!.role === 'teacher'
+  async function addEvent() {
+    const title = evTitle.trim()
+    if (!title || !evWhen) return
+    await supabase.from('events').insert({ institution_id: inst, title, starts_at: new Date(evWhen).toISOString(), host_id: me!.userId })
+    setEvTitle(''); setEvWhen(''); setShowEvent(false); reload()
   }
 
   if (loading || !data) return <Loader />
@@ -115,9 +127,10 @@ export default function Community() {
                 <button onClick={() => toggleLike(p)} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', background: 'none', border: 'none', color: p.liked ? '#D14343' : '#8494A8' }}>
                   <Icon name="heart" size={15} fill={p.liked ? '#D14343' : 'none'} />{p.likes}
                 </button>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#8494A8', fontWeight: 700 }}><Icon name="message-circle" size={15} />{p.comments}</span>
+                <button onClick={() => setOpenComments(openComments === p.id ? null : p.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: openComments === p.id ? 'var(--navy-800)' : '#8494A8', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}><Icon name="message-circle" size={15} />{p.comments}</button>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#8494A8', fontWeight: 700 }}><Icon name="share-2" size={15} />{t('share')}</span>
               </div>
+              {openComments === p.id && <CommentThread postId={p.id} meId={me!.userId} onPosted={reload} />}
             </Card>
           ))}
         </div>
@@ -125,11 +138,22 @@ export default function Community() {
         {/* Right rail */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 0 }}>
           <Card style={{ padding: '16px 17px', borderRadius: 14 }}>
-            <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 14, color: 'var(--navy-800)', marginBottom: 13, display: 'flex', alignItems: 'center', gap: 7 }}><Icon name="calendar" size={16} color="#D9A441" />{t('upcomingEvents')}</div>
+            <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 14, color: 'var(--navy-800)', marginBottom: 13, display: 'flex', alignItems: 'center', gap: 7 }}>
+              <Icon name="calendar" size={16} color="#D9A441" /><span style={{ flex: 1 }}>{t('upcomingEvents')}</span>
+              {isStaff && <button onClick={() => setShowEvent((v) => !v)} title="Add event" style={{ width: 26, height: 26, borderRadius: 8, border: '1px solid var(--border)', background: '#fff', color: 'var(--navy-800)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={showEvent ? 'x' : 'plus'} size={15} /></button>}
+            </div>
+            {showEvent && isStaff && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0 12px', borderBottom: '1px solid #F3F6FA', marginBottom: 6 }}>
+                <input value={evTitle} onChange={(e) => setEvTitle(e.target.value)} placeholder="Event title" style={{ height: 36, border: '1px solid var(--border)', borderRadius: 9, padding: '0 10px', fontSize: 13, outline: 'none' }} />
+                <input type="datetime-local" value={evWhen} onChange={(e) => setEvWhen(e.target.value)} style={{ height: 36, border: '1px solid var(--border)', borderRadius: 9, padding: '0 10px', fontSize: 13, outline: 'none' }} />
+                <button onClick={addEvent} disabled={!evTitle.trim() || !evWhen} style={{ height: 36, borderRadius: 9, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 12.5, cursor: 'pointer', opacity: (evTitle.trim() && evWhen) ? 1 : .6 }}>Add event</button>
+              </div>
+            )}
+            {events.length === 0 && !showEvent && <div style={{ fontSize: 12, color: '#9AA7B8', fontWeight: 600, padding: '4px 0' }}>{t('noData')}</div>}
             {events.map((e) => {
               const d = new Date(e.starts_at)
               const mon = d.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR', { month: 'short' }).toUpperCase().replace('.', '')
-              const time = d.toLocaleTimeString(lang === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })
+              const time = d.toLocaleTimeString(lang === 'es' ? 'es-ES' : 'en-US', { hour: '2-digit', minute: '2-digit' })
               return (
                 <div key={e.id} style={{ display: 'flex', gap: 11, padding: '9px 0', borderTop: '1px solid #F3F6FA' }}>
                   <div style={{ width: 44, flex: 'none', textAlign: 'center', background: '#F2F6FB', borderRadius: 9, padding: '6px 0' }}>
@@ -157,6 +181,52 @@ export default function Community() {
             ))}
           </Card>
         </div>
+      </div>
+    </div>
+  )
+}
+
+type Comment = { id: string; body: string; created_at: string; author: string }
+
+/** Reply thread under a post — any institution member can read and reply. */
+function CommentThread({ postId, meId, onPosted }: { postId: string; meId: string; onPosted: () => void }) {
+  const { t, lang } = useI18n()
+  const [comments, setComments] = useState<Comment[] | null>(null)
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function load() {
+    const { data } = await supabase
+      .from('post_comments')
+      .select('id, body, created_at, author:profiles!post_comments_author_profile_fkey(full_name)')
+      .eq('post_id', postId).order('created_at')
+    setComments((data ?? []).map((c: any) => ({ id: c.id, body: c.body, created_at: c.created_at, author: c.author?.full_name ?? '—' })))
+  }
+  useEffect(() => { load() }, [postId])
+
+  async function send() {
+    const body = text.trim()
+    if (!body) return
+    setBusy(true)
+    await supabase.from('post_comments').insert({ post_id: postId, author_id: meId, body })
+    setText(''); setBusy(false)
+    await load(); onPosted()
+  }
+
+  return (
+    <div style={{ marginTop: 13, paddingTop: 13, borderTop: '1px solid var(--border-soft)', display: 'flex', flexDirection: 'column', gap: 11 }}>
+      {(comments ?? []).map((c) => (
+        <div key={c.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <Avatar name={c.author} size={30} radius={9} />
+          <div style={{ background: '#F5F7FA', borderRadius: 11, padding: '8px 12px', flex: 1 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--navy-800)' }}>{c.author} <span style={{ color: '#9AA7B8', fontWeight: 600, fontSize: 11 }}>· {relTime(c.created_at, lang)}</span></div>
+            <div style={{ fontSize: 13, color: '#33415A', lineHeight: 1.5, marginTop: 2 }}>{c.body}</div>
+          </div>
+        </div>
+      ))}
+      <div style={{ display: 'flex', gap: 9 }}>
+        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') send() }} placeholder={t('yourReply')} style={{ flex: 1, height: 38, border: '1px solid var(--border)', borderRadius: 10, background: '#fff', padding: '0 12px', fontSize: 13, outline: 'none' }} />
+        <button onClick={send} disabled={busy || !text.trim()} style={{ height: 38, padding: '0 16px', borderRadius: 10, background: '#0F2C4C', color: '#fff', border: 'none', fontWeight: 800, fontSize: 12.5, cursor: 'pointer', opacity: text.trim() ? 1 : .6 }}>{t('send')}</button>
       </div>
     </div>
   )

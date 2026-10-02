@@ -8,11 +8,13 @@ import { Icon } from '../../components/Icon'
 import { Avatar, Loader } from '../../components/ui'
 import { FileUpload } from '../../components/FileUpload'
 import { ReviewForm } from '../../components/ReviewForm'
+import { RichText } from '../../components/RichText'
 import { relTime } from '../../lib/format'
 
 type Lesson = { id: string; title: string; duration: string | null; body: string | null; done: boolean; content_type: string; file_url: string | null; external_url: string | null; duration_seconds: number | null }
 type Section = { id: string; title: string; lessons: Lesson[] }
-type Resource = { id: string; name: string; size_label: string | null; icon: string | null; kind: string | null }
+type Resource = { id: string; name: string; size_label: string | null; icon: string | null; kind: string | null; file_url: string | null; lesson_id: string | null; section_id: string | null }
+type ResourceGroup = { id: string; title: string; items: Resource[] }
 type QuizOption = { id: string; label: string }
 type QuizQuestion = { id: string; prompt: string; points: number; question_type: string; options: QuizOption[] }
 type Quiz = { id: string; title: string; pass_score: number; questions: QuizQuestion[] }
@@ -54,7 +56,25 @@ export default function Player() {
       if (secQuizzes.length > 0) sectionPassed[s.id] = secQuizzes.some((q) => (bestScore[q.id] ?? 0) >= q.pass_score)
       else sectionPassed[s.id] = s.lessons.length > 0 && s.lessons.every((l) => l.done) // no test → all lessons done
     }
-    return { course: course as { id: string; title: string; drip_enabled: boolean; module_lock: boolean }, sections: secs, sectionPassed }
+
+    // All resources for the whole course — attached at the MODULE (section) level or the lesson
+    // level — grouped by module, so nothing the instructor uploaded stays hidden.
+    const secIds = secs.map((s) => s.id)
+    const lesIds = secs.flatMap((s) => s.lessons.map((l) => l.id))
+    const orFilter = [secIds.length ? `section_id.in.(${secIds.join(',')})` : '', lesIds.length ? `lesson_id.in.(${lesIds.join(',')})` : ''].filter(Boolean).join(',')
+    const { data: resAll } = orFilter
+      ? await supabase.from('lesson_resources').select('id,name,size_label,icon,kind,file_url,lesson_id,section_id,position').or(orFilter).order('position')
+      : { data: [] as any[] }
+    const lessonToSection: Record<string, string> = {}
+    secs.forEach((s) => s.lessons.forEach((l) => { lessonToSection[l.id] = s.id }))
+    const byModule: Record<string, Resource[]> = {}
+    for (const r of (resAll ?? []) as any[]) {
+      const sid = r.section_id ?? lessonToSection[r.lesson_id]
+      if (sid) (byModule[sid] ||= []).push(r)
+    }
+    const resourceGroups: ResourceGroup[] = secs.map((s) => ({ id: s.id, title: s.title, items: byModule[s.id] ?? [] })).filter((g) => g.items.length > 0)
+
+    return { course: course as { id: string; title: string; drip_enabled: boolean; module_lock: boolean }, sections: secs, sectionPassed, quizByLesson, resourceGroups }
   }, [courseId, me!.userId])
 
   // Sections unlocked when the previous module is "passed" (test passed, or all lessons done if no test)
@@ -84,17 +104,22 @@ export default function Player() {
 
   const current = flat.find((l) => l.id === currentId) ?? null
 
-  // Load quiz + note for the current lesson
+  // The quiz for the CURRENT MODULE (section) — surfaced from any lesson in the module that has one,
+  // so a module test is reachable at the end of the module regardless of which lesson is open.
+  const quizLessonId = useMemo(() => {
+    if (!data || !current) return null
+    const sec = data.sections.find((s) => s.id === (current as any).sectionId)
+    return sec?.lessons.find((l) => data.quizByLesson[l.id])?.id ?? null
+  }, [data, current])
+
+  // Load the module quiz + this lesson's note
   const detail = useAsync(async () => {
-    if (!currentId) return { quiz: null as Quiz | null, note: '' }
-    const [{ data: resources }, { data: quizData }, { data: note }] = await Promise.all([
-      supabase.from('lesson_resources').select('id,name,size_label,icon,kind,position').eq('lesson_id', currentId).order('position'),
-      supabase.rpc('get_quiz', { p_lesson: currentId }),
-      supabase.from('notes').select('body').eq('lesson_id', currentId).eq('user_id', me!.userId).maybeSingle(),
+    const [quizRes, noteRes] = await Promise.all([
+      quizLessonId ? supabase.rpc('get_quiz', { p_lesson: quizLessonId }) : Promise.resolve({ data: null }),
+      currentId ? supabase.from('notes').select('body').eq('lesson_id', currentId).eq('user_id', me!.userId).maybeSingle() : Promise.resolve({ data: null }),
     ])
-    const quiz = (quizData as unknown as Quiz | null) ?? null
-    return { resources: (resources ?? []) as Resource[], quiz, note: note?.body ?? '' }
-  }, [currentId])
+    return { quiz: (quizRes.data as unknown as Quiz | null) ?? null, note: (noteRes.data as any)?.body ?? '' }
+  }, [quizLessonId, currentId])
 
   if (loading || !data || !current) return <Loader />
 
@@ -105,6 +130,15 @@ export default function Player() {
     if (!current) return
     await supabase.from('lesson_progress').upsert({ user_id: me!.userId, lesson_id: current.id, completed_at: new Date().toISOString() }, { onConflict: 'user_id,lesson_id' })
     reload()
+  }
+
+  async function downloadResource(r: Resource) {
+    if (!r.file_url) return
+    // Link resources point straight at an external URL — open in a new tab.
+    if (r.kind === 'link' || /^https?:\/\//i.test(r.file_url)) { window.open(r.file_url, '_blank', 'noopener'); return }
+    // Force a real download with the ORIGINAL filename + extension (e.g. .docx), not an inline preview.
+    const { data } = await supabase.storage.from('course-media').createSignedUrl(r.file_url, 3600, { download: r.name || true })
+    if (data?.signedUrl) window.location.href = data.signedUrl
   }
 
   const tabs: { id: TabId; label: string }[] = [
@@ -140,7 +174,7 @@ export default function Player() {
                 {[
                   { icon: 'clock', label: t('duration'), value: current.duration ?? '—' },
                   { icon: 'bar-chart-2', label: t('level'), value: lang === 'en' ? 'Intermediate' : lang === 'es' ? 'Intermedio' : 'Intermédiaire' },
-                  { icon: 'globe', label: 'Audio', value: 'FR · EN · ES' },
+                  { icon: 'globe', label: 'Audio', value: 'EN · ES' },
                 ].map((m, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 15px', background: '#fff', border: '1px solid var(--border)', borderRadius: 12 }}>
                     <Icon name={m.icon} size={17} color="#D9A441" />
@@ -156,20 +190,28 @@ export default function Player() {
 
           {tab === 'resources' && (
             <>
-              {(detail.data?.resources ?? []).length === 0 && <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t('noData')}</div>}
-              {(detail.data?.resources ?? []).map((r) => {
-                const tints: Record<string, [string, string]> = { pdf: ['#FBEBEB', '#D14343'], xlsx: ['#EAF6EF', '#1F8A5B'], docx: ['#EAF1FB', '#1B5FB0'] }
-                const [tint, color] = tints[r.kind ?? ''] ?? ['#EAF1FB', '#1B5FB0']
-                return (
-                  <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', background: '#fff', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 10, cursor: 'pointer' }}>
-                    <div style={{ width: 38, height: 38, borderRadius: 10, background: tint, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={r.icon ?? 'file-text'} size={18} /></div>
-                    <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--navy-800)' }}>{r.name}</div><div style={{ fontSize: 11.5, color: '#93A1B4', fontWeight: 600 }}>{r.size_label}</div></div>
-                    <Icon name="download" size={18} color="#8494A8" />
-                  </div>
-                )
-              })}
+              {(data.resourceGroups ?? []).length === 0 && <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t('noData')}</div>}
+              {(data.resourceGroups ?? []).map((g) => (
+                <div key={g.id} style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#8494A8', textTransform: 'uppercase', letterSpacing: .4, marginBottom: 8 }}>{g.title}</div>
+                  {g.items.map((r) => {
+                    const tints: Record<string, [string, string]> = { pdf: ['#FBEBEB', '#D14343'], xlsx: ['#EAF6EF', '#1F8A5B'], docx: ['#EAF1FB', '#1B5FB0'], link: ['#F3EDFB', '#7C5CD6'] }
+                    const [tint, color] = tints[r.kind ?? ''] ?? ['#EAF1FB', '#1B5FB0']
+                    const isLink = r.kind === 'link'
+                    return (
+                      <div key={r.id} onClick={() => downloadResource(r)} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', background: '#fff', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 10, cursor: 'pointer' }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: tint, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={isLink ? 'link' : (r.icon ?? 'file-text')} size={18} /></div>
+                        <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--navy-800)' }}>{r.name}</div><div style={{ fontSize: 11.5, color: '#93A1B4', fontWeight: 600 }}>{r.size_label}</div></div>
+                        <Icon name={isLink ? 'external-link' : 'download'} size={18} color="#8494A8" />
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
             </>
           )}
+
+          <LiveButton courseId={courseId!} />
 
           {tab === 'quiz' && <QuizPanel quiz={detail.data?.quiz ?? null} />}
 
@@ -214,6 +256,42 @@ export default function Player() {
         ))}
       </aside>
     </div>
+  )
+}
+
+/** Live course: shows the student's own personal Zoom link (valid for every session),
+ *  provisioning it automatically on first click via the zoom-register edge function. */
+function LiveButton({ courseId }: { courseId: string }) {
+  const { me } = useAuth()
+  const [live, setLive] = useState(false)
+  const [url, setUrl] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    let on = true
+    ;(async () => {
+      const [{ data: c }, { data: e }] = await Promise.all([
+        supabase.from('courses').select('is_live').eq('id', courseId).single(),
+        supabase.from('enrollments').select('zoom_join_url').eq('course_id', courseId).eq('user_id', me!.userId).maybeSingle(),
+      ])
+      if (!on) return
+      setLive(!!(c as any)?.is_live)
+      setUrl((e as any)?.zoom_join_url ?? null)
+    })()
+    return () => { on = false }
+  }, [courseId, me])
+  if (!live) return null
+  async function join() {
+    if (url) { window.open(url, '_blank'); return }
+    setBusy(true)
+    const { data, error } = await supabase.functions.invoke('zoom-register', { body: { course_id: courseId } })
+    setBusy(false)
+    if (error || !(data as any)?.join_url) { alert((data as any)?.error ?? 'zoom_error'); return }
+    setUrl((data as any).join_url); window.open((data as any).join_url, '_blank')
+  }
+  return (
+    <button onClick={join} disabled={busy} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', justifyContent: 'center', marginBottom: 16, background: 'linear-gradient(135deg,#2D8CFF,#1B5FB0)', color: '#fff', border: 0, padding: '13px', borderRadius: 12, fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>
+      <Icon name="video" size={18} /> {busy ? '…' : (url ? 'Join live session' : 'Get my live link')}
+    </button>
   )
 }
 
@@ -392,7 +470,7 @@ function MediaPlayer({ lesson, userId, progressPct, onCompleted }: {
 
 function QuizPanel({ quiz }: { quiz: Quiz | null }) {
   const { t } = useI18n()
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ score: number; passed: boolean; pass_score: number } | null>(null)
 
@@ -425,8 +503,17 @@ function QuizPanel({ quiz }: { quiz: Quiz | null }) {
         <div key={q.id} style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--navy-800)', lineHeight: 1.5, marginBottom: 12 }}>{i + 1}. {q.prompt}</div>
           {q.question_type === 'short_answer' ? (
-            <input value={answers[q.id] ?? ''} onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))} placeholder={t('yourAnswer')} style={{ width: '100%', height: 44, border: '1px solid var(--border)', borderRadius: 11, padding: '0 14px', fontSize: 14, outline: 'none' }} />
-          ) : q.options.map((o, oi) => {
+            <input value={(answers[q.id] as string) ?? ''} onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))} placeholder={t('yourAnswer')} style={{ width: '100%', height: 44, border: '1px solid var(--border)', borderRadius: 11, padding: '0 14px', fontSize: 14, outline: 'none' }} />
+          ) : q.question_type === 'multiple' ? q.options.map((o, oi) => {
+            const cur = (answers[q.id] as string[]) ?? []
+            const picked = cur.includes(o.id)
+            return (
+              <button key={o.id} onClick={() => setAnswers((a) => { const c = (a[q.id] as string[]) ?? []; return { ...a, [q.id]: c.includes(o.id) ? c.filter((x) => x !== o.id) : [...c, o.id] } })} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '13px 16px', borderRadius: 12, border: `1.5px solid ${picked ? '#D9A441' : '#E6EBF1'}`, background: picked ? '#FBF7EE' : '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13.5, color: '#33415A', textAlign: 'left', marginBottom: 8 }}>
+                <span style={{ width: 26, height: 26, flex: 'none', borderRadius: 7, background: picked ? '#D9A441' : '#F1F4F8', color: picked ? '#0F2C4C' : '#8494A8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={picked ? 'check-square' : 'square'} size={15} /></span>
+                <span style={{ flex: 1, textAlign: 'left' }}>{o.label}</span>
+              </button>
+            )
+          }) : q.options.map((o, oi) => {
             const picked = answers[q.id] === o.id
             return (
               <button key={o.id} onClick={() => setAnswers((a) => ({ ...a, [q.id]: o.id }))} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '13px 16px', borderRadius: 12, border: `1.5px solid ${picked ? '#D9A441' : '#E6EBF1'}`, background: picked ? '#FBF7EE' : '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13.5, color: '#33415A', textAlign: 'left', marginBottom: 8 }}>
@@ -512,7 +599,7 @@ function AssignmentsPanel({ courseId }: { courseId: string }) {
               <StatusPill graded={graded} sub={sub} closed={!!closed} notYet={!!notYet} />
               <span style={{ fontSize: 12, color: '#8494A8', fontWeight: 700 }}>{a.points} {t('points')}</span>
             </div>
-            {a.instructions && <div style={{ fontSize: 13, color: '#5B6B82', lineHeight: 1.55, marginBottom: 10, whiteSpace: 'pre-wrap' }}>{a.instructions}</div>}
+            {a.instructions && <RichText html={a.instructions} style={{ fontSize: 13, color: '#5B6B82', lineHeight: 1.55, marginBottom: 10 }} />}
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 11.5, color: '#9AA7B8', fontWeight: 600, marginBottom: 12 }}>
               {a.due_at && <span style={{ color: duePassed && !graded ? '#D14343' : '#9AA7B8' }}><Icon name="clock" size={12} /> {t('due')}: {fmt(a.due_at)}</span>}
               {a.max_attempts !== 0 && <span><Icon name="repeat" size={12} /> {t('attempts')}: {used}/{a.max_attempts}</span>}
